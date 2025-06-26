@@ -1,93 +1,234 @@
-# V25_Copilot_Frontend
+# HARX REPS AI Copilot
 
+A comprehensive AI-powered sales copilot system with clean architecture, real-time features, and advanced analytics.
 
+## Architecture Overview
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+This project follows a clean architecture pattern with clear separation between frontend and backend:
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/h3763/v25_copilot_frontend.git
-git branch -M main
-git push -uf origin main
+├── backend/                 # Node.js API Server
+│   ├── src/
+│   │   ├── routes/         # API route definitions
+│   │   ├── controllers/    # Request handlers and business logic coordination
+│   │   ├── services/       # Business logic and data processing
+│   │   ├── models/         # MongoDB data models
+│   │   ├── middleware/     # Authentication, validation, error handling
+│   │   ├── utils/          # Helper functions and utilities
+│   │   └── config/         # Database and app configuration
+│   └── package.json
+│
+├── frontend/               # React Application
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API communication layer
+│   │   ├── stores/         # State management (Zustand)
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── types/          # TypeScript type definitions
+│   │   └── config/         # App configuration
+│   └── package.json
+│
+└── README.md
 ```
 
-## Integrate with your tools
+## Technology Stack
 
-- [ ] [Set up project integrations](https://gitlab.com/h3763/v25_copilot_frontend/-/settings/integrations)
+### Backend
+- **Node.js** with Express.js framework
+- **MongoDB** with Mongoose ODM
+- **Socket.io** for real-time communication
+- **JWT** for authentication
+- **bcryptjs** for password hashing
+- **Express Validator** for input validation
 
-## Collaborate with your team
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for build tooling
+- **Tailwind CSS** for styling
+- **Zustand** for state management
+- **React Query** for server state management
+- **Socket.io Client** for real-time features
+- **Axios** for HTTP requests
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## Features
 
-## Test and Deploy
+### Core Functionality
+- **Contact Management**: Complete CRM functionality with lead scoring
+- **Call Management**: Real-time call handling with REPS methodology
+- **AI Recommendations**: Intelligent suggestions during calls
+- **Real-time Transcription**: Live speech-to-text with sentiment analysis
+- **Performance Analytics**: Comprehensive call metrics and reporting
+- **Compliance Monitoring**: Automated compliance checking and alerts
 
-Use the built-in continuous integration in GitLab.
+### Real-time Features
+- Live call transcription
+- Real-time audio level monitoring
+- Instant AI recommendations
+- Live performance metrics
+- Multi-user collaboration
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### AI Capabilities
+- DISC personality analysis
+- Transaction intelligence
+- Smart warning system
+- Automated coaching suggestions
+- Sentiment analysis
 
-***
+## Getting Started
 
-# Editing this README
+### Prerequisites
+- Node.js 18+ 
+- MongoDB 6+
+- npm or yarn
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Backend Setup
 
-## Suggestions for a good README
+1. Navigate to backend directory:
+```bash
+cd backend
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Name
-Choose a self-explaining name for your project.
+3. Create environment file:
+```bash
+cp .env.example .env
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+4. Configure environment variables in `.env`:
+```env
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/harx_reps_db
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:5173
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+5. Start the server:
+```bash
+# Development
+npm run dev
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+# Production
+npm start
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### Frontend Setup
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+1. Navigate to frontend directory:
+```bash
+cd frontend
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+2. Install dependencies:
+```bash
+npm install
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+3. Create environment file:
+```bash
+cp .env.example .env
+```
+
+4. Configure environment variables in `.env`:
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+5. Start the development server:
+```bash
+npm run dev
+```
+
+### Database Setup
+
+1. Install MongoDB locally or use MongoDB Atlas
+2. Create a database named `harx_reps_db`
+3. The application will automatically create collections and indexes
+
+## API Documentation
+
+### Authentication Endpoints
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
+- `PUT /api/auth/profile` - Update user profile
+
+### Contact Endpoints
+- `GET /api/contacts` - Get contacts with filtering
+- `POST /api/contacts` - Create new contact
+- `GET /api/contacts/:id` - Get contact by ID
+- `PUT /api/contacts/:id` - Update contact
+- `DELETE /api/contacts/:id` - Delete contact
+
+### Call Endpoints
+- `GET /api/calls` - Get calls with filtering
+- `POST /api/calls` - Start new call
+- `PUT /api/calls/:id/end` - End call
+- `PUT /api/calls/:id/metrics` - Update call metrics
+- `GET /api/calls/:id/transcripts` - Get call transcripts
+
+## Real-time Events
+
+### Socket.io Events
+- `join-call` - Join a call room
+- `leave-call` - Leave a call room
+- `transcript-update` - Real-time transcript updates
+- `audio-level` - Audio level monitoring
+- `metrics-updated` - Performance metrics updates
+- `new-recommendation` - AI recommendation alerts
+
+## Development Guidelines
+
+### Code Organization
+- **Routes**: Define API endpoints and route parameters
+- **Controllers**: Handle HTTP requests, validate input, coordinate services
+- **Services**: Implement business logic, data processing, external API calls
+- **Models**: Define data structure and database interactions
+
+### Error Handling
+- Centralized error handling middleware
+- Consistent API response format
+- Proper HTTP status codes
+- Detailed error logging
+
+### Security
+- JWT-based authentication
+- Input validation and sanitization
+- Rate limiting
+- CORS configuration
+- Helmet.js security headers
+
+## Deployment
+
+### Backend Deployment
+1. Set production environment variables
+2. Build and deploy to your preferred platform (AWS, Heroku, etc.)
+3. Configure MongoDB connection string
+4. Set up SSL certificates
+
+### Frontend Deployment
+1. Build the production bundle:
+```bash
+npm run build
+```
+2. Deploy to static hosting (Netlify, Vercel, etc.)
+3. Configure environment variables for production API
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+1. Fork the repository
+2. Create a feature branch
+3. Follow the established code patterns
+4. Add tests for new functionality
+5. Submit a pull request
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is licensed under the MIT License.
