@@ -31,7 +31,7 @@ ENV VITE_CRM_API_KEY=your_crm_api_key
 ENV VITE_SPEECH_API_URL=your_speech_api_url
 ENV VITE_SPEECH_API_KEY=your_speech_api_key
 
-ENV VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
+ENV VITE_API_URL_CALL=https://api-calls.harx.ai
 
 # Construire l'application
 RUN npm run build
