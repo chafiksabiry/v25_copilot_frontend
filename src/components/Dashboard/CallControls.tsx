@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
+import { useCallStorage } from '../../hooks/useCallStorage';
 
 interface CallControlsProps {
   phoneNumber?: string;
@@ -31,6 +32,7 @@ export const CallControls: React.FC<CallControlsProps> = ({
   onCallStatusChange,
   onCallSidChange
 }) => {
+  const { storeCall } = useCallStorage();
   const [device, setDevice] = useState<Device | null>(null);
   const [connection, setConnection] = useState<any>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
@@ -136,12 +138,17 @@ export const CallControls: React.FC<CallControlsProps> = ({
         onCallStatusChange?.("active");
       });
 
-      conn.on('disconnect', () => {
+      conn.on('disconnect', async () => {
         console.log("Call disconnected");
         setCallStatus("ended");
         onCallStatusChange?.("ended");
         setConnection(null);
         setDevice(null);
+        
+        // Store call in database when it disconnects
+        if (callSid && agentId) {
+          await storeCall(callSid, agentId);
+        }
       });
 
       conn.on('error', (error: any) => {
@@ -163,13 +170,18 @@ export const CallControls: React.FC<CallControlsProps> = ({
     }
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     if (connection) {
       connection.disconnect();
       setConnection(null);
       setDevice(null);
       setCallStatus("ended");
       onCallStatusChange?.("ended");
+      
+      // Store call in database when it ends
+      if (callSid && agentId) {
+        await storeCall(callSid, agentId);
+      }
     }
   };
 
@@ -253,7 +265,7 @@ export const CallControls: React.FC<CallControlsProps> = ({
             End Call
           </button>
         </div>
+              </div>
       </div>
-    </div>
   );
 };

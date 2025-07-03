@@ -3,6 +3,7 @@ import { useAgent } from '../../contexts/AgentContext';
 import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
+import { useCallStorage } from '../../hooks/useCallStorage';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -14,17 +15,17 @@ interface TokenResponse {
 }
 
 export function ContactInfo() {
-  const { state } = useAgent();
-  const { startCall } = useRealTimeFeatures();
+  const { storeCall } = useCallStorage();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const [activeDevice, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
+  const [currentCallSid, setCurrentCallSid] = useState<string>('');
 
   // Store original contact data to prevent it from being overwritten
   const [originalContact] = useState({
-    id: 'lead-001',
+    id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
     phone: '+18605670043',
@@ -160,16 +161,22 @@ export function ContactInfo() {
         console.log("✅ Call accepted");
         const Sid = conn.parameters?.CallSid;
         console.log("CallSid recupéré", Sid);
+        setCurrentCallSid(Sid);
         setCallStatus('active');
         // Set call details in global state
-        console.log('Setting call details:', { callSid: Sid, agentId: contact.assignedAgent });
+        console.log('Setting call details:', { callSid: Sid, agentId: contact.id });
       });
 
-      conn.on('disconnect', () => {
+      conn.on('disconnect', async () => {
         console.log("Call disconnected");
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        
+        // Store call in database when it disconnects
+        if (currentCallSid && contact.id) {
+          await storeCall(currentCallSid, contact.id);
+        }
       });
 
       conn.on('error', (error: any) => {
@@ -187,7 +194,7 @@ export function ContactInfo() {
     }
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     console.log("Ending call...");
     console.log("Contact before ending call:", contact);
     console.log("Contact phone before ending call:", contact.phone);
@@ -200,6 +207,11 @@ export function ContactInfo() {
     setActiveConnection(null);
     setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
+    
+    // Store call in database when it ends
+    if (currentCallSid && contact.id) {
+      await storeCall(currentCallSid, contact.id);
+    }
     
     console.log("Call ended. Contact after ending call:", contact);
     console.log("Contact phone after ending call:", contact.phone);
