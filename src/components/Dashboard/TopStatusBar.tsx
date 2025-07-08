@@ -1,13 +1,35 @@
 import React, { useState } from 'react';
-import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff } from 'lucide-react';
+import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX } from 'lucide-react';
 import StatusCard from './StatusCard';
 import CallControlsPanel from './CallControlsPanel';
+import { useAgent } from '../../contexts/AgentContext';
 
 const TopStatusBar: React.FC = () => {
+  const { state } = useAgent();
   const [callExpanded, setCallExpanded] = useState(false);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
+
+  // Mute/unmute microphone
+  const handleToggleMic = () => {
+    if (state.mediaStream) {
+      state.mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = !isMicMuted;
+      });
+      setIsMicMuted(m => !m);
+    }
+  };
+
+  // Mute/unmute speaker (output)
+  // Note: This only toggles a local state; actual output mute requires control of an <audio> element
+  const handleToggleSpeaker = () => {
+    setIsSpeakerMuted(m => !m);
+    // If you have an <audio> element, you can set its volume or muted property here
+    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
+  };
 
   return (
     <div className="w-full max-w-[1800px] mx-auto px-2 py-2 overflow-x-auto">
@@ -15,7 +37,10 @@ const TopStatusBar: React.FC = () => {
         <StatusCard
           icon={<PhoneOff size={20} className="text-slate-200" />}
           title="Call"
-          value={<span className="text-slate-400 font-semibold">Inactive</span>}
+          value={state.callState.isActive
+            ? <span className="text-green-400 font-semibold">Active</span>
+            : <span className="text-slate-400 font-semibold">Inactive</span>
+          }
           expandable
           expanded={callExpanded}
           onToggle={() => setCallExpanded(e => !e)}
@@ -99,18 +124,30 @@ const TopStatusBar: React.FC = () => {
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Audio Controls</div>
               <div className="flex space-x-3">
-                <button className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]">
-                  <MicOff size={20} className="text-slate-300" />
+                <button
+                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
+                  onClick={handleToggleMic}
+                  aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                >
+                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
-                <button className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]">
-                  <Volume2 size={20} className="text-slate-300" />
+                <button
+                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
+                  onClick={handleToggleSpeaker}
+                  aria-label={isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
+                >
+                  {isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
                 </button>
               </div>
             </div>
             {/* Call Status */}
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Call Status</div>
-              <div className="text-slate-300">No active call</div>
+              {state.callState.isActive ? (
+                <span className="text-green-400 font-semibold">Active</span>
+              ) : (
+                <span className="text-slate-400 font-semibold">Inactive</span>
+              )}
             </div>
             {/* Recording Status */}
             <div className="flex-1">
