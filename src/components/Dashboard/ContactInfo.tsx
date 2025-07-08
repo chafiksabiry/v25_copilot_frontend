@@ -4,6 +4,7 @@ import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
+import { useTranscriptionIntegration } from '../../hooks/useTranscriptionIntegration';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -16,12 +17,15 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
+  const { startTranscription, stopTranscription, isActive: isTranscriptionActive } = useTranscriptionIntegration();
+  const { state, dispatch } = useAgent();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const [activeDevice, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
   // Store original contact data to prevent it from being overwritten
   const [originalContact] = useState({
@@ -32,9 +36,9 @@ export function ContactInfo() {
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-    status: 'qualified',
-    source: 'website',
-    priority: 'high',
+    status: 'qualified' as 'qualified',
+    source: 'website' as 'website',
+    priority: 'high' as 'high',
     lastContact: new Date(Date.now() - 86400000 * 3), // 3 days ago
     nextFollowUp: new Date(Date.now() + 86400000), // Tomorrow
     notes: 'Interested in enterprise solution. Budget approved. Decision maker identified.',
@@ -42,7 +46,7 @@ export function ContactInfo() {
     value: 75000,
     assignedAgent: 'Agent Smith',
     timezone: 'EST',
-    preferredContactMethod: 'phone',
+    preferredContactMethod: 'phone' as 'phone',
     socialProfiles: {
       linkedin: 'https://linkedin.com/in/sarahjohnson',
       twitter: 'https://twitter.com/sarahj'
@@ -71,7 +75,7 @@ export function ContactInfo() {
         outcome: 'Qualified lead',
         notes: 'Budget confirmed, timeline established'
       }
-    ]
+    ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
   });
 
   // Use original contact data instead of state.callState.contact
@@ -163,6 +167,29 @@ export function ContactInfo() {
         console.log("CallSid recupéré", Sid);
         setCurrentCallSid(Sid);
         setCallStatus('active');
+
+        // Ajout : dispatcher l'action START_CALL dans le contexte global
+        dispatch({
+          type: 'START_CALL',
+          participants: [], // tu peux mettre la vraie liste si tu l'as
+          contact: contact
+        });
+        
+        // Start transcription when call is accepted
+        setTimeout(async () => {
+          try {
+            const stream = conn.getRemoteStream();
+            if (stream) {
+              setMediaStream(stream);
+              dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
+              await startTranscription(stream, contact.phone);
+              console.log('🎤 Transcription started for call phases');
+            }
+          } catch (error) {
+            console.error('Failed to start transcription:', error);
+          }
+        }, 1000);
+        
         // Set call details in global state
         console.log('Setting call details:', { callSid: Sid, agentId: contact.id });
       });
@@ -172,6 +199,11 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        setMediaStream(null);
+        dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+        
+        // Stop transcription
+        await stopTranscription();
         
         // Store call in database when it disconnects
         if (currentCallSid && contact.id) {
@@ -207,11 +239,19 @@ export function ContactInfo() {
     setActiveConnection(null);
     setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
+    setMediaStream(null);
+    dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+    
+    // Stop transcription
+    await stopTranscription();
     
     // Store call in database when it ends
     if (currentCallSid && contact.id) {
       await storeCall(currentCallSid, contact.id);
     }
+    
+    // Ajout : dispatch END_CALL pour mettre à jour le context global
+    dispatch({ type: 'END_CALL' });
     
     console.log("Call ended. Contact after ending call:", contact);
     console.log("Contact phone after ending call:", contact.phone);

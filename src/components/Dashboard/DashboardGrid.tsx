@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { CallMetrics } from './CallMetrics';
 import { CallStructureGuide } from './CallStructureGuide';
 import { TransactionTargeting } from './TransactionTargeting';
@@ -13,6 +13,7 @@ import CallStructureGuideDetails from './CallStructureGuideDetails';
 import CoachingDetails from './CoachingDetails';
 import TargetingDetails from './TargetingDetails';
 import RecommendationsDetails from './RecommendationsDetails';
+import { useAgent } from '../../contexts/AgentContext';
 
 // Placeholders stylés pour les widgets vides
 const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, title: string, subtitle: string }) => (
@@ -23,7 +24,20 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
   </div>
 );
 
+const repsPhases = [
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-100 text-blue-800' },
+  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-green-100 text-green-800' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-purple-100 text-purple-800' },
+  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-yellow-100 text-yellow-800' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-pink-100 text-pink-800' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-100 text-indigo-800' },
+  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-red-100 text-red-800' },
+  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-100 text-teal-800' },
+  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-gray-100 text-gray-800' }
+];
+
 const DashboardGrid: React.FC = () => {
+  const { state } = useAgent();
   const [discExpanded, setDiscExpanded] = useState(false);
   const [transactionExpanded, setTransactionExpanded] = useState(false);
   const [callStructureExpanded, setCallStructureExpanded] = useState(false);
@@ -154,16 +168,27 @@ const DashboardGrid: React.FC = () => {
       )}
       {/* Grille 2 colonnes toujours visible */}
       <div className="grid grid-cols-2 gap-6 mt-2">
-        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px]">
-          <div className="flex items-center mb-4 self-start">
-            <MapPin className="text-cyan-400 mr-2" />
-            <span className="text-lg font-bold text-white">REPS Call Phases</span>
-          </div>
-          <div className="flex flex-col items-center justify-center flex-1">
-            <Phone className="w-14 h-14 text-slate-400 mb-4" />
-            <div className="text-slate-300 text-center text-lg mb-1">Start a call to activate REPS phase tracking</div>
-            <div className="text-slate-400 text-center text-base">9-phase structured methodology with real-time progress</div>
-          </div>
+        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
+          <CallPhasesDisplay
+            phases={repsPhases.map((phase, idx) => ({
+              ...phase,
+              status:
+                state.callState.isActive
+                  ? idx === 0
+                    ? 'completed'
+                    : idx === 1
+                    ? 'in-progress'
+                    : 'pending'
+                  : 'pending'
+            }))}
+            currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
+            isCallActive={state.callState.isActive}
+            phoneNumber="+18605670043"
+            mediaStream={state.mediaStream}
+            onPhaseClick={(phaseId) => {
+              console.log('Phase clicked:', phaseId);
+            }}
+          />
         </div>
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px]">
           <div className="flex items-center mb-4 self-start">
