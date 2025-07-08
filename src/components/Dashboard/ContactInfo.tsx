@@ -250,6 +250,9 @@ export function ContactInfo() {
       await storeCall(currentCallSid, contact.id);
     }
     
+    // Ajout : dispatch END_CALL pour mettre à jour le context global
+    dispatch({ type: 'END_CALL' });
+    
     console.log("Call ended. Contact after ending call:", contact);
     console.log("Contact phone after ending call:", contact.phone);
   };
