@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { CallMetrics } from './CallMetrics';
 import { CallStructureGuide } from './CallStructureGuide';
 import { TransactionTargeting } from './TransactionTargeting';
@@ -6,7 +6,7 @@ import { Recommendations } from './Recommendations';
 import { CallPhasesDisplay } from './CallPhasesDisplay';
 import { ScriptPrompter } from './ScriptPrompter';
 import StatusCard from './StatusCard';
-import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, Phone, FileText } from 'lucide-react';
+import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, Phone, FileText, ArrowUp } from 'lucide-react';
 import DiscPersonalityAnalysis from './DiscPersonalityAnalysis';
 import TransactionProgressDetails from './TransactionProgressDetails';
 import CallStructureGuideDetails from './CallStructureGuideDetails';
@@ -37,13 +37,22 @@ const repsPhases = [
 ];
 
 const DashboardGrid: React.FC = () => {
-  const { state } = useAgent();
+  const { state, dispatch } = useAgent();
   const [discExpanded, setDiscExpanded] = useState(false);
   const [transactionExpanded, setTransactionExpanded] = useState(false);
   const [callStructureExpanded, setCallStructureExpanded] = useState(false);
   const [coachingExpanded, setCoachingExpanded] = useState(false);
   const [targetingExpanded, setTargetingExpanded] = useState(false);
   const [recommendationsExpanded, setRecommendationsExpanded] = useState(false);
+  const discSectionRef = useRef<HTMLDivElement>(null);
+
+  // Génère une transcription propre pour DISC : uniquement les textes finaux uniques
+  const transcriptTexts = state.transcript
+    .map(entry => entry.text)
+    .filter((text, idx, arr) => text && arr.indexOf(text) === idx);
+  // (Optionnel) Ajoute la dernière interim si tu veux du live (à adapter si tu veux la passer via le contexte)
+  // const fullTranscription = [...transcriptTexts, state.currentInterimText].filter(Boolean).join(' ');
+  const fullTranscription = transcriptTexts.join(' ');
 
   return (
     <div className="w-full pb-8">
@@ -137,9 +146,40 @@ const DashboardGrid: React.FC = () => {
         />
       </div>
       {discExpanded && (
-        <div className="w-full mt-2 mb-8">
-          <DiscPersonalityAnalysis />
+        <>
+          {console.log('[DASHBOARD] state.transcript:', state.transcript)}
+          {console.log('[DASHBOARD] transcription prop:', fullTranscription)}
+          <div ref={discSectionRef} className="w-full mt-2 mb-8">
+            <DiscPersonalityAnalysis 
+              transcription={fullTranscription}
+              context={state.transcript || []}
+              callDuration={state.callState.isActive ? Math.floor((Date.now() - (state.callState.startTime?.getTime() || Date.now())) / 60000) : 0}
+              onPersonalityDetected={(profile) => {
+                console.log('Personality detected:', profile);
+                // Adapter le profil pour le contexte
+                const adaptedProfile = {
+                  type: profile.primaryType,
+                  dominance: profile.primaryType === 'D' ? profile.confidence : 0,
+                  influence: profile.primaryType === 'I' ? profile.confidence : 0,
+                  steadiness: profile.primaryType === 'S' ? profile.confidence : 0,
+                  conscientiousness: profile.primaryType === 'C' ? profile.confidence : 0,
+                  confidence: profile.confidence,
+                  description: profile.communicationStyle,
+                  recommendations: profile.recommendations
+                };
+                dispatch({ type: 'UPDATE_PERSONALITY_PROFILE', profile: adaptedProfile });
+                
+                // Notification pour informer l'utilisateur
+                if (profile.confidence >= 70) {
+                  // Scroll automatique vers le DISC si confiance élevée
+                  setTimeout(() => {
+                    discSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  }, 1000);
+                }
+              }}
+            />
         </div>
+        </>
       )}
       {transactionExpanded && (
         <div className="w-full mt-2 mb-8">
@@ -166,6 +206,17 @@ const DashboardGrid: React.FC = () => {
           <RecommendationsDetails />
         </div>
       )}
+      {/* Bouton flottant pour remonter vers DISC */}
+      {discExpanded && (
+        <button
+          onClick={() => discSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+          title="Scroll to DISC Analysis"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Grille 2 colonnes toujours visible */}
       <div className="grid grid-cols-2 gap-6 mt-2">
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
@@ -185,6 +236,7 @@ const DashboardGrid: React.FC = () => {
             isCallActive={state.callState.isActive}
             phoneNumber="+18605670043"
             mediaStream={state.mediaStream}
+            disableAutoScroll={true}
             onPhaseClick={(phaseId) => {
               console.log('Phase clicked:', phaseId);
             }}

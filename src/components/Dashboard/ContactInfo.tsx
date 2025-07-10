@@ -82,14 +82,14 @@ export function ContactInfo() {
   const contact = originalContact;
 
   // Debug: Log contact data whenever it changes
-  console.log("Contact data:", contact);
+ /*  console.log("Contact data:", contact);
   console.log("Contact phone:", contact.phone);
-  console.log("Call status:", callStatus);
+  console.log("Call status:", callStatus); */
 
   const initiateTwilioCall = async () => {
-    console.log("Contact phone number:", contact.phone);
+   /*  console.log("Contact phone number:", contact.phone);
     console.log("Contact object:", contact);
-    console.log("Call status at start:", callStatus);
+    console.log("Call status at start:", callStatus); */
     
     // Ensure we have valid contact data
     const phoneNumber = contact?.phone || '+18605670043'; // Fallback to default

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TranscriptionService, TranscriptionMessage } from '../../services/transcriptionService';
+import { useAgent } from '../../contexts/AgentContext';
 
 interface CallPhase {
   id: string;
@@ -19,6 +20,7 @@ interface CallPhasesDisplayProps {
   isCallActive?: boolean;
   phoneNumber?: string;
   mediaStream?: MediaStream | null;
+  disableAutoScroll?: boolean;
 }
 
 export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
@@ -27,18 +29,24 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   onPhaseClick,
   isCallActive = false,
   phoneNumber,
-  mediaStream
+  mediaStream,
+  disableAutoScroll = false
 }) => {
   const [transcriptionService] = useState(() => new TranscriptionService());
   const [transcripts, setTranscripts] = useState<TranscriptionMessage[]>([]);
   const [currentInterimText, setCurrentInterimText] = useState('');
   const [isTranscriptionActive, setIsTranscriptionActive] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(!disableAutoScroll);
   const transcriptsEndRef = useRef<HTMLDivElement>(null);
+  const lastTranscriptTextRef = useRef('');
+  const { dispatch } = useAgent();
 
-  // Auto-scroll to bottom of transcripts
+  // Auto-scroll to bottom of transcripts (can be disabled)
   useEffect(() => {
+    if (autoScrollEnabled && !disableAutoScroll) {
     transcriptsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [transcripts, currentInterimText]);
+    }
+  }, [transcripts, currentInterimText, autoScrollEnabled, disableAutoScroll]);
 
   // Initialize transcription when call becomes active
   useEffect(() => {
@@ -50,9 +58,32 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
         console.log('📝 CallPhasesDisplay received transcription:', message);
         if (message.type === 'interim') {
           setCurrentInterimText(message.text);
+          // Astuce : n'ajoute que si différent du dernier texte stocké
+          if (message.text && message.text !== lastTranscriptTextRef.current) {
+            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+              participantId: 'agent',
+              text: message.text,
+              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+              confidence: message.confidence || 0,
+              sentiment: 'neutral'
+            }});
+            lastTranscriptTextRef.current = message.text;
+          }
         } else if (message.type === 'final') {
           setTranscripts(prev => [...prev, message]);
           setCurrentInterimText('');
+          if (message.text && message.text !== lastTranscriptTextRef.current) {
+            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+              participantId: 'agent',
+              text: message.text,
+              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+              confidence: message.confidence || 0,
+              sentiment: 'neutral'
+            }});
+            lastTranscriptTextRef.current = message.text;
+          }
         }
       });
 
@@ -63,7 +94,7 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
       transcriptionService.cleanup();
       setCurrentInterimText('');
     }
-  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, transcriptionService]);
+  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, transcriptionService, dispatch]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -114,6 +145,17 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-green-200 font-medium">Active</span>
+              <button
+                onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                className={`ml-4 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  autoScrollEnabled 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                }`}
+                title={autoScrollEnabled ? 'Disable auto-scroll' : 'Enable auto-scroll'}
+              >
+                {autoScrollEnabled ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+              </button>
             </div>
           </div>
           
