@@ -57,15 +57,30 @@ export class TranscriptionService {
   }
 
   private getLanguageFromPhoneNumber(phone: string): string {
-    if (phone.startsWith('+33') || phone.startsWith('0033')) {
+    console.log('🔍 Detecting language for phone number:', phone);
+    
+    // Nettoyer le numéro de téléphone
+    const cleanPhone = phone.replace(/\s+/g, '').replace(/[()-]/g, '');
+    
+    if (cleanPhone.startsWith('+33') || cleanPhone.startsWith('0033') || 
+        cleanPhone.startsWith('33') || cleanPhone.match(/^0[1-9]/)) {
+      console.log('🇫🇷 Detected French phone number, using fr-FR');
       return 'fr-FR';
-    } else if (phone.startsWith('+212') || phone.startsWith('00212')) {
+    } else if (cleanPhone.startsWith('+212') || cleanPhone.startsWith('00212')) {
+      console.log('🇲🇦 Detected Moroccan phone number, using ar-MA');
       return 'ar-MA';
-    } else if (phone.startsWith('+34') || phone.startsWith('0034')) {
+    } else if (cleanPhone.startsWith('+34') || cleanPhone.startsWith('0034')) {
+      console.log('🇪🇸 Detected Spanish phone number, using es-ES');
       return 'es-ES';
-    } else if (phone.startsWith('+49') || phone.startsWith('0049')) {
+    } else if (cleanPhone.startsWith('+49') || cleanPhone.startsWith('0049')) {
+      console.log('🇩🇪 Detected German phone number, using de-DE');
       return 'de-DE';
+    } else if (cleanPhone.startsWith('+44') || cleanPhone.startsWith('0044') || 
+               cleanPhone.startsWith('44') || cleanPhone.match(/^0[1-9]/)) {
+      console.log('🇬🇧 Detected UK phone number, using en-GB');
+      return 'en-GB';
     } else {
+      console.log('🇺🇸 Using default English (en-US) for phone number:', cleanPhone);
       return 'en-US'; // Default to English
     }
   }
@@ -120,7 +135,7 @@ export class TranscriptionService {
             config: {
               encoding: 'LINEAR16',
               sampleRateHertz: this.audioContext!.sampleRate,
-              languageCode: this.getLanguageFromPhoneNumber(phoneNumber),
+              languageCode: 'fr-FR', // Forcer le français
               enableAutomaticPunctuation: true,
               model: 'phone_call',
               useEnhanced: true,
@@ -129,11 +144,11 @@ export class TranscriptionService {
               enableSpeakerDiarization: true,
               diarizationConfig: {
                 enableSpeakerDiarization: true,
-                minSpeakerCount: 2,
+                minSpeakerCount: 1,
                 maxSpeakerCount: 2
               },
-              enableAutomaticLanguageIdentification: true,
-              alternativeLanguageCodes: ['en-US', 'fr-FR', 'ar-MA', 'es-ES', 'de-DE'],
+              enableAutomaticLanguageIdentification: false, // Désactiver la détection automatique
+              alternativeLanguageCodes: [], // Pas d'alternatives pour forcer le français
               interimResults: true,
               singleUtterance: false,
               metadata: {
@@ -148,7 +163,9 @@ export class TranscriptionService {
             }
           };
           
-          console.log('📝 Sending speech recognition config:', config);
+          console.log('📝 Sending speech recognition config with FORCED French:', config);
+          console.log('🇫🇷 Forcing French (fr-FR) - auto-detection DISABLED');
+          console.log('🎤 Audio sample rate:', this.audioContext!.sampleRate);
           this.ws!.send(JSON.stringify(config));
 
           // Handle audio data
@@ -216,8 +233,15 @@ export class TranscriptionService {
         const isFinal = result.isFinal;
         const transcript = result.alternatives[0]?.transcript || '';
         const confidence = result.alternatives[0]?.confidence || 0;
+        const detectedLanguage = 'fr-FR'; // Forcer le français
+
+        console.log('🔍 Raw result:', result);
+        console.log('🔍 Alternative:', result.alternatives[0]);
 
         if (transcript.trim()) {
+          console.log(`🇫🇷 French transcription: "${transcript}"`);
+          console.log(`📊 Confidence: ${confidence}, Final: ${isFinal}`);
+          
           const message: TranscriptionMessage = {
             type: isFinal ? 'final' : 'interim',
             text: transcript,
@@ -229,10 +253,16 @@ export class TranscriptionService {
           if (this.onTranscriptionUpdate) {
             this.onTranscriptionUpdate(message);
           }
+        } else {
+          console.log('⚠️ Empty transcript received');
         }
       }
       // Fallback: flat format (comme dans les logs de l'utilisateur)
       else if (typeof data.transcript === 'string') {
+        const detectedLanguage = 'fr-FR'; // Forcer le français
+        console.log(`🇫🇷 French transcription: "${data.transcript}"`);
+        console.log(`📊 Confidence: ${data.confidence}, Final: ${data.isFinal}`);
+        
         const message: TranscriptionMessage = {
           type: data.isFinal ? 'final' : 'interim',
           text: data.transcript,
@@ -243,6 +273,8 @@ export class TranscriptionService {
         if (this.onTranscriptionUpdate) {
           this.onTranscriptionUpdate(message);
         }
+      } else {
+        console.log('⚠️ Unknown message format:', data);
       }
     } catch (error) {
       console.error('❌ Error parsing WebSocket message:', error);

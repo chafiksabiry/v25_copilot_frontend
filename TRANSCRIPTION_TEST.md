@@ -1,112 +1,96 @@
-# Test de la Transcription en Temps Réel
+# Test de Transcription Française Forcée
 
-## 🎯 Objectif
-Vérifier que la transcription s'affiche correctement dans le composant "REPS Call Phases" pendant un appel.
+## Problème résolu
+Le système détectait automatiquement l'arabe au lieu du français, causant une mauvaise transcription.
 
-## ✅ Étapes de Test
+## Solution appliquée
+**Configuration française forcée** - Désactivation complète de la détection automatique de langue.
 
-### 1. Préparation
-- [ ] Ouvrir l'application
-- [ ] Vérifier que le backend est accessible
-- [ ] Vérifier les variables d'environnement :
-  ```env
-  VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
-  VITE_WS_URL=wss://preprod-api-dash-calls.harx.ai/speech-to-text
-  ```
+## Configuration actuelle
+- **Langue forcée** : `fr-FR` (français uniquement)
+- **Détection automatique** : **DÉSACTIVÉE** (`enableAutomaticLanguageIdentification: false`)
+- **Langues alternatives** : **AUCUNE** (`alternativeLanguageCodes: []`)
+- **Modèle** : `phone_call` optimisé pour les appels téléphoniques
 
-### 2. Démarrage d'un appel
-- [ ] Cliquer sur "Start Call" dans ContactInfo
-- [ ] Vérifier que l'appel se connecte
-- [ ] Vérifier les logs console :
-  ```
-  ✅ Call accepted
-  🎤 Transcription started for call phases
-  🔌 WebSocket connection established for speech-to-text
-  ```
+## Test avec votre cas spécifique
 
-### 3. Vérification de la transcription
-- [ ] Parler pendant l'appel
-- [ ] Vérifier les logs audio :
-  ```
-  🎤 Audio levels: {rms: '0.032', peak: '0.110', bufferSize: 1024, isActive: true}
-  ```
-- [ ] Vérifier les logs de transcription :
-  ```
-  📝 Received transcription data: {transcript: '...', confidence: 0, isFinal: false}
-  📝 CallPhasesDisplay received transcription: {type: 'interim', text: '...'}
-  ```
+### Appel vers +13024440090 (répondeur français)
 
-### 4. Vérification de l'affichage
-- [ ] Regarder le composant "REPS Call Phases" dans le dashboard
-- [ ] Vérifier que la section "Live Transcription" apparaît
-- [ ] Vérifier que le texte s'affiche en temps réel
-- [ ] Vérifier l'indicateur "Active" (point vert animé)
-- [ ] Vérifier les statistiques (nombre de segments, langue)
+**Résultat attendu :**
+1. **Configuration initiale** : Français forcé
+   ```
+   📝 Sending speech recognition config with FORCED French
+   🇫🇷 Forcing French (fr-FR) - auto-detection DISABLED
+   🎤 Audio sample rate: 48000
+   ```
 
-### 5. Test des fonctionnalités
-- [ ] Vérifier l'auto-scroll vers le bas
-- [ ] Vérifier les timestamps sur chaque segment
-- [ ] Vérifier l'affichage de la confiance
-- [ ] Vérifier la distinction interim/final
+2. **Transcription française correcte** :
+   ```
+   🇫🇷 French transcription: "Bonjour, comment puis-je vous aider?"
+   📊 Confidence: 0.95, Final: true
+   ```
 
-### 6. Fin d'appel
-- [ ] Cliquer sur "End Call"
-- [ ] Vérifier que la transcription s'arrête
-- [ ] Vérifier que la section "Live Transcription" disparaît
-- [ ] Vérifier les logs de nettoyage :
-  ```
-  🛑 Stopping transcription...
-  🧹 Starting transcription cleanup...
-  ✅ Transcription cleanup complete
-  ```
+## Logs de débogage à vérifier
 
-## 🔍 Points de Vérification
-
-### Logs Console Attendus
+### Frontend (Console navigateur)
 ```
-✅ Call accepted
-🎤 Transcription started for call phases
-🔌 WebSocket connection established for speech-to-text
-📝 Sending speech recognition config: {...}
-🎤 Audio levels: {...}
-📝 Received transcription data: {...}
-📝 CallPhasesDisplay received transcription: {...}
+📝 Sending speech recognition config with FORCED French
+🇫🇷 Forcing French (fr-FR) - auto-detection DISABLED
+🎤 Audio sample rate: 48000
+🔍 Raw result: {results: [{alternatives: [{transcript: "Bonjour"}]}]}
+🔍 Alternative: {transcript: "Bonjour", confidence: 0.95}
+🇫🇷 French transcription: "Bonjour"
+📊 Confidence: 0.95, Final: false
 ```
 
-### Interface Utilisateur Attendue
-- [ ] Section "Live Transcription" visible pendant l'appel
-- [ ] Indicateur "Active" avec point vert animé
-- [ ] Texte qui apparaît en temps réel
-- [ ] Segments organisés avec timestamps
-- [ ] Statistiques en bas (segments, langue)
+### Backend (Logs serveur)
+```
+Received config: {config: {languageCode: "fr-FR", enableAutomaticLanguageIdentification: false, ...}}
+🔍 Raw recognition response: {results: [{alternatives: [{transcript: "Bonjour"}]}]}
+🇫🇷 French transcription: "Bonjour"
+📊 Confidence: 0.95, Final: false
+🔍 Full result: {results: [{alternatives: [{transcript: "Bonjour"}]}]}
+```
 
-### États Attendus
-- **Avant appel** : Message "No Active Call"
-- **Pendant appel** : Transcription en temps réel
-- **Après appel** : Retour au message "No Active Call"
+## Avantages de cette approche
 
-## 🐛 Dépannage
+✅ **Précision** : Transcription française uniquement, pas de confusion avec d'autres langues
+✅ **Qualité** : Meilleure reconnaissance car le modèle se concentre sur le français
+✅ **Fiabilité** : Pas de mauvaise détection automatique
+✅ **Simplicité** : Configuration claire et directe
 
-### Si la transcription ne s'affiche pas :
-1. Vérifier les logs console pour les erreurs
-2. Vérifier la connexion WebSocket
-3. Vérifier que le mediaStream est bien passé
-4. Vérifier que le composant CallPhasesDisplay reçoit les props
+## Test recommandé
 
-### Si l'audio n'est pas détecté :
-1. Vérifier les permissions microphone
-2. Vérifier que l'appel Twilio fonctionne
-3. Vérifier les niveaux audio dans les logs
+1. **Redémarrer le serveur backend**
+2. **Faire un appel vers +13024440090**
+3. **Vérifier les logs** :
+   - Configuration avec français forcé
+   - Détection automatique désactivée
+   - Transcription française correcte
+4. **Confirmer** que la transcription est en français et non en arabe
 
-### Si le WebSocket ne se connecte pas :
-1. Vérifier l'URL WebSocket
-2. Vérifier que le backend expose l'endpoint
-3. Vérifier les variables d'environnement
+## Résultat attendu
 
-## 📊 Métriques de Succès
+**Avant (problématique) :**
+```
+🌍 Language detected: ar-MA - "بونج. بونجور. بونجور بو..."
+```
 
-- [ ] Transcription visible dans l'interface
-- [ ] Latence < 2 secondes
-- [ ] Reconnexion automatique en cas de déconnexion
-- [ ] Nettoyage propre des ressources
-- [ ] Pas d'erreurs dans la console 
+**Maintenant (corrigé) :**
+```
+🇫🇷 French transcription: "Bonjour, comment puis-je vous aider?"
+```
+
+## Si le problème persiste
+
+### Vérifications supplémentaires :
+1. **Redémarrage complet** : Serveur backend + navigateur
+2. **Cache navigateur** : Vider le cache et les cookies
+3. **Service Google Speech** : Vérifier les credentials
+4. **Qualité audio** : Vérifier que l'audio est clair
+
+### Configuration alternative :
+Si nécessaire, on peut aussi essayer :
+- Modèle `latest_long` au lieu de `phone_call`
+- Différents paramètres audio
+- Configuration avec `useEnhanced: false` 
