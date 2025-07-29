@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL_CALL + '/api';
 
 export const getPersonalityAnalysis = async (transcription: string, context?: any[], callDuration?: number) => {
   try {
