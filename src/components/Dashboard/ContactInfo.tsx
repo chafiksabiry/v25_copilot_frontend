@@ -32,7 +32,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+18605670043',
+    phone: '+13024440090',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -92,7 +92,7 @@ export function ContactInfo() {
     console.log("Call status at start:", callStatus); */
     
     // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+18605670043'; // Fallback to default
+    const phoneNumber = contact?.phone || '+13024440090'; // Fallback to default
     console.log("Using phone number:", phoneNumber);
     
     if (!phoneNumber) {
