@@ -242,15 +242,22 @@ const DashboardGrid: React.FC = () => {
             }}
           />
         </div>
-        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px]">
-          <div className="flex items-center mb-4 self-start">
-            <Brain className="text-cyan-400 mr-2" />
-            <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
+        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] relative">
+          {/* Overlay pour le grisé */}
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0" />
           </div>
-          <div className="flex flex-col items-center justify-center flex-1">
-            <FileText className="w-14 h-14 text-slate-400 mb-4" />
-            <div className="text-slate-300 text-center text-lg mb-1">Script prompter will activate when call starts</div>
-            <div className="text-slate-400 text-center text-base">AI will analyze conversation and adapt REPS scripts in real-time</div>
+          
+          <div className="relative z-0">
+            <div className="flex items-center mb-4 self-start">
+              <Brain className="text-cyan-400 mr-2" />
+              <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
+            </div>
+            <div className="flex flex-col items-center justify-center flex-1">
+              <FileText className="w-14 h-14 text-slate-400 mb-4" />
+              <div className="text-slate-300 text-center text-lg mb-1">Script prompter will activate when call starts</div>
+              <div className="text-slate-400 text-center text-base">AI will analyze conversation and adapt REPS scripts in real-time</div>
+            </div>
           </div>
         </div>
       </div>
