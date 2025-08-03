@@ -217,7 +217,7 @@ const DashboardGrid: React.FC = () => {
                 }
               }}
             />
-        </div>
+          </div>
         </>
       )}
       {transactionExpanded && (
@@ -259,27 +259,29 @@ const DashboardGrid: React.FC = () => {
       {/* Grille 2 colonnes toujours visible */}
       <div className="grid grid-cols-2 gap-6 mt-2">
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
-          <CallPhasesDisplay
-            phases={repsPhases.map((phase, idx) => ({
-              ...phase,
-              status:
-                state.callState.isActive
-                  ? idx === 0
-                    ? 'completed'
-                    : idx === 1
-                    ? 'in-progress'
+          <div className="relative">
+            <CallPhasesDisplay
+              phases={repsPhases.map((phase, idx) => ({
+                ...phase,
+                status:
+                  state.callState.isActive
+                    ? idx === 0
+                      ? 'completed'
+                      : idx === 1
+                      ? 'in-progress'
+                      : 'pending'
                     : 'pending'
-                  : 'pending'
-            }))}
-            currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
-            isCallActive={state.callState.isActive}
-            phoneNumber="+13024440090"
-            mediaStream={state.mediaStream}
-            disableAutoScroll={true}
-            onPhaseClick={(phaseId) => {
-              console.log('Phase clicked:', phaseId);
-            }}
-          />
+              }))}
+              currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
+              isCallActive={state.callState.isActive}
+              phoneNumber="+13024440090"
+              mediaStream={state.mediaStream}
+              disableAutoScroll={true}
+              onPhaseClick={(phaseId) => {
+                console.log('Phase clicked:', phaseId);
+              }}
+            />
+          </div>
         </div>
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] relative">
           {/* Overlay pour le grisé */}
@@ -303,4 +305,4 @@ const DashboardGrid: React.FC = () => {
   );
 };
 
-export default DashboardGrid; 
+export default DashboardGrid;
