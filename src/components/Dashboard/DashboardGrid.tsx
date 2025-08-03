@@ -75,75 +75,114 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-        <StatusCard
-          icon={<Radar className="text-cyan-400" />}
-          title="Transaction Progress"
-          value={
-            <div className="flex flex-col w-full">
-              <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
-              <span className="text-slate-300 text-sm mb-1">Success Probability</span>
-              <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
-                <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
-              </div>
-              <span className="text-slate-400 text-sm">0% to goal</span>
-            </div>
-          }
-          expandable
-          expanded={transactionExpanded}
-          onToggle={() => setTransactionExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<MapPin className="text-cyan-400" />}
-          title="Call Structure"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <MapPin className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No active methodology</span>
-            </div>
-          }
-          expandable
-          expanded={callStructureExpanded}
-          onToggle={() => setCallStructureExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<GraduationCap className="text-blue-400" />}
-          title="Coaching"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <GraduationCap className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">Start call for coaching</span>
-            </div>
-          }
-          expandable
-          expanded={coachingExpanded}
-          onToggle={() => setCoachingExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<Target className="text-cyan-400" />}
-          title="Targeting"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Target className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No transaction goal set</span>
-            </div>
-          }
-          expandable
-          expanded={targetingExpanded}
-          onToggle={() => setTargetingExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<Lightbulb className="text-yellow-400" />}
-          title="Recommendations"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Lightbulb className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No recommendations yet</span>
-            </div>
-          }
-          expandable
-          expanded={recommendationsExpanded}
-          onToggle={() => setRecommendationsExpanded(v => !v)}
-        />
+                 <div className="relative">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none">
+             <StatusCard
+               icon={<Radar className="text-cyan-400" />}
+               title="Transaction Progress"
+               value={
+                 <div className="flex flex-col w-full">
+                   <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
+                   <span className="text-slate-300 text-sm mb-1">Success Probability</span>
+                   <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
+                     <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
+                   </div>
+                   <span className="text-slate-400 text-sm">0% to goal</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none">
+             <StatusCard
+               icon={<MapPin className="text-cyan-400" />}
+               title="Call Structure"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <MapPin className="w-10 h-10 text-slate-500 mb-2" />
+                   <span className="text-slate-400 text-base text-center">No active methodology</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none">
+             <StatusCard
+               icon={<GraduationCap className="text-blue-400" />}
+               title="Coaching"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <GraduationCap className="w-10 h-10 text-slate-500 mb-2" />
+                   <span className="text-slate-400 text-base text-center">Start call for coaching</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none">
+             <StatusCard
+               icon={<Target className="text-cyan-400" />}
+               title="Targeting"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <Target className="w-10 h-10 text-slate-500 mb-2" />
+                   <span className="text-slate-400 text-base text-center">No transaction goal set</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none">
+             <StatusCard
+               icon={<Lightbulb className="text-yellow-400" />}
+               title="Recommendations"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <Lightbulb className="w-10 h-10 text-slate-500 mb-2" />
+                   <span className="text-slate-400 text-base text-center">No recommendations yet</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
       </div>
       {discExpanded && (
         <>
