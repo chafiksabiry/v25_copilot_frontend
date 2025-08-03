@@ -33,7 +33,7 @@ const TopStatusBar: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1800px] mx-auto px-2 py-2 overflow-x-auto">
-      <div className="grid grid-cols-9 gap-2 auto-rows-fr">
+      <div className="grid grid-cols-9 gap-2 h-[120px]">
         <StatusCard
           icon={<PhoneOff size={20} className="text-slate-200" />}
           title="Call"
@@ -45,11 +45,11 @@ const TopStatusBar: React.FC = () => {
           expanded={callExpanded}
           onToggle={() => setCallExpanded(e => !e)}
         />
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<CheckSquare size={20} className="text-slate-200" />}
               title="Recording"
@@ -57,11 +57,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<BarChart2 size={20} className="text-green-400" />}
               title="Metrics"
@@ -74,11 +74,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<Brain size={20} className="text-purple-400" />}
               title="Profile"
@@ -89,11 +89,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<Shield size={20} className="text-cyan-400" />}
               title="Warnings"
@@ -105,11 +105,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<Target size={20} className="text-cyan-400" />}
               title="Transaction"
@@ -119,11 +119,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<Volume2 size={20} className="text-blue-400" />}
               title="Audio"
@@ -138,11 +138,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<Activity size={20} className="text-violet-400" />}
               title="AI Status"
@@ -150,11 +150,11 @@ const TopStatusBar: React.FC = () => {
             />
           </div>
         </div>
-        <div className="relative flex-1">
+        <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none h-full">
+          <div className="pointer-events-none w-full h-full">
             <StatusCard
               icon={<TrendingUp size={20} className="text-yellow-400" />}
               title="Phase"
