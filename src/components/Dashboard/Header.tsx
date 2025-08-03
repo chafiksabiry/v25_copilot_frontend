@@ -39,18 +39,18 @@ export function Header() {
           )}
 
         <div className="flex items-center space-x-4">
-          <button className="p-2 rounded-lg hover:bg-[#22304a] transition-colors">
+          <div className="p-2">
             <Volume2 className="w-5 h-5 text-slate-300" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-[#22304a] transition-colors">
+          </div>
+          <div className="p-2">
             <Mic className="w-5 h-5 text-slate-300" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-[#22304a] transition-colors">
+          </div>
+          <div className="p-2">
             <Settings className="w-5 h-5 text-slate-300" />
-            </button>
+          </div>
           <div className="flex items-center space-x-2 text-slate-200 font-medium">
             <User className="w-5 h-5" />
-            <span className="text-base">Agent Smith</span>
+            <span className="text-base text-gray-400">Agent Smith</span>
           </div>
         </div>
       </div>

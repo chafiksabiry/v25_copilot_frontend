@@ -23,7 +23,7 @@ const statusColors = {
 const StatusCard: React.FC<StatusCardProps> = ({
   icon, title, value, subtitle, status, expandable, expanded, onToggle, children
 }) => (
-  <div className="bg-[#232f47] rounded-xl shadow-lg py-5 px-4 w-full flex flex-col justify-between">
+  <div className="bg-[#232f47] rounded-xl shadow-lg py-5 px-4 w-full h-full flex flex-col justify-between">
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-2 text-slate-300">
         <span className="w-5 h-5 flex items-center justify-center text-[20px]">{icon}</span>
