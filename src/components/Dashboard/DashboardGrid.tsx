@@ -110,7 +110,7 @@ const DashboardGrid: React.FC = () => {
                title="Call Structure"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <MapPin className="w-10 h-10 text-slate-500 mb-2" />
+                   <MapPin className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No active methodology</span>
                  </div>
                }
@@ -131,7 +131,7 @@ const DashboardGrid: React.FC = () => {
                title="Coaching"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <GraduationCap className="w-10 h-10 text-slate-500 mb-2" />
+                   <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">Start call for coaching</span>
                  </div>
                }
@@ -152,7 +152,7 @@ const DashboardGrid: React.FC = () => {
                title="Targeting"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Target className="w-10 h-10 text-slate-500 mb-2" />
+                   <Target className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No transaction goal set</span>
                  </div>
                }
@@ -173,7 +173,7 @@ const DashboardGrid: React.FC = () => {
                title="Recommendations"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Lightbulb className="w-10 h-10 text-slate-500 mb-2" />
+                   <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No recommendations yet</span>
                  </div>
                }
