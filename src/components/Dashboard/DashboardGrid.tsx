@@ -220,27 +220,27 @@ const DashboardGrid: React.FC = () => {
       {/* Grille 2 colonnes toujours visible */}
       <div className="grid grid-cols-2 gap-6 mt-2">
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
-          <CallPhasesDisplay
-            phases={repsPhases.map((phase, idx) => ({
-              ...phase,
-              status:
-                state.callState.isActive
-                  ? idx === 0
-                    ? 'completed'
-                    : idx === 1
-                    ? 'in-progress'
-                    : 'pending'
-                  : 'pending'
-            }))}
-            currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
-            isCallActive={state.callState.isActive}
-            phoneNumber="+13024440090"
-            mediaStream={state.mediaStream}
-            disableAutoScroll={true}
-            onPhaseClick={(phaseId) => {
-              console.log('Phase clicked:', phaseId);
-            }}
-          />
+          <div className="relative">
+            {/* Wrapper pour les phases avec grisé */}
+            <div className="absolute inset-0 z-10 pointer-events-none">
+              <div className="bg-[#232f47]/50 absolute inset-0" />
+            </div>
+            
+            <CallPhasesDisplay
+              phases={repsPhases.map((phase) => ({
+                ...phase,
+                status: 'pending'
+              }))}
+              currentPhase={undefined}
+              isCallActive={false}
+              phoneNumber="+13024440090"
+              mediaStream={state.mediaStream}
+              disableAutoScroll={true}
+              onPhaseClick={(phaseId) => {
+                console.log('Phase clicked:', phaseId);
+              }}
+            />
+          </div>
         </div>
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px]">
           <div className="flex items-center mb-4 self-start">
