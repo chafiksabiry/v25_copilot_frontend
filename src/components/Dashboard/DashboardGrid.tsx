@@ -56,7 +56,7 @@ const DashboardGrid: React.FC = () => {
 
   return (
     <div className="w-full pb-8">
-      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full">
+      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full h-[180px]">
         <StatusCard
           icon={<Brain className="text-purple-400" />}
           title="DISC Profile"
@@ -75,11 +75,11 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-                 <div className="relative">
+                 <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Radar className="text-cyan-400" />}
                title="Transaction Progress"
@@ -100,11 +100,11 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<MapPin className="text-cyan-400" />}
                title="Call Structure"
@@ -121,11 +121,11 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<GraduationCap className="text-blue-400" />}
                title="Coaching"
@@ -142,11 +142,11 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Target className="text-cyan-400" />}
                title="Targeting"
@@ -163,11 +163,11 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Lightbulb className="text-yellow-400" />}
                title="Recommendations"
