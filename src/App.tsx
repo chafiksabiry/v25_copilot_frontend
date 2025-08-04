@@ -5,7 +5,7 @@ import { Header } from './components/Dashboard/Header';
 import TopStatusBar from './components/Dashboard/TopStatusBar';
 import { ContactInfo } from './components/Dashboard/ContactInfo';
 import DashboardGrid from './components/Dashboard/DashboardGrid';
-import { DestinationZoneDebug } from './components/Dashboard/DestinationZoneDebug';
+
 import { useDestinationZone } from './hooks/useDestinationZone';
 
 function AppContent() {
@@ -23,8 +23,7 @@ function AppContent() {
           <ContactInfo />
           <DashboardGrid />
         </div>
-        {/* Composant de debug pour la zone de destination */}
-        <DestinationZoneDebug />
+
       </div>
     </TranscriptionProvider>
   );

@@ -220,6 +220,9 @@ export function ContactInfo() {
         if (currentCallSid && contact.id) {
           await storeCall(currentCallSid, contact.id);
         }
+        
+        // Ajout : dispatch END_CALL pour mettre à jour le context global
+        dispatch({ type: 'END_CALL' });
       });
 
       conn.on('error', (error: any) => {
@@ -227,6 +230,9 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        
+        // Ajout : dispatch END_CALL pour mettre à jour le context global
+        dispatch({ type: 'END_CALL' });
       });
 
     } catch (err: any) {
