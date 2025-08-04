@@ -8,7 +8,7 @@ export interface DestinationZoneState {
 
 // Fonction pour récupérer le gigId selon l'environnement
 const getGigId = (): string | null => {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === 'development') {
     // En développement, utiliser un gigId fixe
     return '686e8ddcf74ddc5ba5d4b493';
   } else {
