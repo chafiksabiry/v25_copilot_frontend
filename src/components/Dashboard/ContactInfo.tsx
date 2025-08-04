@@ -4,7 +4,7 @@ import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
-import { useTranscriptionIntegration } from '../../hooks/useTranscriptionIntegration';
+import { useTranscription } from '../../contexts/TranscriptionContext';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -17,7 +17,14 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
-  const { startTranscription, stopTranscription, isActive: isTranscriptionActive } = useTranscriptionIntegration();
+  
+  // Utiliser le contexte de transcription global
+  const { 
+    startTranscription, 
+    stopTranscription, 
+    isActive: isTranscriptionActive
+  } = useTranscription();
+  
   const { state, dispatch } = useAgent();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
@@ -32,7 +39,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+13024440090',
+    phone: '+18154652196',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -92,7 +99,7 @@ export function ContactInfo() {
     console.log("Call status at start:", callStatus); */
     
     // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+13024440090'; // Fallback to default
+    const phoneNumber = contact?.phone || '+18154652196'; // Fallback to default
     console.log("Using phone number:", phoneNumber);
     
     if (!phoneNumber) {
@@ -182,6 +189,10 @@ export function ContactInfo() {
             if (stream) {
               setMediaStream(stream);
               dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
+              
+              // Log de debug pour la transcription
+              console.log('🌍 Starting transcription with global context');
+              
               await startTranscription(stream, contact.phone);
               console.log('🎤 Transcription started for call phases');
             }
@@ -209,6 +220,9 @@ export function ContactInfo() {
         if (currentCallSid && contact.id) {
           await storeCall(currentCallSid, contact.id);
         }
+        
+        // Ajout : dispatch END_CALL pour mettre à jour le context global
+        dispatch({ type: 'END_CALL' });
       });
 
       conn.on('error', (error: any) => {
@@ -216,6 +230,9 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        
+        // Ajout : dispatch END_CALL pour mettre à jour le context global
+        dispatch({ type: 'END_CALL' });
       });
 
     } catch (err: any) {
