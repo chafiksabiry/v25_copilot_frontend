@@ -234,7 +234,7 @@ const DashboardGrid: React.FC = () => {
             }))}
             currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
             isCallActive={state.callState.isActive}
-            phoneNumber="+13024440090"
+            phoneNumber="+18154652196"
             mediaStream={state.mediaStream}
             disableAutoScroll={true}
             onPhaseClick={(phaseId) => {

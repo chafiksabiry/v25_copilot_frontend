@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { TranscriptionService, TranscriptionMessage } from '../../services/transcriptionService';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { TranscriptionMessage } from '../../services/transcriptionService';
 import { useAgent } from '../../contexts/AgentContext';
+import { useTranscription } from '../../contexts/TranscriptionContext';
 
 interface CallPhase {
   id: string;
@@ -32,14 +33,65 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   mediaStream,
   disableAutoScroll = false
 }) => {
-  const [transcriptionService] = useState(() => new TranscriptionService());
+  // Utiliser le contexte de transcription global
+  const {
+    isActive: isTranscriptionActive,
+    startTranscription,
+    stopTranscription,
+    addTranscriptionCallback,
+    removeTranscriptionCallback
+  } = useTranscription();
+  
   const [transcripts, setTranscripts] = useState<TranscriptionMessage[]>([]);
   const [currentInterimText, setCurrentInterimText] = useState('');
-  const [isTranscriptionActive, setIsTranscriptionActive] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(!disableAutoScroll);
   const transcriptsEndRef = useRef<HTMLDivElement>(null);
   const lastTranscriptTextRef = useRef('');
   const { dispatch } = useAgent();
+
+  // Callback pour gérer les messages de transcription
+  const handleTranscriptionMessage = useCallback((message: TranscriptionMessage) => {
+    console.log('📝 CallPhasesDisplay received transcription:', message);
+    if (message.type === 'interim') {
+      setCurrentInterimText(message.text);
+      // Astuce : n'ajoute que si différent du dernier texte stocké
+      if (message.text && message.text !== lastTranscriptTextRef.current) {
+        dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+          id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+          participantId: 'agent',
+          text: message.text,
+          timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+          confidence: message.confidence || 0,
+          sentiment: 'neutral'
+        }});
+        lastTranscriptTextRef.current = message.text;
+      }
+    } else if (message.type === 'final') {
+      setTranscripts(prev => [...prev, message]);
+      setCurrentInterimText('');
+      if (message.text && message.text !== lastTranscriptTextRef.current) {
+        dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+          id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+          participantId: 'agent',
+          text: message.text,
+          timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+          confidence: message.confidence || 0,
+          sentiment: 'neutral'
+        }});
+        lastTranscriptTextRef.current = message.text;
+      }
+    }
+  }, [dispatch]);
+
+  // Ajouter le callback quand le composant monte
+  useEffect(() => {
+    addTranscriptionCallback(handleTranscriptionMessage);
+    
+    // Retirer le callback quand le composant se démonte
+    return () => {
+      removeTranscriptionCallback(handleTranscriptionMessage);
+    };
+  }, [addTranscriptionCallback, removeTranscriptionCallback, handleTranscriptionMessage]);
 
   // Auto-scroll to bottom of transcripts (can be disabled)
   useEffect(() => {
@@ -51,59 +103,25 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   // Initialize transcription when call becomes active
   useEffect(() => {
     if (isCallActive && mediaStream && phoneNumber && !isTranscriptionActive) {
-      console.log('🎤 Starting transcription for call phases...');
-      setIsTranscriptionActive(true);
+      console.log('🎤 Starting transcription for call phases with destination zone:', phoneNumber);
       
-      transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
-        console.log('📝 CallPhasesDisplay received transcription:', message);
-        if (message.type === 'interim') {
-          setCurrentInterimText(message.text);
-          // Astuce : n'ajoute que si différent du dernier texte stocké
-          if (message.text && message.text !== lastTranscriptTextRef.current) {
-            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
-              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
-              participantId: 'agent',
-              text: message.text,
-              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
-              confidence: message.confidence || 0,
-              sentiment: 'neutral'
-            }});
-            lastTranscriptTextRef.current = message.text;
-          }
-        } else if (message.type === 'final') {
-          setTranscripts(prev => [...prev, message]);
-          setCurrentInterimText('');
-          if (message.text && message.text !== lastTranscriptTextRef.current) {
-            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
-              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
-              participantId: 'agent',
-              text: message.text,
-              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
-              confidence: message.confidence || 0,
-              sentiment: 'neutral'
-            }});
-            lastTranscriptTextRef.current = message.text;
-          }
-        }
-      });
-
-      transcriptionService.initializeTranscription(mediaStream, phoneNumber);
+      // Utiliser le hook de transcription au lieu de créer une nouvelle instance
+      startTranscription(mediaStream, phoneNumber);
     } else if (!isCallActive && isTranscriptionActive) {
       console.log('🛑 Stopping transcription...');
-      setIsTranscriptionActive(false);
-      transcriptionService.cleanup();
+      stopTranscription();
       setCurrentInterimText('');
     }
-  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, transcriptionService, dispatch]);
+  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, startTranscription, stopTranscription]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isTranscriptionActive) {
-        transcriptionService.cleanup();
+        stopTranscription();
       }
     };
-  }, [isTranscriptionActive, transcriptionService]);
+  }, [isTranscriptionActive, stopTranscription]);
   return (
     <div className="flex flex-col space-y-1 p-2">
       <div className="flex items-center mb-2">
