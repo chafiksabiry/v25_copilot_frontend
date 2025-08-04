@@ -56,7 +56,7 @@ const DashboardGrid: React.FC = () => {
 
   return (
     <div className="w-full pb-8">
-      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full">
+      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full h-[180px]">
         <StatusCard
           icon={<Brain className="text-purple-400" />}
           title="DISC Profile"
@@ -75,75 +75,114 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-        <StatusCard
-          icon={<Radar className="text-cyan-400" />}
-          title="Transaction Progress"
-          value={
-            <div className="flex flex-col w-full">
-              <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
-              <span className="text-slate-300 text-sm mb-1">Success Probability</span>
-              <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
-                <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
-              </div>
-              <span className="text-slate-400 text-sm">0% to goal</span>
-            </div>
-          }
-          expandable
-          expanded={transactionExpanded}
-          onToggle={() => setTransactionExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<MapPin className="text-cyan-400" />}
-          title="Call Structure"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <MapPin className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No active methodology</span>
-            </div>
-          }
-          expandable
-          expanded={callStructureExpanded}
-          onToggle={() => setCallStructureExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<GraduationCap className="text-blue-400" />}
-          title="Coaching"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <GraduationCap className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">Start call for coaching</span>
-            </div>
-          }
-          expandable
-          expanded={coachingExpanded}
-          onToggle={() => setCoachingExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<Target className="text-cyan-400" />}
-          title="Targeting"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Target className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No transaction goal set</span>
-            </div>
-          }
-          expandable
-          expanded={targetingExpanded}
-          onToggle={() => setTargetingExpanded(v => !v)}
-        />
-        <StatusCard
-          icon={<Lightbulb className="text-yellow-400" />}
-          title="Recommendations"
-          value={
-            <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Lightbulb className="w-10 h-10 text-slate-500 mb-2" />
-              <span className="text-slate-400 text-base text-center">No recommendations yet</span>
-            </div>
-          }
-          expandable
-          expanded={recommendationsExpanded}
-          onToggle={() => setRecommendationsExpanded(v => !v)}
-        />
+                 <div className="relative w-full h-full">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none w-full h-full">
+             <StatusCard
+               icon={<Radar className="text-cyan-400" />}
+               title="Transaction Progress"
+               value={
+                 <div className="flex flex-col w-full">
+                   <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
+                   <span className="text-slate-300 text-sm mb-1">Success Probability</span>
+                   <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
+                     <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
+                   </div>
+                   <span className="text-slate-400 text-sm">0% to goal</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative w-full h-full">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none w-full h-full">
+             <StatusCard
+               icon={<MapPin className="text-cyan-400" />}
+               title="Call Structure"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <MapPin className="w-10 h-10 text-slate-500 mb-5" />
+                   <span className="text-slate-400 text-base text-center">No active methodology</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative w-full h-full">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none w-full h-full">
+             <StatusCard
+               icon={<GraduationCap className="text-blue-400" />}
+               title="Coaching"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
+                   <span className="text-slate-400 text-base text-center">Start call for coaching</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative w-full h-full">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none w-full h-full">
+             <StatusCard
+               icon={<Target className="text-cyan-400" />}
+               title="Targeting"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <Target className="w-10 h-10 text-slate-500 mb-5" />
+                   <span className="text-slate-400 text-base text-center">No transaction goal set</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
+
+         <div className="relative w-full h-full">
+           <div className="absolute inset-0 z-10 pointer-events-none">
+             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+           </div>
+           <div className="pointer-events-none w-full h-full">
+             <StatusCard
+               icon={<Lightbulb className="text-yellow-400" />}
+               title="Recommendations"
+               value={
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
+                   <span className="text-slate-400 text-base text-center">No recommendations yet</span>
+                 </div>
+               }
+               expandable
+               expanded={false}
+               onToggle={() => {}}
+             />
+           </div>
+         </div>
       </div>
       {discExpanded && (
         <>
@@ -178,7 +217,7 @@ const DashboardGrid: React.FC = () => {
                 }
               }}
             />
-        </div>
+          </div>
         </>
       )}
       {transactionExpanded && (
@@ -220,37 +259,45 @@ const DashboardGrid: React.FC = () => {
       {/* Grille 2 colonnes toujours visible */}
       <div className="grid grid-cols-2 gap-6 mt-2">
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
-          <CallPhasesDisplay
-            phases={repsPhases.map((phase, idx) => ({
-              ...phase,
-              status:
-                state.callState.isActive
-                  ? idx === 0
-                    ? 'completed'
-                    : idx === 1
-                    ? 'in-progress'
+          <div className="relative">
+            <CallPhasesDisplay
+              phases={repsPhases.map((phase, idx) => ({
+                ...phase,
+                status:
+                  state.callState.isActive
+                    ? idx === 0
+                      ? 'completed'
+                      : idx === 1
+                      ? 'in-progress'
+                      : 'pending'
                     : 'pending'
-                  : 'pending'
-            }))}
-            currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
-            isCallActive={state.callState.isActive}
-            phoneNumber="+18154652196"
-            mediaStream={state.mediaStream}
-            disableAutoScroll={true}
-            onPhaseClick={(phaseId) => {
-              console.log('Phase clicked:', phaseId);
-            }}
-          />
-        </div>
-        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px]">
-          <div className="flex items-center mb-4 self-start">
-            <Brain className="text-cyan-400 mr-2" />
-            <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
+              }))}
+              currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
+              isCallActive={state.callState.isActive}
+              phoneNumber="+13024440090"
+              mediaStream={state.mediaStream}
+              disableAutoScroll={true}
+              onPhaseClick={(phaseId) => {
+                console.log('Phase clicked:', phaseId);
+              }}
+            />
           </div>
-          <div className="flex flex-col items-center justify-center flex-1">
-            <FileText className="w-14 h-14 text-slate-400 mb-4" />
-            <div className="text-slate-300 text-center text-lg mb-1">Script prompter will activate when call starts</div>
-            <div className="text-slate-400 text-center text-base">AI will analyze conversation and adapt REPS scripts in real-time</div>
+        </div>
+        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] relative">
+          {/* Overlay pour le grisé */}
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0" />
+          </div>
+          
+          <div className="relative z-0 h-full flex flex-col">
+            <div className="flex items-center mb-4 self-start">
+              <Brain className="text-cyan-400 mr-2" />
+              <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
+            </div>
+            <div className="flex flex-col items-center justify-center flex-1">
+              <FileText className="w-10 h-10 text-slate-500 mb-5" />
+              <div className="text-slate-400 text-base text-center">Script prompter will activate when call starts</div>
+            </div>
           </div>
         </div>
       </div>
@@ -258,4 +305,4 @@ const DashboardGrid: React.FC = () => {
   );
 };
 
-export default DashboardGrid; 
+export default DashboardGrid;

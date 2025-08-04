@@ -33,7 +33,7 @@ const TopStatusBar: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1800px] mx-auto px-2 py-2 overflow-x-auto">
-      <div className="flex flex-nowrap gap-2">
+      <div className="grid grid-cols-9 gap-2 h-[120px]">
         <StatusCard
           icon={<PhoneOff size={20} className="text-slate-200" />}
           title="Call"
@@ -45,67 +45,123 @@ const TopStatusBar: React.FC = () => {
           expanded={callExpanded}
           onToggle={() => setCallExpanded(e => !e)}
         />
-        <StatusCard
-          icon={<CheckSquare size={20} className="text-slate-200" />}
-          title="Recording"
-          value={<span className="bg-[#22304a] px-3 py-1 rounded-full text-xs font-semibold text-slate-200">STOPPED</span>}
-        />
-        <StatusCard
-          icon={<BarChart2 size={20} className="text-green-400" />}
-          title="Metrics"
-          value={<span className="text-red-400 font-extrabold">0%</span>}
-          subtitle={<span>Overall Score</span>}
-          status="danger"
-          expandable
-          expanded={metricsExpanded}
-          onToggle={() => setMetricsExpanded(e => !e)}
-        />
-        <StatusCard
-          icon={<Brain size={20} className="text-purple-400" />}
-          title="Profile"
-          value={<span className="text-slate-400 font-semibold">Analyzing...</span>}
-          expandable
-          expanded={profileExpanded}
-          onToggle={() => setProfileExpanded(e => !e)}
-        />
-        <StatusCard
-          icon={<Shield size={20} className="text-cyan-400" />}
-          title="Warnings"
-          value={<span className="text-green-400 font-semibold">All Clear</span>}
-          status="success"
-          expandable
-          expanded={warningsExpanded}
-          onToggle={() => setWarningsExpanded(e => !e)}
-        />
-        <StatusCard
-          icon={<Target size={20} className="text-cyan-400" />}
-          title="Transaction"
-          value={<span className="text-red-400 font-extrabold">0%</span>}
-          subtitle={<span>Success Rate</span>}
-          status="danger"
-        />
-        <StatusCard
-          icon={<Volume2 size={20} className="text-blue-400" />}
-          title="Audio"
-          value={
-            <div className="w-full">
-              <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
-                <div className="bg-blue-400 h-3 rounded-full" style={{ width: '0%' }}></div>
-              </div>
-              <span className="block mt-2 text-blue-400 text-sm text-left">0%</span>
-            </div>
-          }
-        />
-        <StatusCard
-          icon={<Activity size={20} className="text-violet-400" />}
-          title="AI Status"
-          value={<span className="text-slate-400 font-semibold">Paused</span>}
-        />
-        <StatusCard
-          icon={<TrendingUp size={20} className="text-yellow-400" />}
-          title="Phase"
-          value={<span className="text-slate-400 font-semibold whitespace-nowrap">No active phase</span>}
-        />
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<CheckSquare size={20} className="text-slate-200" />}
+              title="Recording"
+              value={<span className="bg-[#22304a] px-3 py-1 rounded-full text-xs font-semibold text-slate-200">STOPPED</span>}
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<BarChart2 size={20} className="text-green-400" />}
+              title="Metrics"
+              value={<span className="text-red-400 font-extrabold">0%</span>}
+              subtitle={<span>Overall Score</span>}
+              status="danger"
+              expandable
+              expanded={metricsExpanded}
+              onToggle={() => setMetricsExpanded(e => !e)}
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Brain size={20} className="text-purple-400" />}
+              title="Profile"
+              value={<span className="text-slate-400 font-semibold">Analyzing...</span>}
+              expandable
+              expanded={profileExpanded}
+              onToggle={() => setProfileExpanded(e => !e)}
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Shield size={20} className="text-cyan-400" />}
+              title="Warnings"
+              value={<span className="text-green-400 font-semibold">All Clear</span>}
+              status="success"
+              expandable
+              expanded={warningsExpanded}
+              onToggle={() => setWarningsExpanded(e => !e)}
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Target size={20} className="text-cyan-400" />}
+              title="Transaction"
+              value={<span className="text-red-400 font-extrabold">0%</span>}
+              subtitle={<span>Success Rate</span>}
+              status="danger"
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Volume2 size={20} className="text-blue-400" />}
+              title="Audio"
+              value={
+                <div className="w-full">
+                  <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
+                    <div className="bg-blue-400 h-3 rounded-full" style={{ width: '0%' }}></div>
+                  </div>
+                  <span className="block mt-2 text-blue-400 text-sm text-left">0%</span>
+                </div>
+              }
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Activity size={20} className="text-violet-400" />}
+              title="AI Status"
+              value={<span className="text-slate-400 font-semibold">Paused</span>}
+            />
+          </div>
+        </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<TrendingUp size={20} className="text-yellow-400" />}
+              title="Phase"
+              value={<span className="text-slate-400 font-semibold whitespace-nowrap">No active phase</span>}
+            />
+          </div>
+        </div>
       </div>
       {callExpanded && (
         <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
