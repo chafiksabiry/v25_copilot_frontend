@@ -34,6 +34,8 @@ ENV VITE_SPEECH_API_KEY=your_speech_api_key
 ENV VITE_API_URL_CALL=https://api-calls.harx.ai
 ENV VITE_WS_URL=wss://api-calls.harx.ai/speech-to-text
 ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
+ENV NODE_ENV=development
+
 # Construire l'application
 RUN npm run build
 
