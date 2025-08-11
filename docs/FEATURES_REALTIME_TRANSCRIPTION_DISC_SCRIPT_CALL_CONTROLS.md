@@ -8,6 +8,14 @@ Ce document décrit en détail quatre capacités clés du frontend:
 - Contrôles d’appel pour l’agent (micro, haut-parleur, arrêt d’enregistrement)
 
 ## 1) Transcription en temps réel
+```mermaid
+flowchart LR
+  Mic["Micro / Remote MediaStream"] --> Worklet["AudioWorklet (audio-processor.js)"]
+  Worklet --> PCM["PCM 16-bit buffers"]
+  PCM --> WS["WebSocket"]
+  WS --> BackendASR["Backend ASR"]
+  BackendASR --> UI["UI (Transcripts, Phases)"]
+```
 
 Architecture:
 - Capture micro via Web Audio API + AudioWorklet (`public/audio-processor.js`).
@@ -62,6 +70,17 @@ await startTranscription(stream, contact.phone);
 ```
 
 ## 2) Détermination du profil DISC
+```mermaid
+sequenceDiagram
+  participant UI as UI (Dashboard)
+  participant Hook as usePersonalityAnalysis
+  participant API as Backend API
+  UI->>Hook: analyzePersonality(transcription, context, callDuration)
+  Hook->>API: POST /personality/analyze
+  API-->>Hook: { profile: DISC, confidence, recs }
+  Hook-->>UI: profile
+  UI->>State: dispatch(UPDATE_PERSONALITY_PROFILE)
+```
 
 Flux:
 - Composant: `DiscPersonalityAnalysis`.
@@ -92,6 +111,14 @@ case 'UPDATE_PERSONALITY_PROFILE':
 ```
 
 ## 3) Script suggéré et phases d’appel (REPS)
+```mermaid
+flowchart TB
+  Transcripts --> Engine["REPS Engine"]
+  Engine -->|detect| Methodology["Methodology (reps-flow)"]
+  Engine -->|advance| Phase["Current Phase"]
+  Phase --> Script["ScriptPrompter"]
+  State["DISC Profile"] --> Script
+```
 
 État actuel:
 - Méthodologie REPS avec 9 phases: définie dans `useCallMethodologies` (détection du type d’appel, progression auto selon objectifs/indices).
@@ -113,6 +140,13 @@ if (progress >= 80 && currentPhaseIndex < methodology.phases.length - 1) {
 ```
 
 ## 4) Contrôles d’appel (micro/haut-parleur/enregistrement)
+```mermaid
+flowchart LR
+  MediaStream --> MicTrack["AudioTrack (enabled)"]
+  MicToggle["Mute/Unmute Mic Button"] -->|toggle enabled| MicTrack
+  MediaStream --> AudioEl["<audio id=call-audio>"]
+  SpeakerToggle["Mute/Unmute Speaker Button"] -->|muted/volume| AudioEl
+```
 
 - Micro: toggle au niveau des `AudioTrack.enabled`.
 - Haut-parleur: état UI local; pour mute effectif, raccorder au `<audio>` de restitution.

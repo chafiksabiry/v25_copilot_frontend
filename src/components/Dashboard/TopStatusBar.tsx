@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX } from 'lucide-react';
 import StatusCard from './StatusCard';
 import CallControlsPanel from './CallControlsPanel';
@@ -12,6 +12,31 @@ const TopStatusBar: React.FC = () => {
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Attach remote media stream to a hidden audio element for proper output mute
+  useEffect(() => {
+    if (!audioRef.current) return;
+    const audioEl = audioRef.current as HTMLAudioElement & { srcObject?: MediaStream };
+    if (state.mediaStream) {
+      try {
+        audioEl.srcObject = state.mediaStream;
+      } catch {
+        // Fallback for older browsers
+        const url = URL.createObjectURL(state.mediaStream as any);
+        audioEl.src = url;
+      }
+      audioEl.muted = isSpeakerMuted;
+      audioEl.volume = isSpeakerMuted ? 0 : 1;
+      audioEl.play?.().catch(() => {});
+    } else {
+      if ('srcObject' in audioEl) {
+        (audioEl as any).srcObject = null;
+      } else {
+        audioEl.src = '';
+      }
+    }
+  }, [state.mediaStream, isSpeakerMuted]);
 
   // Mute/unmute microphone
   const handleToggleMic = () => {
@@ -27,8 +52,6 @@ const TopStatusBar: React.FC = () => {
   // Note: This only toggles a local state; actual output mute requires control of an <audio> element
   const handleToggleSpeaker = () => {
     setIsSpeakerMuted(m => !m);
-    // If you have an <audio> element, you can set its volume or muted property here
-    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
   };
 
   return (
@@ -163,6 +186,8 @@ const TopStatusBar: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Hidden audio element for remote stream playback */}
+      <audio id="call-audio" ref={audioRef} autoPlay hidden />
       {callExpanded && (
         <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
           <div className="flex items-center justify-between mb-6">
