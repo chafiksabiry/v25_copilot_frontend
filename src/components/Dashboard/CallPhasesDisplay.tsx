@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { TranscriptionService, TranscriptionMessage } from '../../services/transcriptionService';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { TranscriptionMessage } from '../../services/transcriptionService';
 import { useAgent } from '../../contexts/AgentContext';
+import { useTranscription } from '../../contexts/TranscriptionContext';
 
 interface CallPhase {
   id: string;
@@ -32,14 +33,65 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   mediaStream,
   disableAutoScroll = false
 }) => {
-  const [transcriptionService] = useState(() => new TranscriptionService());
+  // Utiliser le contexte de transcription global
+  const {
+    isActive: isTranscriptionActive,
+    startTranscription,
+    stopTranscription,
+    addTranscriptionCallback,
+    removeTranscriptionCallback
+  } = useTranscription();
+  
   const [transcripts, setTranscripts] = useState<TranscriptionMessage[]>([]);
   const [currentInterimText, setCurrentInterimText] = useState('');
-  const [isTranscriptionActive, setIsTranscriptionActive] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(!disableAutoScroll);
   const transcriptsEndRef = useRef<HTMLDivElement>(null);
   const lastTranscriptTextRef = useRef('');
   const { dispatch } = useAgent();
+
+  // Callback pour gérer les messages de transcription
+  const handleTranscriptionMessage = useCallback((message: TranscriptionMessage) => {
+    console.log('📝 CallPhasesDisplay received transcription:', message);
+    if (message.type === 'interim') {
+      setCurrentInterimText(message.text);
+      // Astuce : n'ajoute que si différent du dernier texte stocké
+      if (message.text && message.text !== lastTranscriptTextRef.current) {
+        dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+          id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+          participantId: 'agent',
+          text: message.text,
+          timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+          confidence: message.confidence || 0,
+          sentiment: 'neutral'
+        }});
+        lastTranscriptTextRef.current = message.text;
+      }
+    } else if (message.type === 'final') {
+      setTranscripts(prev => [...prev, message]);
+      setCurrentInterimText('');
+      if (message.text && message.text !== lastTranscriptTextRef.current) {
+        dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
+          id: message.timestamp ? String(message.timestamp) : String(Date.now()),
+          participantId: 'agent',
+          text: message.text,
+          timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
+          confidence: message.confidence || 0,
+          sentiment: 'neutral'
+        }});
+        lastTranscriptTextRef.current = message.text;
+      }
+    }
+  }, [dispatch]);
+
+  // Ajouter le callback quand le composant monte
+  useEffect(() => {
+    addTranscriptionCallback(handleTranscriptionMessage);
+    
+    // Retirer le callback quand le composant se démonte
+    return () => {
+      removeTranscriptionCallback(handleTranscriptionMessage);
+    };
+  }, [addTranscriptionCallback, removeTranscriptionCallback, handleTranscriptionMessage]);
 
   // Auto-scroll to bottom of transcripts (can be disabled)
   useEffect(() => {
@@ -51,59 +103,25 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   // Initialize transcription when call becomes active
   useEffect(() => {
     if (isCallActive && mediaStream && phoneNumber && !isTranscriptionActive) {
-      console.log('🎤 Starting transcription for call phases...');
-      setIsTranscriptionActive(true);
+      console.log('🎤 Starting transcription for call phases with destination zone:', phoneNumber);
       
-      transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
-        console.log('📝 CallPhasesDisplay received transcription:', message);
-        if (message.type === 'interim') {
-          setCurrentInterimText(message.text);
-          // Astuce : n'ajoute que si différent du dernier texte stocké
-          if (message.text && message.text !== lastTranscriptTextRef.current) {
-            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
-              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
-              participantId: 'agent',
-              text: message.text,
-              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
-              confidence: message.confidence || 0,
-              sentiment: 'neutral'
-            }});
-            lastTranscriptTextRef.current = message.text;
-          }
-        } else if (message.type === 'final') {
-          setTranscripts(prev => [...prev, message]);
-          setCurrentInterimText('');
-          if (message.text && message.text !== lastTranscriptTextRef.current) {
-            dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry: {
-              id: message.timestamp ? String(message.timestamp) : String(Date.now()),
-              participantId: 'agent',
-              text: message.text,
-              timestamp: typeof message.timestamp === 'number' ? new Date(message.timestamp) : (message.timestamp || new Date()),
-              confidence: message.confidence || 0,
-              sentiment: 'neutral'
-            }});
-            lastTranscriptTextRef.current = message.text;
-          }
-        }
-      });
-
-      transcriptionService.initializeTranscription(mediaStream, phoneNumber);
+      // Utiliser le hook de transcription au lieu de créer une nouvelle instance
+      startTranscription(mediaStream, phoneNumber);
     } else if (!isCallActive && isTranscriptionActive) {
       console.log('🛑 Stopping transcription...');
-      setIsTranscriptionActive(false);
-      transcriptionService.cleanup();
+      stopTranscription();
       setCurrentInterimText('');
     }
-  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, transcriptionService, dispatch]);
+  }, [isCallActive, mediaStream, phoneNumber, isTranscriptionActive, startTranscription, stopTranscription]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isTranscriptionActive) {
-        transcriptionService.cleanup();
+        stopTranscription();
       }
     };
-  }, [isTranscriptionActive, transcriptionService]);
+  }, [isTranscriptionActive, stopTranscription]);
   return (
     <div className="flex flex-col space-y-1 p-2">
       <div className="flex items-center mb-2">
@@ -114,28 +132,34 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
       {/* Call Phases Section */}
       <div className="space-y-1 mb-4">
         {phases.map((phase) => (
-          <div
-            key={phase.id}
-            className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm mb-1
-              bg-[#3a4661]
-              ${phase.id === currentPhase ? 'border-blue-500 border' : ''}
-            `}
-            onClick={() => onPhaseClick?.(phase.id)}
-          >
-            {/* Icon with colored text only, no background */}
-            <span className={`flex items-center justify-center w-7 h-7 mr-2 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')}`}>{phase.icon}</span>
-            <span className="font-medium truncate max-w-[60%] text-white">{phase.name}</span>
-            <span className={`px-2 py-0.5 rounded text-xs ml-2
-              ${phase.status === 'completed' ? 'bg-green-100 text-green-800' :
-                phase.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                phase.status === 'pending' ? 'bg-[#22304a] text-blue-200' :
-                'bg-gray-100 text-gray-800'}
-            `}>
-              {phase.status}
-            </span>
-          </div>
-        ))}
-      </div>
+                      <div
+              key={phase.id}
+              className="relative mb-1"
+            >
+              <div className="absolute inset-0 z-10 pointer-events-none">
+                <div className="bg-[#232f47]/50 absolute inset-0 rounded-md" />
+              </div>
+              <div
+                className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm
+                bg-[#3a4661] pointer-events-none relative
+                ${phase.id === currentPhase ? 'border-blue-500 border' : ''}
+              `}
+                onClick={() => onPhaseClick?.(phase.id)}
+              >
+                <span className={`flex items-center justify-center w-7 h-7 mr-2 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')}`}>{phase.icon}</span>
+                <span className="font-medium truncate max-w-[60%] text-white">{phase.name}</span>
+                <span className={`px-2 py-0.5 rounded text-xs ml-2 ${
+                  phase.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  phase.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
+                  phase.status === 'pending' ? 'bg-[#22304a] text-blue-200' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {phase.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
 
       {/* Live Transcription Section */}
       {isCallActive && (

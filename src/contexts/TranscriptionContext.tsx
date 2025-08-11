@@ -1,20 +1,35 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { TranscriptionService, TranscriptionMessage } from '../services/transcriptionService';
 
-export interface TranscriptionState {
+interface TranscriptionContextState {
   isActive: boolean;
   transcripts: TranscriptionMessage[];
   currentInterimText: string;
   error: string | null;
+  startTranscription: (stream: MediaStream, phoneNumber: string) => Promise<void>;
+  stopTranscription: () => Promise<void>;
+  clearTranscripts: () => void;
+  addTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
+  removeTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
 }
 
-export const useTranscriptionIntegration = (destinationZone?: string) => {
+const TranscriptionContext = createContext<TranscriptionContextState | undefined>(undefined);
+
+interface TranscriptionProviderProps {
+  children: React.ReactNode;
+  destinationZone?: string;
+}
+
+export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({ 
+  children, 
+  destinationZone 
+}) => {
   const [transcriptionService] = useState(() => new TranscriptionService());
-  const [state, setState] = useState<TranscriptionState>({
+  const [state, setState] = useState({
     isActive: false,
-    transcripts: [],
+    transcripts: [] as TranscriptionMessage[],
     currentInterimText: '',
-    error: null
+    error: null as string | null
   });
   
   // Référence pour stocker les callbacks externes
@@ -24,7 +39,7 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
   useEffect(() => {
     if (destinationZone) {
       transcriptionService.setDestinationZone(destinationZone);
-      console.log('🌍 Destination zone updated in transcription service:', destinationZone);
+      console.log('🌍 [Context] Destination zone updated in transcription service:', destinationZone);
     }
   }, [destinationZone, transcriptionService]);
 
@@ -48,7 +63,7 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
       // S'assurer que la zone de destination est définie avant de démarrer
       if (destinationZone) {
         transcriptionService.setDestinationZone(destinationZone);
-        console.log('🌍 Setting destination zone before transcription start:', destinationZone);
+        console.log('🌍 [Context] Setting destination zone before transcription start:', destinationZone);
       }
       
       transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
@@ -114,7 +129,7 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
     };
   }, [state.isActive, transcriptionService]);
 
-  return {
+  const contextValue: TranscriptionContextState = {
     ...state,
     startTranscription,
     stopTranscription,
@@ -122,4 +137,18 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
     addTranscriptionCallback,
     removeTranscriptionCallback
   };
+
+  return (
+    <TranscriptionContext.Provider value={contextValue}>
+      {children}
+    </TranscriptionContext.Provider>
+  );
+};
+
+export const useTranscription = () => {
+  const context = useContext(TranscriptionContext);
+  if (context === undefined) {
+    throw new Error('useTranscription must be used within a TranscriptionProvider');
+  }
+  return context;
 }; 

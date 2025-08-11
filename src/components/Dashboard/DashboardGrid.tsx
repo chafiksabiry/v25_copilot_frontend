@@ -56,7 +56,7 @@ const DashboardGrid: React.FC = () => {
 
   return (
     <div className="w-full pb-8">
-      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full">
+      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full h-[180px]">
         <StatusCard
           icon={<Brain className="text-purple-400" />}
           title="DISC Profile"
@@ -75,11 +75,11 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-                 <div className="relative">
+                 <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Radar className="text-cyan-400" />}
                title="Transaction Progress"
@@ -100,17 +100,17 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<MapPin className="text-cyan-400" />}
                title="Call Structure"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <MapPin className="w-10 h-10 text-slate-500 mb-2" />
+                   <MapPin className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No active methodology</span>
                  </div>
                }
@@ -121,17 +121,17 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<GraduationCap className="text-blue-400" />}
                title="Coaching"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <GraduationCap className="w-10 h-10 text-slate-500 mb-2" />
+                   <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">Start call for coaching</span>
                  </div>
                }
@@ -142,17 +142,17 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Target className="text-cyan-400" />}
                title="Targeting"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Target className="w-10 h-10 text-slate-500 mb-2" />
+                   <Target className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No transaction goal set</span>
                  </div>
                }
@@ -163,17 +163,17 @@ const DashboardGrid: React.FC = () => {
            </div>
          </div>
 
-         <div className="relative">
+         <div className="relative w-full h-full">
            <div className="absolute inset-0 z-10 pointer-events-none">
              <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
            </div>
-           <div className="pointer-events-none">
+           <div className="pointer-events-none w-full h-full">
              <StatusCard
                icon={<Lightbulb className="text-yellow-400" />}
                title="Recommendations"
                value={
                  <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Lightbulb className="w-10 h-10 text-slate-500 mb-2" />
+                   <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
                    <span className="text-slate-400 text-base text-center">No recommendations yet</span>
                  </div>
                }
@@ -217,7 +217,7 @@ const DashboardGrid: React.FC = () => {
                 }
               }}
             />
-        </div>
+          </div>
         </>
       )}
       {transactionExpanded && (
@@ -260,18 +260,20 @@ const DashboardGrid: React.FC = () => {
       <div className="grid grid-cols-2 gap-6 mt-2">
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
           <div className="relative">
-            {/* Wrapper pour les phases avec grisé */}
-            <div className="absolute inset-0 z-10 pointer-events-none">
-              <div className="bg-[#232f47]/50 absolute inset-0" />
-            </div>
-            
             <CallPhasesDisplay
-              phases={repsPhases.map((phase) => ({
+              phases={repsPhases.map((phase, idx) => ({
                 ...phase,
-                status: 'pending'
+                status:
+                  state.callState.isActive
+                    ? idx === 0
+                      ? 'completed'
+                      : idx === 1
+                      ? 'in-progress'
+                      : 'pending'
+                    : 'pending'
               }))}
-              currentPhase={undefined}
-              isCallActive={false}
+              currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
+              isCallActive={state.callState.isActive}
               phoneNumber="+13024440090"
               mediaStream={state.mediaStream}
               disableAutoScroll={true}
@@ -287,15 +289,14 @@ const DashboardGrid: React.FC = () => {
             <div className="bg-[#232f47]/50 absolute inset-0" />
           </div>
           
-          <div className="relative z-0">
+          <div className="relative z-0 h-full flex flex-col">
             <div className="flex items-center mb-4 self-start">
               <Brain className="text-cyan-400 mr-2" />
               <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
             </div>
             <div className="flex flex-col items-center justify-center flex-1">
-              <FileText className="w-14 h-14 text-slate-400 mb-4" />
-              <div className="text-slate-300 text-center text-lg mb-1">Script prompter will activate when call starts</div>
-              <div className="text-slate-400 text-center text-base">AI will analyze conversation and adapt REPS scripts in real-time</div>
+              <FileText className="w-10 h-10 text-slate-500 mb-5" />
+              <div className="text-slate-400 text-base text-center">Script prompter will activate when call starts</div>
             </div>
           </div>
         </div>
@@ -304,4 +305,4 @@ const DashboardGrid: React.FC = () => {
   );
 };
 
-export default DashboardGrid; 
+export default DashboardGrid;
