@@ -4,7 +4,7 @@ import { useTranscriptionIntegration } from '../../hooks/useTranscriptionIntegra
 
 export const TranscriptionTest: React.FC = () => {
   const [testGigId] = useState('686e8ddcf74ddc5ba5d4b493'); // GigId de test
-  const [testPhoneNumber] = useState('+18154652196'); // Numéro français
+  const [testPhoneNumber] = useState('+212693223005'); // Numéro français
   
   // Récupérer la zone de destination
   const { zone: destinationZone, loading: zoneLoading, error: zoneError, gigId } = useDestinationZone(testGigId);
