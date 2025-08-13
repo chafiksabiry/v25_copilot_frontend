@@ -5,6 +5,7 @@ import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -17,6 +18,7 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
+  const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
   
   // Utiliser le contexte de transcription global
   const { 
@@ -158,9 +160,12 @@ export function ContactInfo() {
       } as any);
       console.log("Connection established:", conn);
 
-      // Store active connection and device
+      // Store active connection and device locally
       setActiveConnection(conn);
       setActiveDevice(newDevice);
+      
+      // Store connection in global state for mute controls
+      setTwilioConnection(conn, newDevice);
 
       // Set up event listeners
       conn.on('connect', () => {
@@ -213,6 +218,9 @@ export function ContactInfo() {
         setMediaStream(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
         
+        // Clear Twilio connection from global state
+        clearTwilioConnection();
+        
         // Stop transcription
         await stopTranscription();
         
@@ -230,6 +238,9 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        
+        // Clear Twilio connection from global state
+        clearTwilioConnection();
         
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });

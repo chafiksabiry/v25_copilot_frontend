@@ -3,14 +3,21 @@ import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activ
 import StatusCard from './StatusCard';
 import CallControlsPanel from './CallControlsPanel';
 import { useAgent } from '../../contexts/AgentContext';
+import { useTwilioMute } from '../../hooks/useTwilioMute';
 
 const TopStatusBar: React.FC = () => {
   const { state } = useAgent();
+  const { 
+    toggleMicMute, 
+    isMicMuted, 
+    isConnected,
+    canMute 
+  } = useTwilioMute();
+  
   const [callExpanded, setCallExpanded] = useState(false);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
-  const [isMicMuted, setIsMicMuted] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -38,13 +45,21 @@ const TopStatusBar: React.FC = () => {
     }
   }, [state.mediaStream, isSpeakerMuted]);
 
-  // Mute/unmute microphone
+  // Mute/unmute microphone using Twilio SDK
   const handleToggleMic = () => {
-    if (state.mediaStream) {
-      state.mediaStream.getAudioTracks().forEach(track => {
-        track.enabled = !isMicMuted;
-      });
-      setIsMicMuted(m => !m);
+    if (canMute) {
+      // Use Twilio call.mute() method - this affects server-side recording
+      toggleMicMute();
+    } else {
+      // Fallback: local MediaStream control when no Twilio connection
+      if (state.mediaStream) {
+        state.mediaStream.getAudioTracks().forEach(track => {
+          track.enabled = !track.enabled;
+        });
+        console.log('📱 Local MediaStream muted (no Twilio connection)');
+      } else {
+        console.warn('⚠️ No active call to mute/unmute');
+      }
     }
   };
 
@@ -203,14 +218,47 @@ const TopStatusBar: React.FC = () => {
           <div className="flex gap-x-16">
             {/* Audio Controls */}
             <div className="flex-1">
-              <div className="text-lg font-semibold text-white mb-2">Audio Controls</div>
+              <div className="text-lg font-semibold text-white mb-2">
+                Audio Controls
+                {isConnected && (
+                  <span className="ml-2 text-xs text-green-400">• Twilio Connected</span>
+                )}
+                {!isConnected && (
+                  <span className="ml-2 text-xs text-slate-400">• No Call Active</span>
+                )}
+              </div>
+              
+              {/* Feedback pour l'état de mute */}
+              {isMicMuted && (
+                <div className="text-sm text-red-400 mb-2 flex items-center">
+                  <MicOff size={14} className="mr-1" />
+                  {isConnected 
+                    ? '🚫 Twilio recording paused - Server-side mute active' 
+                    : '🚫 Local microphone muted'
+                  }
+                </div>
+              )}
+              
               <div className="flex space-x-3">
                 <button
-                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
+                  className={`p-3 rounded-lg transition-all duration-200 ${
+                    isMicMuted 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : isConnected
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-[#1b253a] hover:bg-[#22304a] text-slate-300'
+                  }`}
                   onClick={handleToggleMic}
                   aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                  title={
+                    isConnected
+                      ? (isMicMuted 
+                          ? 'Unmute microphone - Resume Twilio recording' 
+                          : 'Mute microphone - Pause Twilio recording')
+                      : 'No active call - Local mute only'
+                  }
                 >
-                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
+                  {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
                 </button>
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
@@ -224,11 +272,36 @@ const TopStatusBar: React.FC = () => {
             {/* Call Status */}
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Call Status</div>
-              {state.callState.isActive ? (
-                <span className="text-green-400 font-semibold">Active</span>
-              ) : (
-                <span className="text-slate-400 font-semibold">Inactive</span>
-              )}
+              <div className="space-y-2">
+                {state.callState.isActive ? (
+                  <span className="text-green-400 font-semibold">Active</span>
+                ) : (
+                  <span className="text-slate-400 font-semibold">Inactive</span>
+                )}
+                
+                {/* Status détaillé */}
+                <div className="text-xs text-slate-400 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span>Twilio Connection:</span>
+                    <span className={isConnected ? 'text-green-400' : 'text-slate-400'}>
+                      {isConnected ? 'Connected' : 'Disconnected'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Microphone:</span>
+                    <span className={isMicMuted ? 'text-red-400' : 'text-green-400'}>
+                      {isMicMuted ? 'Muted' : 'Active'}
+                      {isConnected ? ' (Twilio)' : ' (Local)'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Recording:</span>
+                    <span className={isMicMuted ? 'text-red-400' : 'text-green-400'}>
+                      {isMicMuted ? 'Paused' : 'Active'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Recording Status */}
             <div className="flex-1">
