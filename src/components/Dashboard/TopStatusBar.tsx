@@ -20,6 +20,14 @@ const TopStatusBar: React.FC = () => {
   const [warningsExpanded, setWarningsExpanded] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Auto-ouvrir le panel audio quand un appel commence
+  useEffect(() => {
+    if (state.callState.isActive && !callExpanded) {
+      console.log('🎧 Auto-opening call controls panel for active call');
+      setCallExpanded(true);
+    }
+  }, [state.callState.isActive, callExpanded]);
 
   // Attach remote media stream to a hidden audio element for proper output mute
   useEffect(() => {
@@ -28,14 +36,20 @@ const TopStatusBar: React.FC = () => {
     if (state.mediaStream) {
       try {
         audioEl.srcObject = state.mediaStream;
+        console.log('🔊 Setting up audio element with media stream');
       } catch {
         // Fallback for older browsers
         const url = URL.createObjectURL(state.mediaStream as any);
         audioEl.src = url;
+        console.log('🔊 Fallback: Using object URL for audio');
       }
       audioEl.muted = isSpeakerMuted;
       audioEl.volume = isSpeakerMuted ? 0 : 1;
-      audioEl.play?.().catch(() => {});
+      
+      // Assurer que l'audio peut être joué - important pour les sons d'appel
+      audioEl.play?.().catch((error) => {
+        console.log('⚠️ Audio play failed (normal for some browsers):', error.message);
+      });
     } else {
       if ('srcObject' in audioEl) {
         (audioEl as any).srcObject = null;
@@ -227,6 +241,13 @@ const TopStatusBar: React.FC = () => {
                   <span className="ml-2 text-xs text-slate-400">• No Call Active</span>
                 )}
               </div>
+              
+              {/* Message d'aide UX */}
+              {state.callState.isActive && (
+                <div className="text-sm text-green-400 mb-2 flex items-center">
+                  ✨ Contrôles audio disponibles - Gérez votre micro pendant l'appel
+                </div>
+              )}
               
               {/* Feedback pour l'état de mute */}
               {isMicMuted && (

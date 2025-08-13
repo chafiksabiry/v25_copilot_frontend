@@ -156,7 +156,10 @@ export function ContactInfo() {
           echoCancellation: true,
           autoGainControl: true,
           noiseSuppression: true
-        }
+        },
+        // Assurer que les sons d'appel sont audibles
+        enableRingingState: true,
+        allowIncomingWhileBusy: false
       } as any);
       console.log("Connection established:", conn);
 
@@ -172,6 +175,12 @@ export function ContactInfo() {
         const callSid = conn.parameters?.CallSid;
         console.log("CallSid:", callSid);
       });
+      
+      // Écouter les événements de sonnerie
+      conn.on('ringing', () => {
+        console.log('🔔 Call is ringing - outbound call audio should be heard');
+        setCallStatus('ringing');
+      });
 
       conn.on('accept', () => {
         console.log("✅ Call accepted");
@@ -179,6 +188,8 @@ export function ContactInfo() {
         console.log("CallSid recupéré", Sid);
         setCurrentCallSid(Sid);
         setCallStatus('active');
+        
+        console.log('🎧 Call connected - setting up audio streams');
 
         // Ajout : dispatcher l'action START_CALL dans le contexte global
         dispatch({

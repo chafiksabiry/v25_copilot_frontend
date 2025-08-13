@@ -93,6 +93,32 @@ export function useTwilioMute() {
       device 
     });
     console.log('🔗 Twilio connection stored in global state');
+    
+    // Configurer les événements audio pour garantir le bon fonctionnement
+    if (connection) {
+      // Écouter les événements audio importants
+      connection.on('volume', (inputVolume: number, outputVolume: number) => {
+        console.log('🎵 Audio levels - Input:', inputVolume, 'Output:', outputVolume);
+      });
+      
+      // S'assurer que l'audio distant est correctement routé
+      connection.on('accept', () => {
+        setTimeout(() => {
+          try {
+            const remoteAudio = document.getElementById('call-audio') as HTMLAudioElement;
+            if (remoteAudio && connection.getRemoteStream) {
+              const remoteStream = connection.getRemoteStream();
+              if (remoteStream && !remoteAudio.srcObject) {
+                remoteAudio.srcObject = remoteStream;
+                console.log('🔊 Remote audio stream attached to audio element');
+              }
+            }
+          } catch (error) {
+            console.log('Audio setup note:', error);
+          }
+        }, 500);
+      });
+    }
   }, [dispatch]);
 
   /**
