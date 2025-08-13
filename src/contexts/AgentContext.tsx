@@ -23,6 +23,11 @@ export interface AgentState {
   audioLevel: number;
   mediaStream: MediaStream | null;
   
+  // Twilio connection management
+  twilioConnection: any | null; // Twilio Call connection object
+  twilioDevice: any | null; // Twilio Device object
+  isMicMuted: boolean; // Microphone mute state for Twilio calls
+  
   // Transcript and conversation
   transcript: TranscriptEntry[];
   
@@ -64,7 +69,12 @@ export type AgentAction =
   | { type: 'SET_TRANSACTION_GOAL'; goal: any }
   | { type: 'ADD_SMART_WARNING'; warning: SmartWarning }
   | { type: 'RESOLVE_WARNING'; warningId: string }
-  | { type: 'UPDATE_WARNING_SYSTEM'; state: Partial<WarningSystemState> };
+  | { type: 'UPDATE_WARNING_SYSTEM'; state: Partial<WarningSystemState> }
+  // Twilio connection actions
+  | { type: 'SET_TWILIO_CONNECTION'; connection: any; device: any }
+  | { type: 'CLEAR_TWILIO_CONNECTION' }
+  | { type: 'TOGGLE_MIC_MUTE' }
+  | { type: 'SET_MIC_MUTE'; muted: boolean };
 
 // Initial state
 const initialState: AgentState = {
@@ -77,6 +87,9 @@ const initialState: AgentState = {
   isAIListening: false,
   audioLevel: 0,
   mediaStream: null,
+  twilioConnection: null,
+  twilioDevice: null,
+  isMicMuted: false,
   transcript: [],
   recommendations: [],
   callMetrics: {
@@ -148,7 +161,10 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
           contact: undefined
         },
         isAIListening: false,
-        audioLevel: 0
+        audioLevel: 0,
+        twilioConnection: null,
+        twilioDevice: null,
+        isMicMuted: false
       };
 
     case 'UPDATE_CALL_STATE':
@@ -276,6 +292,33 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
           ...state.warningSystem,
           ...action.state
         }
+      };
+
+    case 'SET_TWILIO_CONNECTION':
+      return {
+        ...state,
+        twilioConnection: action.connection,
+        twilioDevice: action.device
+      };
+
+    case 'CLEAR_TWILIO_CONNECTION':
+      return {
+        ...state,
+        twilioConnection: null,
+        twilioDevice: null,
+        isMicMuted: false
+      };
+
+    case 'TOGGLE_MIC_MUTE':
+      return {
+        ...state,
+        isMicMuted: !state.isMicMuted
+      };
+
+    case 'SET_MIC_MUTE':
+      return {
+        ...state,
+        isMicMuted: action.muted
       };
 
     default:

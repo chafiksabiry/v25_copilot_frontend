@@ -61,6 +61,14 @@ This project follows a clean architecture pattern with clear separation between 
 - **Performance Analytics**: Comprehensive call metrics and reporting
 - **Compliance Monitoring**: Automated compliance checking and alerts
 
+### Detailed Feature Docs
+
+- See `docs/FEATURES_REALTIME_TRdANSCRIPTION_DISC_SCRIPT_CALL_CONTROLS.md` for deep-dive documentation on:
+  - Real-time Transcription
+  - DISC Lead Profiling
+  - Script Prompting & Call Phases (REPS)
+  - Agent Call Controls (mute/recording)
+
 ### Real-time Features
 - Live call transcription
 - Real-time audio level monitoring

@@ -5,6 +5,7 @@ import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -17,6 +18,7 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
+  const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
   
   // Utiliser le contexte de transcription global
   const { 
@@ -39,7 +41,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+18154652196',
+    phone: '+33623984708',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -99,7 +101,7 @@ export function ContactInfo() {
     console.log("Call status at start:", callStatus); */
     
     // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+18154652196'; // Fallback to default
+    const phoneNumber = contact?.phone || '+33623984708'; // Fallback to default
     console.log("Using phone number:", phoneNumber);
     
     if (!phoneNumber) {
@@ -154,18 +156,30 @@ export function ContactInfo() {
           echoCancellation: true,
           autoGainControl: true,
           noiseSuppression: true
-        }
+        },
+        // Assurer que les sons d'appel sont audibles
+        enableRingingState: true,
+        allowIncomingWhileBusy: false
       } as any);
       console.log("Connection established:", conn);
 
-      // Store active connection and device
+      // Store active connection and device locally
       setActiveConnection(conn);
       setActiveDevice(newDevice);
+      
+      // Store connection in global state for mute controls
+      setTwilioConnection(conn, newDevice);
 
       // Set up event listeners
       conn.on('connect', () => {
         const callSid = conn.parameters?.CallSid;
         console.log("CallSid:", callSid);
+      });
+      
+      // Écouter les événements de sonnerie
+      conn.on('ringing', () => {
+        console.log('🔔 Call is ringing - outbound call audio should be heard');
+        setCallStatus('ringing');
       });
 
       conn.on('accept', () => {
@@ -174,6 +188,8 @@ export function ContactInfo() {
         console.log("CallSid recupéré", Sid);
         setCurrentCallSid(Sid);
         setCallStatus('active');
+        
+        console.log('🎧 Call connected - setting up audio streams');
 
         // Ajout : dispatcher l'action START_CALL dans le contexte global
         dispatch({
@@ -213,6 +229,9 @@ export function ContactInfo() {
         setMediaStream(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
         
+        // Clear Twilio connection from global state
+        clearTwilioConnection();
+        
         // Stop transcription
         await stopTranscription();
         
@@ -230,6 +249,9 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        
+        // Clear Twilio connection from global state
+        clearTwilioConnection();
         
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
