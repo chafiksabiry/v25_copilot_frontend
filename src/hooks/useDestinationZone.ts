@@ -10,7 +10,7 @@ export interface DestinationZoneState {
 const getGigId = (): string | null => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   
-  if (runMode === 'sandbox') {
+  if (runMode === 'standalone') {
     // En mode sandbox (équivalent développement), utiliser un gigId fixe
     return '686e8ddcf74ddc5ba5d4b493';
   } else if (runMode === 'in-app') {

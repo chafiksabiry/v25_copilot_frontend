@@ -109,10 +109,10 @@ Assurez-vous que les variables suivantes sont configurées dans votre fichier `.
 
 ```env
 VITE_GIGS_API=https://api.example.com/gigs
-VITE_RUN_MODE=sandbox
+VITE_RUN_MODE=standalone
 
 # VITE_RUN_MODE options:
-# - sandbox: Mode développement (utilise un gigId fixe: 686e8ddcf74ddc5ba5d4b493)
+# - standalone: Mode développement (utilise un gigId fixe: 686e8ddcf74ddc5ba5d4b493)
 # - in-app: Mode production (récupère gigId depuis le cookie 'currentGigId')
 ```
 
