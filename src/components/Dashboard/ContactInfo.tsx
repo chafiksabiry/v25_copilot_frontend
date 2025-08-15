@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useTwilioMute } from '../../hooks/useTwilioMute';
+import { getAgentName } from '../../utils';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -53,7 +54,7 @@ export function ContactInfo() {
     notes: 'Interested in enterprise solution. Budget approved. Decision maker identified.',
     tags: ['Enterprise', 'Hot Lead', 'Q4 Target'],
     value: 75000,
-    assignedAgent: 'Agent Smith',
+    assignedAgent: getAgentName(),
     timezone: 'EST',
     preferredContactMethod: 'phone' as 'phone',
     socialProfiles: {
