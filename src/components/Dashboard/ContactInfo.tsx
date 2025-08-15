@@ -7,10 +7,12 @@ import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { getAgentName } from '../../utils';
+import { useLead } from '../../hooks/useLead';
+import { useUrlParam } from '../../hooks/useUrlParams';
 import { 
   User, Phone, Mail, Building, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
-  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp
+  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -20,6 +22,12 @@ interface TokenResponse {
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
   const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
+  
+  // Récupérer le leadId depuis l'URL
+  const leadId = useUrlParam('leadId');
+  
+  // Récupérer les données du lead depuis l'API
+  const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
   
   // Utiliser le contexte de transcription global
   const { 
@@ -37,12 +45,12 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
-  // Store original contact data to prevent it from being overwritten
-  const [originalContact] = useState({
+  // Fallback contact data when no lead is provided or while loading
+  const fallbackContact = {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+33623984708',
+    phone: '+212693223005', // Default Moroccan number per memory
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -86,10 +94,25 @@ export function ContactInfo() {
         notes: 'Budget confirmed, timeline established'
       }
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
-  });
+  };
 
-  // Use original contact data instead of state.callState.contact
-  const contact = originalContact;
+  // Transform API lead data to contact format
+  const getContactFromApiLead = (lead: any) => {
+    return {
+      ...fallbackContact,
+      id: lead._id || lead.id || fallbackContact.id,
+      name: lead.Deal_Name || 'Unknown Lead',
+      email: lead.Email_1 || fallbackContact.email,
+      phone: lead.Phone || fallbackContact.phone,
+      company: lead.assignedTo?.name || fallbackContact.company,
+      title: lead.Stage || fallbackContact.title,
+      assignedAgent: getAgentName(),
+      // Keep other fields from fallback for now
+    };
+  };
+
+  // Use API lead data if available, otherwise use fallback
+  const contact = apiLead ? getContactFromApiLead(apiLead) : fallbackContact;
 
   // Debug: Log contact data whenever it changes
  /*  console.log("Contact data:", contact);
@@ -349,14 +372,34 @@ export function ContactInfo() {
 
   return (
     <>
-      <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
+      {/* Error state */}
+      {leadError && (
+        <div className="w-full bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center gap-2 text-red-300">
+            <span className="text-sm font-medium">Error loading lead:</span>
+            <span className="text-sm">{leadError}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading state */}
+      {leadLoading && (
+        <div className="w-full flex items-center justify-center py-4 bg-[#1b253a] rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-400 mr-2" />
+          <span className="text-slate-300">Loading lead data...</span>
+        </div>
+      )}
+      
+      {/* Main content - only show when not loading */}
+      {!leadLoading && (
+        <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
         {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
             {contact.avatar ? (
               <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
             ) : (
-              contact.name.split(' ').map(n => n[0]).join('')
+              contact.name.split(' ').map((n: string) => n[0]).join('')
             )}
           </div>
           <div>
@@ -411,7 +454,9 @@ export function ContactInfo() {
         >
           {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
         </button>
-              </div>
+        </div>
+      )}
+      
       {expanded && (
         <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
           <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
@@ -421,7 +466,7 @@ export function ContactInfo() {
                 {contact.avatar ? (
                   <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
                 ) : (
-                  contact.name.split(' ').map(n => n[0]).join('')
+                  contact.name.split(' ').map((n: string) => n[0]).join('')
                 )}
               </div>
               <div className="text-lg font-bold text-white mb-1">{contact.name}</div>

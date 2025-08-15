@@ -226,3 +226,41 @@ export interface WarningSystemState {
   sensitivity: 'low' | 'medium' | 'high';
   autoResolutionEnabled: boolean;
 }
+
+// API Lead types
+export interface ApiLead {
+  _id: string;
+  userId?: string;
+  companyId?: string;
+  assignedTo?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  gigId?: string;
+  refreshToken?: string;
+  id?: string;
+  Last_Activity_Time?: Date;
+  Activity_Tag?: string;
+  Deal_Name?: string;
+  Stage?: string;
+  Email_1?: string;
+  Phone?: string;
+  Telephony?: string;
+  Pipeline?: string;
+  updatedAt: Date;
+}
+
+export interface LeadsResponse {
+  success: boolean;
+  count?: number;
+  total?: number;
+  totalPages?: number;
+  currentPage?: number;
+  data: ApiLead | ApiLead[];
+}
+
+export interface LeadApiResponse {
+  success: boolean;
+  data: ApiLead;
+}
