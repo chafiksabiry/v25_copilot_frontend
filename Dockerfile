@@ -35,6 +35,11 @@ ENV VITE_API_URL_CALL=https://api-calls.harx.ai
 ENV VITE_WS_URL=wss://api-calls.harx.ai/speech-to-text
 ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
 ENV NODE_ENV=development
+ENV VITE_RUN_MODE=in-app
+ENV VITE_ENVIRONMENT=sandbox
+ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
+ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
+ENV VITE_PREPROD_FRONT_URL=https://preprod-copilot.harx.ai/
 
 # Construire l'application
 RUN npm run build
