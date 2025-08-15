@@ -105,10 +105,15 @@ Si la zone de destination est disponible, elle sera utilisée en priorité. Sino
 
 ## Variables d'Environnement
 
-Assurez-vous que `VITE_GIGS_API` est configuré dans votre fichier `.env` :
+Assurez-vous que les variables suivantes sont configurées dans votre fichier `.env` :
 
 ```env
 VITE_GIGS_API=https://api.example.com/gigs
+VITE_RUN_MODE=sandbox
+
+# VITE_RUN_MODE options:
+# - sandbox: Mode développement (utilise un gigId fixe: 686e8ddcf74ddc5ba5d4b493)
+# - in-app: Mode production (récupère gigId depuis le cookie 'currentGigId')
 ```
 
 ## Gestion d'Erreurs

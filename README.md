@@ -147,6 +147,10 @@ cp .env.example .env
 ```env
 VITE_API_URL=http://localhost:5000/api
 VITE_SOCKET_URL=http://localhost:5000
+VITE_RUN_MODE=sandbox
+# VITE_RUN_MODE options:
+# - sandbox: Development mode (uses fixed gigId)
+# - in-app: Production mode (uses currentGigId from cookies)
 ```
 
 5. Start the development server:
