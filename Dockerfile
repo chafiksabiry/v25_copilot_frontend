@@ -1,5 +1,5 @@
-# Étape de build - Construction de l'application
-FROM node:18-alpine AS builder
+# Use Node.js LTS version with Alpine for smaller image size
+FROM node:20-alpine
 
 # Définir le répertoire de travail
 WORKDIR /app

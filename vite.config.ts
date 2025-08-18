@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => {
       __POWERED_BY_QIANKUN__: isQiankun,
     },
     server: {
-      port: 5185,
+      port: 5186,
       cors: true,
       headers: {
         'Access-Control-Allow-Origin': '*',
