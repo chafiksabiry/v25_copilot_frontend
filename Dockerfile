@@ -1,5 +1,5 @@
-# Étape de build - Construction de l'application
-FROM node:18-alpine AS builder
+# Use Node.js LTS version with Alpine for smaller image size
+FROM node:20-alpine
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -35,7 +35,12 @@ ENV VITE_API_URL_CALL=https://api-calls.harx.ai
 ENV VITE_WS_URL=wss://api-calls.harx.ai/speech-to-text
 ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
 ENV NODE_ENV=development
-
+ENV VITE_RUN_MODE=in-app
+ENV VITE_ENVIRONMENT=sandbox
+ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
+ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
+ENV VITE_PREPROD_FRONT_URL=https://preprod-copilot.harx.ai/
+ENV VITE_DASH_COMPANY_API_URL=https://api-dashboard.harx.ai/api
 # Construire l'application
 RUN npm run build
 

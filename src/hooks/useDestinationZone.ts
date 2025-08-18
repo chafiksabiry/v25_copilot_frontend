@@ -8,17 +8,31 @@ export interface DestinationZoneState {
 
 // Fonction pour récupérer le gigId selon l'environnement
 const getGigId = (): string | null => {
-  if (process.env.NODE_ENV === 'development') {
-    // En développement, utiliser un gigId fixe
+  const runMode = import.meta.env.VITE_RUN_MODE;
+  
+  if (runMode === 'standalone') {
+    // En mode sandbox (équivalent développement), utiliser un gigId fixe
     return '686e8ddcf74ddc5ba5d4b493';
-  } else {
-    // En production, récupérer depuis les cookies
+  } else if (runMode === 'in-app') {
+    // En mode in-app (équivalent production), récupérer depuis les cookies
     const cookies = document.cookie.split(';');
-    const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('gigId='));
+    const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
     if (gigIdCookie) {
       return gigIdCookie.split('=')[1];
     }
     return null;
+  } else {
+    // Fallback: si VITE_RUN_MODE n'est pas défini, utiliser l'ancienne logique NODE_ENV
+    if (process.env.NODE_ENV === 'development') {
+      return '686e8ddcf74ddc5ba5d4b493';
+    } else {
+      const cookies = document.cookie.split(';');
+      const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('gigId='));
+      if (gigIdCookie) {
+        return gigIdCookie.split('=')[1];
+      }
+      return null;
+    }
   }
 };
 
