@@ -21,9 +21,9 @@ export default defineConfig(({ mode }) => {
   const isQiankun = mode === 'qiankun';
 
   return {
-    base: process.env.ENVIRONMENT === 'local' 
+    base: process.env.VITE_ENVIRONMENT === 'local' 
       ? 'http://localhost:5186/'
-      : process.env.ENVIRONMENT === 'sandbox'
+      : process.env.VITE_ENVIRONMENT === 'sandbox'
         ? 'https://copilot.harx.ai/'
         : 'https://preprod-copilot.harx.ai/',
     plugins: [
