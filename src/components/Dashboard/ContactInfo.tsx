@@ -6,10 +6,13 @@ import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useTwilioMute } from '../../hooks/useTwilioMute';
+import { getAgentName } from '../../utils';
+import { useLead } from '../../hooks/useLead';
+import { useUrlParam } from '../../hooks/useUrlParams';
 import { 
-  User, Phone, Mail, Building, MapPin, Clock, 
+  User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
-  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp
+  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -19,6 +22,12 @@ interface TokenResponse {
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
   const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
+  
+  // Récupérer le leadId depuis l'URL
+  const leadId = useUrlParam('leadId');
+  
+  // Récupérer les données du lead depuis l'API
+  const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
   
   // Utiliser le contexte de transcription global
   const { 
@@ -36,12 +45,12 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
-  // Store original contact data to prevent it from being overwritten
-  const [originalContact] = useState({
+  // Fallback contact data when no lead is provided or while loading
+  const fallbackContact = {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+33623984708',
+    phone: '+212693223005', // Default Moroccan number per memory
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -52,15 +61,15 @@ export function ContactInfo() {
     nextFollowUp: new Date(Date.now() + 86400000), // Tomorrow
     notes: 'Interested in enterprise solution. Budget approved. Decision maker identified.',
     tags: ['Enterprise', 'Hot Lead', 'Q4 Target'],
-    value: 75000,
-    assignedAgent: 'Agent Smith',
+    value: 0,
+    assignedAgent: getAgentName(),
     timezone: 'EST',
     preferredContactMethod: 'phone' as 'phone',
     socialProfiles: {
       linkedin: 'https://linkedin.com/in/sarahjohnson',
       twitter: 'https://twitter.com/sarahj'
     },
-    leadScore: 85,
+    leadScore: 0,
     interests: ['Automation', 'Cost Reduction', 'Scalability'],
     painPoints: ['Manual processes', 'High operational costs', 'Limited scalability'],
     budget: {
@@ -85,10 +94,27 @@ export function ContactInfo() {
         notes: 'Budget confirmed, timeline established'
       }
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
-  });
+  };
 
-  // Use original contact data instead of state.callState.contact
-  const contact = originalContact;
+  // Transform API lead data to contact format
+  const getContactFromApiLead = (lead: any) => {
+    return {
+      ...fallbackContact,
+      id: lead._id || lead.id || fallbackContact.id,
+      name: lead.Deal_Name || 'Unknown Lead',
+      email: lead.Email_1 || 'No email provided',
+      phone: lead.Phone || fallbackContact.phone,
+      company: lead.assignedTo?.name || 'Unknown Company',
+      title: lead.Stage || 'Lead',
+      assignedAgent: getAgentName(),
+      leadScore: 0,
+      value: 0,
+      avatar: undefined, // Force use of default icon
+    };
+  };
+
+  // Use API lead data if available, otherwise use fallback
+  const contact = apiLead ? getContactFromApiLead(apiLead) : fallbackContact;
 
   // Debug: Log contact data whenever it changes
  /*  console.log("Contact data:", contact);
@@ -348,15 +374,31 @@ export function ContactInfo() {
 
   return (
     <>
-      <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
+      {/* Error state */}
+      {leadError && (
+        <div className="w-full bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center gap-2 text-red-300">
+            <span className="text-sm font-medium">Error loading lead:</span>
+            <span className="text-sm">{leadError}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading state */}
+      {leadLoading && (
+        <div className="w-full flex items-center justify-center py-4 bg-[#1b253a] rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-400 mr-2" />
+          <span className="text-slate-300">Loading lead data...</span>
+        </div>
+      )}
+      
+      {/* Main content - only show when not loading */}
+      {!leadLoading && (
+        <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
         {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
-            {contact.avatar ? (
-              <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
-            ) : (
-              contact.name.split(' ').map(n => n[0]).join('')
-            )}
+            <User className="w-8 h-8" />
           </div>
           <div>
             <div className="flex items-center space-x-2 mb-1">
@@ -364,9 +406,7 @@ export function ContactInfo() {
               <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
             </div>
             <div className="flex items-center space-x-2 text-slate-300 text-sm">
-                <Building className="w-4 h-4" />
-              <span>{contact.company}</span>
-              <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />85/100</span>
+              <span className="text-yellow-400 flex items-center"><Star className="w-4 h-4 mr-1" />{contact.leadScore}/100</span>
             </div>
           </div>
         </div>
@@ -410,22 +450,18 @@ export function ContactInfo() {
         >
           {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
         </button>
-              </div>
+        </div>
+      )}
+      
       {expanded && (
         <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
           <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
             {/* Colonne gauche */}
             <div className="flex flex-col items-start">
               <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-xl font-bold mb-2">
-                {contact.avatar ? (
-                  <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
-                ) : (
-                  contact.name.split(' ').map(n => n[0]).join('')
-                )}
+                <User className="w-8 h-8" />
               </div>
               <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
-              <div className="text-slate-300 text-sm">VP of Operations</div>
-              <div className="text-slate-400 text-sm">TechCorp Solutions</div>
             </div>
             {/* Colonne centre */}
             <div className="flex flex-col items-start gap-2">
@@ -436,7 +472,7 @@ export function ContactInfo() {
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
-                <span className="font-medium text-sm">sarah.johnson@techcorp.com</span>
+                <span className="font-medium text-sm">{contact.email}</span>
                 <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             </div>
               <div className="flex items-center gap-2 text-slate-200">
@@ -451,9 +487,9 @@ export function ContactInfo() {
                 <div className="w-[240px]">
                   <span className="block bg-[#25594B] text-green-200 py-2 rounded-full text-lg font-medium text-center">Qualified</span>
                 </div>
-                <div className="mt-2 text-white text-xl font-bold text-center">85/100</div>
+                <div className="mt-2 text-white text-xl font-bold text-center">{contact.leadScore}/100</div>
                 <div className="text-slate-300 text-sm text-center">Lead Score</div>
-                <div className="mt-2 text-green-400 text-lg font-bold text-center">$75 000</div>
+                <div className="mt-2 text-green-400 text-lg font-bold text-center">${contact.value?.toLocaleString() || '0'}</div>
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
                 </div>
               {/* Bouton à droite */}
