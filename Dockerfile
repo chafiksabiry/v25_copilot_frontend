@@ -32,7 +32,7 @@ ENV VITE_SPEECH_API_URL=your_speech_api_url
 ENV VITE_SPEECH_API_KEY=your_speech_api_key
 
 ENV VITE_API_URL_CALL=http://preprod-api-dash-calls.harx.ai
-ENV VITE_WS_URL=wss://preprod-api-calls.harx.ai/speech-to-text
+ENV VITE_WS_URL=wss://preprod-api-dash-calls.harx.ai/speech-to-text
 ENV VITE_GIGS_API=https://preprod-api-gigsmanual.harx.ai/api
 ENV NODE_ENV=development
 ENV VITE_RUN_MODE=in-app
