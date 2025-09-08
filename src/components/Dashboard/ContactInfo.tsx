@@ -208,6 +208,10 @@ export function ContactInfo() {
         setCallStatus('ringing');
       });
 
+      // Stocker l'ID du contact au début de la connexion
+      const contactIdForCall = contact?.id;
+      console.log("📞 Starting call with contact ID:", contactIdForCall);
+
       conn.on('accept', () => {
         console.log("✅ Call accepted");
         const Sid = conn.parameters?.CallSid;
@@ -248,39 +252,13 @@ export function ContactInfo() {
       });
 
       conn.on('disconnect', async () => {
-        console.log("Call disconnected");
-        setCallStatus('idle'); // Reset to idle to allow new calls
-        setActiveConnection(null);
-        setActiveDevice(null);
-        setMediaStream(null);
-        dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
-        
-        // Clear Twilio connection from global state
-        clearTwilioConnection();
-        
-        // Stop transcription
-        await stopTranscription();
-        
-        // Store call in database when it disconnects
-        if (currentCallSid && contact.id) {
-          await storeCall(currentCallSid, contact.id);
-        }
-        
-        // Ajout : dispatch END_CALL pour mettre à jour le context global
-        dispatch({ type: 'END_CALL' });
+        console.log("📞 Call disconnected - starting cleanup");
+        await cleanupAndStoreCall();
       });
 
-      conn.on('error', (error: any) => {
-        console.error("Call error:", error);
-        setCallStatus('idle'); // Reset to idle to allow new calls
-        setActiveConnection(null);
-        setActiveDevice(null);
-        
-        // Clear Twilio connection from global state
-        clearTwilioConnection();
-        
-        // Ajout : dispatch END_CALL pour mettre à jour le context global
-        dispatch({ type: 'END_CALL' });
+      conn.on('error', async (error: any) => {
+        console.error("❌ Call error:", error);
+        await cleanupAndStoreCall();
       });
 
     } catch (err: any) {
@@ -291,35 +269,99 @@ export function ContactInfo() {
     }
   };
 
-  const endCall = async () => {
-    console.log("Ending call...");
-    console.log("Contact before ending call:", contact);
-    console.log("Contact phone before ending call:", contact.phone);
+  // Fonction pour gérer la fin d'appel (commune aux deux cas)
+  const handleCallEnd = async (callSid: string, contactId: string) => {
+    console.log("📞 Handling call end with:", { callSid, contactId });
     
+    try {
+      // 1. Sauvegarder l'appel AVANT tout nettoyage d'état
+      if (callSid && contactId) {
+        console.log("💾 Storing call in database:", { callSid, contactId });
+        await storeCall(callSid, contactId);
+      }
+      
+      // 2. Arrêter la transcription
+      await stopTranscription();
+      
+      // 3. Nettoyer les états
+      setCallStatus('idle');
+      setActiveConnection(null);
+      setActiveDevice(null);
+      setMediaStream(null);
+      dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+      clearTwilioConnection();
+      
+      // 4. Mettre à jour le contexte global
+      dispatch({ type: 'END_CALL' });
+      
+      console.log("✅ Call end handling completed");
+    } catch (error) {
+      console.error("❌ Error during call end handling:", error);
+    }
+  };
+
+  // Quand l'agent termine l'appel
+  // Fonction pour nettoyer et stocker l'appel
+  const cleanupAndStoreCall = async () => {
+    console.log("📞 [CLEANUP] Starting call cleanup process...");
+    console.log("📊 [CLEANUP] Current state:", {
+      callSid: currentCallSid,
+      contactId: contact?.id,
+      callStatus,
+      hasActiveConnection: !!activeConnection,
+      hasMediaStream: !!mediaStream,
+      isTranscriptionActive
+    });
+    
+    try {
+      // 1. Stocker l'appel d'abord
+      if (currentCallSid && contact?.id) {
+        console.log("💾 [CLEANUP] Storing call in database:", { 
+          callSid: currentCallSid, 
+          contactId: contact.id 
+        });
+        await storeCall(currentCallSid, contact.id);
+        console.log("✅ [CLEANUP] Call stored successfully");
+      } else {
+        console.warn("⚠️ [CLEANUP] Missing data for call storage:", {
+          callSid: currentCallSid,
+          contactId: contact?.id
+        });
+      }
+      
+      // 2. Arrêter la transcription
+      console.log("🎤 [CLEANUP] Stopping transcription...");
+      await stopTranscription();
+      console.log("✅ [CLEANUP] Transcription stopped");
+      
+      // 3. Nettoyer les états
+      console.log("🧹 [CLEANUP] Cleaning up states...");
+      setActiveConnection(null);
+      setActiveDevice(null);
+      setCallStatus('idle');
+      setMediaStream(null);
+      dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+      clearTwilioConnection();
+      console.log("✅ [CLEANUP] States cleaned");
+      
+      // 4. Mettre à jour le contexte global
+      console.log("🌍 [CLEANUP] Updating global context...");
+      dispatch({ type: 'END_CALL' });
+      console.log("✅ [CLEANUP] Global context updated");
+      
+      console.log("🏁 [CLEANUP] Call cleanup completed successfully");
+    } catch (error) {
+      console.error("❌ [CLEANUP] Error during cleanup:", error);
+      throw error; // Propager l'erreur pour la gérer plus haut si nécessaire
+    }
+  };
+
+  // Quand l'agent termine l'appel - juste déclencher disconnect
+  const endCall = () => {
+    console.log("🔴 Agent ending call - triggering disconnect");
     if (activeConnection) {
       activeConnection.disconnect();
     }
-    
-    // Reset call-related states only
-    setActiveConnection(null);
-    setActiveDevice(null);
-    setCallStatus('idle'); // Reset to idle instead of 'ended'
-    setMediaStream(null);
-    dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
-    
-    // Stop transcription
-    await stopTranscription();
-    
-    // Store call in database when it ends
-    if (currentCallSid && contact.id) {
-      await storeCall(currentCallSid, contact.id);
-    }
-    
-    // Ajout : dispatch END_CALL pour mettre à jour le context global
-    dispatch({ type: 'END_CALL' });
-    
-    console.log("Call ended. Contact after ending call:", contact);
-    console.log("Contact phone after ending call:", contact.phone);
   };
 
   const handleStartCall = () => {
