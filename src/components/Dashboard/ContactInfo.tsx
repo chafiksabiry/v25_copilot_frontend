@@ -199,13 +199,24 @@ export function ContactInfo() {
       // Set up event listeners
       conn.on('connect', () => {
         const callSid = conn.parameters?.CallSid;
-        console.log("CallSid:", callSid);
+        console.log("CallSid on connect:", callSid);
+        if (callSid) {
+          setCurrentCallSid(callSid);
+          console.log("✅ CallSid stored on connect:", callSid);
+        }
       });
       
       // Écouter les événements de sonnerie
       conn.on('ringing', () => {
         console.log('🔔 Call is ringing - outbound call audio should be heard');
         setCallStatus('ringing');
+        
+        // Double check CallSid during ringing
+        const callSid = conn.parameters?.CallSid;
+        if (callSid && !currentCallSid) {
+          setCurrentCallSid(callSid);
+          console.log("✅ CallSid stored on ringing:", callSid);
+        }
       });
 
       // Stocker l'ID du contact au début de la connexion
@@ -253,6 +264,19 @@ export function ContactInfo() {
 
       conn.on('disconnect', async () => {
         console.log("📞 Call disconnected - starting cleanup");
+        // Get the final CallSid directly from the connection
+        const finalCallSid = conn.parameters?.CallSid || currentCallSid;
+        console.log("📞 Final CallSid for storage:", finalCallSid);
+        
+        // Store the call with the CallSid we have right now
+        if (finalCallSid && contact?.id) {
+          console.log("💾 Storing call with final CallSid:", finalCallSid);
+          await storeCall(finalCallSid, contact.id);
+        } else {
+          console.warn("⚠️ Missing data for initial call storage:", { finalCallSid, contactId: contact?.id });
+        }
+        
+        // Then proceed with cleanup
         await cleanupAndStoreCall();
       });
 
@@ -304,8 +328,13 @@ export function ContactInfo() {
   // Fonction pour nettoyer et stocker l'appel
   const cleanupAndStoreCall = async () => {
     console.log("📞 [CLEANUP] Starting call cleanup process...");
+    
+    // Get CallSid from active connection if available
+    const finalCallSid = activeConnection?.parameters?.CallSid || currentCallSid;
+    
     console.log("📊 [CLEANUP] Current state:", {
-      callSid: currentCallSid,
+      callSid: finalCallSid,
+      storedCallSid: currentCallSid,
       contactId: contact?.id,
       callStatus,
       hasActiveConnection: !!activeConnection,
@@ -315,16 +344,17 @@ export function ContactInfo() {
     
     try {
       // 1. Stocker l'appel d'abord
-      if (currentCallSid && contact?.id) {
+      if (finalCallSid && contact?.id) {
         console.log("💾 [CLEANUP] Storing call in database:", { 
-          callSid: currentCallSid, 
+          callSid: finalCallSid, 
           contactId: contact.id 
         });
-        await storeCall(currentCallSid, contact.id);
+        await storeCall(finalCallSid, contact.id);
         console.log("✅ [CLEANUP] Call stored successfully");
       } else {
         console.warn("⚠️ [CLEANUP] Missing data for call storage:", {
-          callSid: currentCallSid,
+          finalCallSid,
+          storedCallSid: currentCallSid,
           contactId: contact?.id
         });
       }
