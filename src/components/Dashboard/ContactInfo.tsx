@@ -9,10 +9,12 @@ import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { getAgentName } from '../../utils';
 import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
+import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
-  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2
+  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -44,6 +46,16 @@ export function ContactInfo() {
   const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
+  
+  // Hook for gig phone number management
+  const { 
+    checkPhoneNumber, 
+    configureVoiceFeature, 
+    isLoading: isPhoneNumberLoading,
+    error: phoneNumberCheckError,
+    phoneNumberData
+  } = useGigPhoneNumber();
 
   // Fallback contact data when no lead is provided or while loading
   const fallbackContact = {
@@ -121,19 +133,8 @@ export function ContactInfo() {
   console.log("Contact phone:", contact.phone);
   console.log("Call status:", callStatus); */
 
-  const initiateTwilioCall = async () => {
-   /*  console.log("Contact phone number:", contact.phone);
-    console.log("Contact object:", contact);
-    console.log("Call status at start:", callStatus); */
-    
-    // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+33623984708'; // Fallback to default
-    console.log("Using phone number:", phoneNumber);
-    
-    if (!phoneNumber) {
-      console.error('No phone number available');
-      return;
-    }
+  const initiateTwilioCall = async (phoneNumber: string) => {
+    console.log("Starting Twilio call with number:", phoneNumber);
 
     setIsCallLoading(true);
     setCallStatus('initiating');
@@ -394,12 +395,86 @@ export function ContactInfo() {
     }
   };
 
+  const initiateTelnyxCall = async (phoneNumber: string) => {
+    // TODO: Implement Telnyx call logic
+    console.error('Telnyx call implementation pending');
+    setCallStatus('idle');
+    setIsCallLoading(false);
+  };
+
+  const initiateCall = async () => {
+    setPhoneNumberError(null);
+    setIsCallLoading(true);
+    
+    try {
+      // Check gig phone number
+      const phoneNumberResponse = await checkPhoneNumber();
+      
+      if (!phoneNumberResponse) {
+        throw new Error('Failed to check gig phone number');
+      }
+
+      if (!phoneNumberResponse.hasNumber) {
+        throw new Error(phoneNumberResponse.message || 'No active phone number found for this gig');
+      }
+
+      const { number } = phoneNumberResponse;
+      
+      // Verify number status and features
+      if (number.provider === 'telnyx') {
+        console.log('📞 Processing Telnyx number:', {
+          status: number.status,
+          hasVoice: number.features.voice,
+          phoneNumber: number.phoneNumber
+        });
+
+        if (number.status != 'success') {
+          throw new Error(`Phone number status is ${number.status}, must be success`);
+        }
+
+        // Always check and configure voice feature for Telnyx numbers
+        if (!number.features.voice) {
+          console.log('🔧 Configuring voice feature for Telnyx number:', number);
+          
+          try {
+            const success = await configureVoiceFeature(number);
+            if (!success) {
+              throw new Error('Failed to configure voice feature for Telnyx number');
+            }
+
+            // Voice feature is now configured, proceed with call
+            return await initiateTelnyxCall(number.phoneNumber);
+          } catch (error) {
+            console.error('❌ Error during voice feature configuration:', error);
+            throw error;
+          }
+        }
+      }
+
+      // Initiate call based on provider
+      if (number.provider == 'twilio') {
+        await initiateTwilioCall(number.phoneNumber);
+      } else if (number.provider == 'telnyx') {
+        await initiateTelnyxCall(number.phoneNumber);
+      } else {
+        throw new Error(`Unsupported provider: ${number.provider}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate call';
+      setPhoneNumberError(errorMessage);
+      setCallStatus('idle');
+      console.error('Call initiation error:', error);
+    } finally {
+      setIsCallLoading(false);
+    }
+  };
+
   const handleStartCall = () => {
-    initiateTwilioCall();
+    initiateCall();
   };
 
   const handleCallNow = () => {
-    initiateTwilioCall();
+    initiateCall();
   };
 
   const getStatusColor = (status: string) => {
@@ -446,12 +521,23 @@ export function ContactInfo() {
 
   return (
     <>
-      {/* Error state */}
-      {leadError && (
+      {/* Error states */}
+      {(leadError || phoneNumberError) && (
         <div className="w-full bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2 text-red-300">
-            <span className="text-sm font-medium">Error loading lead:</span>
-            <span className="text-sm">{leadError}</span>
+            <AlertCircle className="w-5 h-5" />
+            {leadError && (
+              <>
+                <span className="text-sm font-medium">Error loading lead:</span>
+                <span className="text-sm">{leadError}</span>
+              </>
+            )}
+            {phoneNumberError && (
+              <>
+                <span className="text-sm font-medium">Call error:</span>
+                <span className="text-sm">{phoneNumberError}</span>
+              </>
+            )}
           </div>
         </div>
       )}
