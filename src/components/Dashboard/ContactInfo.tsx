@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
@@ -7,9 +7,11 @@ import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { getAgentName } from '../../utils';
+import { getAgentIdFromStorage } from '../../utils/agentUtils';
 import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
+import { useCallManager } from '../../hooks/useCallManager';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -389,17 +391,88 @@ export function ContactInfo() {
 
   // Quand l'agent termine l'appel - juste déclencher disconnect
   const endCall = () => {
-    console.log("🔴 Agent ending call - triggering disconnect");
+    console.log("🔴 Agent ending call");
     if (activeConnection) {
+      // For Twilio calls
       activeConnection.disconnect();
+    } else if (telnyxCallStatus === 'in-progress') {
+      // For Telnyx calls
+      endTelnyxCall().catch(error => {
+        console.error('❌ Failed to end Telnyx call:', error);
+        setPhoneNumberError('Failed to end call');
+      });
     }
   };
 
+  const {
+    callStatus: telnyxCallStatus,
+    error: telnyxCallError,
+    initiateCall: initiateTelnyxCallRaw,
+    endCall: endTelnyxCall,
+    isConnected: isTelnyxConnected,
+    mediaStream: telnyxMediaStream
+  } = useCallManager();
+
+  // Effect to sync Telnyx call status with local state
+  useEffect(() => {
+    if (!activeConnection && telnyxCallStatus) {  // Only update if not a Twilio call
+      console.log('📞 Telnyx call status:', telnyxCallStatus);
+      switch (telnyxCallStatus) {
+        case 'call.initiated':
+          console.log('📞 Call initiated');
+          setCallStatus('initiating');
+          break;
+        case 'call.answered':
+          console.log('📞 Call answered');
+          setCallStatus('active');
+          dispatch({ type: 'START_CALL', participants: [], contact: contact });
+          break;
+        case 'call.hangup':
+          console.log('📞 Call ended');
+          setCallStatus('idle');
+          dispatch({ type: 'END_CALL' });
+          break;
+      }
+    }
+  }, [telnyxCallStatus, activeConnection]);
+
+  // Effect to handle Telnyx errors
+  useEffect(() => {
+    if (telnyxCallError) {
+      console.error('❌ Telnyx call error:', telnyxCallError);
+      setPhoneNumberError(telnyxCallError);
+      setCallStatus('idle');
+    }
+  }, [telnyxCallError]);
+
   const initiateTelnyxCall = async (phoneNumber: string) => {
-    // TODO: Implement Telnyx call logic
-    console.error('Telnyx call implementation pending');
-    setCallStatus('idle');
-    setIsCallLoading(false);
+    if (!isTelnyxConnected) {
+      setPhoneNumberError('WebSocket connection not ready');
+      return;
+    }
+
+    try {
+      setIsCallLoading(true);
+      console.log('📞 Initiating Telnyx call:', {
+        to: contact.phone,
+        from: phoneNumber,
+        agentId: getAgentIdFromStorage()
+      });
+      
+      await initiateTelnyxCallRaw(
+        contact.phone,           // To number (contact's number)
+        phoneNumber,             // From number (our Telnyx number)
+        getAgentIdFromStorage()  // Agent ID
+      );
+
+    } catch (error) {
+      console.error('❌ Failed to initiate Telnyx call:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate call';
+      setPhoneNumberError(errorMessage);
+      setCallStatus('idle');
+    } finally {
+      setIsCallLoading(false);
+    }
   };
 
   const initiateCall = async () => {
@@ -521,6 +594,7 @@ export function ContactInfo() {
 
   return (
     <>
+
       {/* Error states */}
       {(leadError || phoneNumberError) && (
         <div className="w-full bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
