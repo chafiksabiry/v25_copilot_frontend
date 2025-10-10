@@ -12,6 +12,7 @@ import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
+import AudioStreamPlayer from '../Call/AudioStreamPlayer';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -48,6 +49,7 @@ export function ContactInfo() {
   const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
   
   // Hook for gig phone number management
@@ -421,6 +423,10 @@ export function ContactInfo() {
         case 'call.initiated':
           console.log('📞 Call initiated');
           setCallStatus('initiating');
+          // Set stream URL when call is initiated
+          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http', 'ws')}/audio-stream`;
+          console.log('🎧 Setting stream URL:', wsUrl);
+          setStreamUrl(wsUrl);
           break;
         case 'call.answered':
           console.log('📞 Call answered');
@@ -430,6 +436,7 @@ export function ContactInfo() {
         case 'call.hangup':
           console.log('📞 Call ended');
           setCallStatus('idle');
+          setStreamUrl(null); // Clear stream URL when call ends
           dispatch({ type: 'END_CALL' });
           break;
       }
@@ -602,8 +609,8 @@ export function ContactInfo() {
             <AlertCircle className="w-5 h-5" />
             {leadError && (
               <>
-                <span className="text-sm font-medium">Error loading lead:</span>
-                <span className="text-sm">{leadError}</span>
+            <span className="text-sm font-medium">Error loading lead:</span>
+            <span className="text-sm">{leadError}</span>
               </>
             )}
             {phoneNumberError && (
@@ -683,6 +690,18 @@ export function ContactInfo() {
           {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
         </button>
         </div>
+      )}
+      
+      {/* Audio Stream Player */}
+      {streamUrl && !activeConnection && (
+        <AudioStreamPlayer
+          streamUrl={streamUrl}
+          callId={currentCallSid}
+          onError={(error) => {
+            console.error('🎧 Audio stream error:', error);
+            setPhoneNumberError(error.message);
+          }}
+        />
       )}
       
       {expanded && (
