@@ -391,11 +391,11 @@ export function ContactInfo() {
 
   // Quand l'agent termine l'appel - juste déclencher disconnect
   const endCall = () => {
-    console.log("🔴 Agent ending call");
+    console.log("🔴 Agent ending call - status:", telnyxCallStatus);
     if (activeConnection) {
       // For Twilio calls
       activeConnection.disconnect();
-    } else if (telnyxCallStatus === 'in-progress') {
+    } else if (telnyxCallStatus === 'call.answered') {
       // For Telnyx calls
       endTelnyxCall().catch(error => {
         console.error('❌ Failed to end Telnyx call:', error);

@@ -121,11 +121,14 @@ export const useCallManager = () => {
       console.log('📞 Ending call:', currentCallId);
       setError(null);
 
-      const response = await fetch(`${BACKEND_URL}/api/calls/telnyx/${currentCallId}/end`, {
+       const response = await fetch(`${BACKEND_URL}/api/calls/telnyx/end`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          call_control_id: currentCallId
+        })
       });
 
       if (!response.ok) {
