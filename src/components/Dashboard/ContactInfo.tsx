@@ -392,18 +392,51 @@ export function ContactInfo() {
     }
   };
 
-  // Quand l'agent termine l'appel - juste déclencher disconnect
-  const endCall = () => {
-    console.log("🔴 Agent ending call - status:", telnyxCallStatus);
-    if (activeConnection) {
-      // For Twilio calls
-      activeConnection.disconnect();
-    } else if (telnyxCallStatus === 'call.answered') {
-      // For Telnyx calls
-      endTelnyxCall().catch(error => {
-        console.error('❌ Failed to end Telnyx call:', error);
-        setPhoneNumberError('Failed to end call');
-      });
+  // Quand l'agent termine l'appel
+  const endCall = async () => {
+    console.log("🔴 Agent ending call - status:", {
+      telnyxStatus: telnyxCallStatus,
+      hasTwilioConnection: !!activeConnection,
+      currentCallSid
+    });
+
+    try {
+      if (activeConnection) {
+        // Pour les appels Twilio
+        console.log("📞 Ending Twilio call...");
+        activeConnection.disconnect();
+        
+        // Forcer le nettoyage après 1 seconde si la déconnexion est lente
+        setTimeout(() => {
+          if (callStatus !== 'idle') {
+            console.log("⚠️ Forcing call cleanup...");
+            cleanupAndStoreCall();
+          }
+        }, 1000);
+      } else if (telnyxCallStatus === 'call.answered') {
+        // Pour les appels Telnyx
+        console.log("📞 Ending Telnyx call...");
+        await endTelnyxCall();
+        
+        // Mettre à jour l'état immédiatement
+        setCallStatus('idle');
+        setStreamUrl(null);
+        dispatch({ type: 'END_CALL' });
+      } else {
+        console.log("⚠️ No active call to end");
+        // Nettoyer l'état par précaution
+        setCallStatus('idle');
+        setStreamUrl(null);
+        dispatch({ type: 'END_CALL' });
+      }
+    } catch (error) {
+      console.error('❌ Failed to end call:', error);
+      setPhoneNumberError('Failed to end call');
+      
+      // Forcer le nettoyage en cas d'erreur
+      setCallStatus('idle');
+      setStreamUrl(null);
+      dispatch({ type: 'END_CALL' });
     }
   };
 
@@ -694,8 +727,10 @@ export function ContactInfo() {
       )}
       
       {/* Audio Stream Components */}
-      {streamUrl && !activeConnection && (
+      {/* Composants Audio */}
+      {streamUrl && (
         <>
+          {/* Lecture audio (toujours actif quand streamUrl existe) */}
           <AudioStreamPlayer
             streamUrl={streamUrl}
             callId={currentCallSid}
@@ -704,14 +739,18 @@ export function ContactInfo() {
               setPhoneNumberError(error.message);
             }}
           />
-          <MicrophoneStream
-            streamUrl={streamUrl}
-            isActive={callStatus === 'active' || telnyxCallStatus === 'call.answered'}
-            onError={(error) => {
-              console.error('🎤 Microphone stream error:', error);
-              setPhoneNumberError(error.message);
-            }}
-          />
+          
+          {/* Micro (actif uniquement quand l'appel est répondu) */}
+          {(telnyxCallStatus === 'call.answered' || (activeConnection && callStatus === 'active')) && (
+            <MicrophoneStream
+              streamUrl={streamUrl}
+              isActive={true}
+              onError={(error) => {
+                console.error('🎤 Microphone stream error:', error);
+                setPhoneNumberError(error.message);
+              }}
+            />
+          )}
         </>
       )}
       

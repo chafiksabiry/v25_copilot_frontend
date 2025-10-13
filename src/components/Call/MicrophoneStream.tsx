@@ -41,12 +41,27 @@ export function MicrophoneStream({ streamUrl, isActive, onError }: MicrophoneStr
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('🎤 WebSocket connection opened for microphone stream');
+      console.log('🎤 WebSocket connection opened for microphone stream:', {
+        url: streamUrl,
+        readyState: ws.readyState,
+        protocol: ws.protocol
+      });
+      
+      // Envoyer un message de test pour vérifier la connexion
+      ws.send(JSON.stringify({
+        event: 'test',
+        message: 'Microphone WebSocket test'
+      }));
+      
       setIsConnected(true);
     };
 
-    ws.onclose = () => {
-      console.log('🎤 WebSocket connection closed for microphone stream');
+    ws.onclose = (event) => {
+      console.log('🎤 WebSocket connection closed for microphone stream:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
       setIsConnected(false);
     };
 
@@ -55,24 +70,64 @@ export function MicrophoneStream({ streamUrl, isActive, onError }: MicrophoneStr
       onError?.(new Error('WebSocket connection error'));
       setIsConnected(false);
     };
+
+    // Ajouter un handler pour les messages reçus
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🎤 Received WebSocket message:', data);
+      } catch (error) {
+        console.log('🎤 Received non-JSON WebSocket message:', event.data);
+      }
+    };
   };
 
   // Initialiser le flux audio
   const initAudioStream = async () => {
     try {
-      // Demander l'accès au micro
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('🎤 Requesting microphone access...');
+      
+      // Vérifier si le navigateur supporte getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+
+      // Demander l'accès au micro avec des contraintes spécifiques
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1
+        }
+      });
+      
+      console.log('✅ Microphone access granted');
       streamRef.current = stream;
+
+      // Vérifier si le micro est actif
+      const audioTrack = stream.getAudioTracks()[0];
+      console.log('🎤 Microphone status:', {
+        label: audioTrack.label,
+        enabled: audioTrack.enabled,
+        muted: audioTrack.muted,
+        readyState: audioTrack.readyState
+      });
 
       // Créer AudioContext à 8kHz pour Telnyx
       const audioContext = new AudioContext({ sampleRate: 8000 });
+      console.log('🎵 AudioContext created:', {
+        sampleRate: audioContext.sampleRate,
+        state: audioContext.state
+      });
       audioContextRef.current = audioContext;
 
       // Créer la source audio
       const source = audioContext.createMediaStreamSource(stream);
 
-      // Créer le processeur audio
-      const processor = audioContext.createScriptProcessor(1024, 1, 1);
+      // Créer le processeur audio avec une taille de buffer fixe
+      const BUFFER_SIZE = 1024;
+      const processor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
       processorRef.current = processor;
 
       // Connecter les nœuds audio
@@ -80,44 +135,71 @@ export function MicrophoneStream({ streamUrl, isActive, onError }: MicrophoneStr
       processor.connect(audioContext.destination);
 
       // Configurer le traitement audio
+      let sequence = 0;
+      const SEND_INTERVAL = 20; // ms entre chaque envoi
+      let lastSendTime = 0;
+
       processor.onaudioprocess = (event) => {
         if (!isActive) {
-          console.log('🎤 Microphone processing skipped - not active');
           return;
         }
         
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('🎤 Microphone processing skipped - WebSocket not ready');
           return;
         }
 
-        // Récupérer les données audio en Float32
-        const inputBuffer = event.inputBuffer.getChannelData(0);
-        
-        // Vérifier si l'audio n'est pas silencieux
-        const isAudible = inputBuffer.some(sample => Math.abs(sample) > 0.01);
-        
-        if (!isAudible) {
-          console.log('🎤 Microphone input too quiet');
+        const now = Date.now();
+        if (now - lastSendTime < SEND_INTERVAL) {
           return;
         }
+        lastSendTime = now;
 
-        // Convertir en PCMU
-        const pcmuData = float32ToPCMU(inputBuffer);
-        console.log('🎤 Processing audio:', {
-          inputSize: inputBuffer.length,
-          outputSize: pcmuData.length,
-          maxAmplitude: Math.max(...Array.from(inputBuffer).map(Math.abs))
-        });
+        try {
+          // Récupérer les données audio en Float32
+          const inputBuffer = event.inputBuffer.getChannelData(0);
+          
+          // Vérifier le niveau sonore
+          let maxAmplitude = 0;
+          for (let i = 0; i < inputBuffer.length; i++) {
+            const abs = Math.abs(inputBuffer[i]);
+            if (abs > maxAmplitude) maxAmplitude = abs;
+          }
+          
+          // Ne pas envoyer le silence
+          if (maxAmplitude < 0.01) {
+            return;
+          }
 
-        // Convertir en base64
-        const base64Payload = btoa(String.fromCharCode(...pcmuData));
+          // Envoyer directement le Float32Array
+          const audioMessage = {
+            event: 'media',
+            sequence_number: sequence++,
+            stream_id: streamRef.current?.id || 'default',
+            media: {
+              format: 'float32',
+              sampleRate: 8000,
+              channels: 1,
+              timestamp: now,
+              size: inputBuffer.length,
+              payload: Array.from(inputBuffer) // Convertir en array pour JSON
+            }
+          };
 
-        // Envoyer au WebSocket
-        wsRef.current.send(JSON.stringify({
-          event: 'media',
-          media: { payload: base64Payload }
-        }));
+          // Log une fois par seconde
+          if (now % 1000 < SEND_INTERVAL) {
+            console.log('🎤 Sending audio:', {
+              sequence: sequence,
+              maxAmplitude,
+              bufferSize: inputBuffer.length,
+              sampleRate: audioContext.sampleRate
+            });
+          }
+
+          // Envoyer au WebSocket
+          wsRef.current.send(JSON.stringify(audioMessage));
+        } catch (error) {
+          console.error('🎤 Error processing audio:', error);
+        }
       };
 
     } catch (error) {
@@ -151,11 +233,34 @@ export function MicrophoneStream({ streamUrl, isActive, onError }: MicrophoneStr
 
   // Effet pour gérer le cycle de vie du composant
   useEffect(() => {
-    if (isActive && streamUrl) {
-      initWebSocket();
-      initAudioStream();
-    }
+    const setupMicrophone = async () => {
+      try {
+        if (!isActive) {
+          console.log('🎤 Microphone setup skipped - call not active');
+          return;
+        }
 
+        if (!streamUrl) {
+          console.log('🎤 Microphone setup skipped - no stream URL');
+          return;
+        }
+
+        console.log('🎤 Setting up microphone for active call...');
+        
+        // 1. Demander l'accès au micro d'abord
+        await initAudioStream();
+        
+        // 2. Si le micro est OK, initialiser le WebSocket
+        if (streamRef.current) {
+          initWebSocket();
+        }
+      } catch (error) {
+        console.error('🎤 Failed to setup microphone:', error);
+        onError?.(error instanceof Error ? error : new Error('Failed to setup microphone'));
+      }
+    };
+
+    setupMicrophone();
     return cleanup;
   }, [isActive, streamUrl]);
 
