@@ -13,6 +13,7 @@ import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
 import AudioStreamPlayer from '../Call/AudioStreamPlayer';
+import { MicrophoneStream } from '../Call/MicrophoneStream';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -692,16 +693,26 @@ export function ContactInfo() {
         </div>
       )}
       
-      {/* Audio Stream Player */}
+      {/* Audio Stream Components */}
       {streamUrl && !activeConnection && (
-        <AudioStreamPlayer
-          streamUrl={streamUrl}
-          callId={currentCallSid}
-          onError={(error) => {
-            console.error('🎧 Audio stream error:', error);
-            setPhoneNumberError(error.message);
-          }}
-        />
+        <>
+          <AudioStreamPlayer
+            streamUrl={streamUrl}
+            callId={currentCallSid}
+            onError={(error) => {
+              console.error('🎧 Audio stream error:', error);
+              setPhoneNumberError(error.message);
+            }}
+          />
+          <MicrophoneStream
+            streamUrl={streamUrl}
+            isActive={callStatus === 'active' || telnyxCallStatus === 'call.answered'}
+            onError={(error) => {
+              console.error('🎤 Microphone stream error:', error);
+              setPhoneNumberError(error.message);
+            }}
+          />
+        </>
       )}
       
       {expanded && (
