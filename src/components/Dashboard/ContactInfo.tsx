@@ -651,7 +651,7 @@ export function ContactInfo() {
         </div>
         {/* Bouton Start Call + Tabs */}
         <div className="flex-1 flex flex-col items-center">
-          {callStatus === 'active' ? (
+          {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
             <button
               onClick={endCall}
               className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-red-500 hover:bg-red-600 text-white"
@@ -744,7 +744,7 @@ export function ContactInfo() {
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
                 </div>
               {/* Bouton à droite */}
-              {callStatus === 'active' ? (
+              {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
                 <button 
                   onClick={endCall}
                   className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
