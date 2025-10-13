@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
@@ -7,12 +7,18 @@ import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useTwilioMute } from '../../hooks/useTwilioMute';
 import { getAgentName } from '../../utils';
+import { getAgentIdFromStorage } from '../../utils/agentUtils';
 import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
+import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
+import { useCallManager } from '../../hooks/useCallManager';
+import AudioStreamPlayer from '../Call/AudioStreamPlayer';
+import { MicrophoneStream } from '../Call/MicrophoneStream';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
-  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2
+  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -44,6 +50,17 @@ export function ContactInfo() {
   const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
+  
+  // Hook for gig phone number management
+  const { 
+    checkPhoneNumber, 
+    configureVoiceFeature, 
+    isLoading: isPhoneNumberLoading,
+    error: phoneNumberCheckError,
+    phoneNumberData
+  } = useGigPhoneNumber();
 
   // Fallback contact data when no lead is provided or while loading
   const fallbackContact = {
@@ -121,19 +138,8 @@ export function ContactInfo() {
   console.log("Contact phone:", contact.phone);
   console.log("Call status:", callStatus); */
 
-  const initiateTwilioCall = async () => {
-   /*  console.log("Contact phone number:", contact.phone);
-    console.log("Contact object:", contact);
-    console.log("Call status at start:", callStatus); */
-    
-    // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+33623984708'; // Fallback to default
-    console.log("Using phone number:", phoneNumber);
-    
-    if (!phoneNumber) {
-      console.error('No phone number available');
-      return;
-    }
+  const initiateTwilioCall = async (phoneNumber: string) => {
+    console.log("Starting Twilio call with number:", phoneNumber);
 
     setIsCallLoading(true);
     setCallStatus('initiating');
@@ -199,14 +205,29 @@ export function ContactInfo() {
       // Set up event listeners
       conn.on('connect', () => {
         const callSid = conn.parameters?.CallSid;
-        console.log("CallSid:", callSid);
+        console.log("CallSid on connect:", callSid);
+        if (callSid) {
+          setCurrentCallSid(callSid);
+          console.log("✅ CallSid stored on connect:", callSid);
+        }
       });
       
       // Écouter les événements de sonnerie
       conn.on('ringing', () => {
         console.log('🔔 Call is ringing - outbound call audio should be heard');
         setCallStatus('ringing');
+        
+        // Double check CallSid during ringing
+        const callSid = conn.parameters?.CallSid;
+        if (callSid && !currentCallSid) {
+          setCurrentCallSid(callSid);
+          console.log("✅ CallSid stored on ringing:", callSid);
+        }
       });
+
+      // Stocker l'ID du contact au début de la connexion
+      const contactIdForCall = contact?.id;
+      console.log("📞 Starting call with contact ID:", contactIdForCall);
 
       conn.on('accept', () => {
         console.log("✅ Call accepted");
@@ -248,39 +269,26 @@ export function ContactInfo() {
       });
 
       conn.on('disconnect', async () => {
-        console.log("Call disconnected");
-        setCallStatus('idle'); // Reset to idle to allow new calls
-        setActiveConnection(null);
-        setActiveDevice(null);
-        setMediaStream(null);
-        dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+        console.log("📞 Call disconnected - starting cleanup");
+        // Get the final CallSid directly from the connection
+        const finalCallSid = conn.parameters?.CallSid || currentCallSid;
+        console.log("📞 Final CallSid for storage:", finalCallSid);
         
-        // Clear Twilio connection from global state
-        clearTwilioConnection();
-        
-        // Stop transcription
-        await stopTranscription();
-        
-        // Store call in database when it disconnects
-        if (currentCallSid && contact.id) {
-          await storeCall(currentCallSid, contact.id);
+        // Store the call with the CallSid we have right now
+        if (finalCallSid && contact?.id) {
+          console.log("💾 Storing call with final CallSid:", finalCallSid);
+          await storeCall(finalCallSid, contact.id);
+        } else {
+          console.warn("⚠️ Missing data for initial call storage:", { finalCallSid, contactId: contact?.id });
         }
         
-        // Ajout : dispatch END_CALL pour mettre à jour le context global
-        dispatch({ type: 'END_CALL' });
+        // Then proceed with cleanup
+        await cleanupAndStoreCall();
       });
 
-      conn.on('error', (error: any) => {
-        console.error("Call error:", error);
-        setCallStatus('idle'); // Reset to idle to allow new calls
-        setActiveConnection(null);
-        setActiveDevice(null);
-        
-        // Clear Twilio connection from global state
-        clearTwilioConnection();
-        
-        // Ajout : dispatch END_CALL pour mettre à jour le context global
-        dispatch({ type: 'END_CALL' });
+      conn.on('error', async (error: any) => {
+        console.error("❌ Call error:", error);
+        await cleanupAndStoreCall();
       });
 
     } catch (err: any) {
@@ -291,43 +299,263 @@ export function ContactInfo() {
     }
   };
 
-  const endCall = async () => {
-    console.log("Ending call...");
-    console.log("Contact before ending call:", contact);
-    console.log("Contact phone before ending call:", contact.phone);
+  // Fonction pour gérer la fin d'appel (commune aux deux cas)
+  const handleCallEnd = async (callSid: string, contactId: string) => {
+    console.log("📞 Handling call end with:", { callSid, contactId });
     
+    try {
+      // 1. Sauvegarder l'appel AVANT tout nettoyage d'état
+      if (callSid && contactId) {
+        console.log("💾 Storing call in database:", { callSid, contactId });
+        await storeCall(callSid, contactId);
+      }
+      
+      // 2. Arrêter la transcription
+      await stopTranscription();
+      
+      // 3. Nettoyer les états
+      setCallStatus('idle');
+      setActiveConnection(null);
+      setActiveDevice(null);
+      setMediaStream(null);
+      dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+      clearTwilioConnection();
+      
+      // 4. Mettre à jour le contexte global
+      dispatch({ type: 'END_CALL' });
+      
+      console.log("✅ Call end handling completed");
+    } catch (error) {
+      console.error("❌ Error during call end handling:", error);
+    }
+  };
+
+  // Quand l'agent termine l'appel
+  // Fonction pour nettoyer et stocker l'appel
+  const cleanupAndStoreCall = async () => {
+    console.log("📞 [CLEANUP] Starting call cleanup process...");
+    
+    // Get CallSid from active connection if available
+    const finalCallSid = activeConnection?.parameters?.CallSid || currentCallSid;
+    
+    console.log("📊 [CLEANUP] Current state:", {
+      callSid: finalCallSid,
+      storedCallSid: currentCallSid,
+      contactId: contact?.id,
+      callStatus,
+      hasActiveConnection: !!activeConnection,
+      hasMediaStream: !!mediaStream,
+      isTranscriptionActive
+    });
+    
+    try {
+      // 1. Stocker l'appel d'abord
+      if (finalCallSid && contact?.id) {
+        console.log("💾 [CLEANUP] Storing call in database:", { 
+          callSid: finalCallSid, 
+          contactId: contact.id 
+        });
+        await storeCall(finalCallSid, contact.id);
+        console.log("✅ [CLEANUP] Call stored successfully");
+      } else {
+        console.warn("⚠️ [CLEANUP] Missing data for call storage:", {
+          finalCallSid,
+          storedCallSid: currentCallSid,
+          contactId: contact?.id
+        });
+      }
+      
+      // 2. Arrêter la transcription
+      console.log("🎤 [CLEANUP] Stopping transcription...");
+      await stopTranscription();
+      console.log("✅ [CLEANUP] Transcription stopped");
+      
+      // 3. Nettoyer les états
+      console.log("🧹 [CLEANUP] Cleaning up states...");
+      setActiveConnection(null);
+      setActiveDevice(null);
+      setCallStatus('idle');
+      setMediaStream(null);
+      dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+      clearTwilioConnection();
+      console.log("✅ [CLEANUP] States cleaned");
+      
+      // 4. Mettre à jour le contexte global
+      console.log("🌍 [CLEANUP] Updating global context...");
+      dispatch({ type: 'END_CALL' });
+      console.log("✅ [CLEANUP] Global context updated");
+      
+      console.log("🏁 [CLEANUP] Call cleanup completed successfully");
+    } catch (error) {
+      console.error("❌ [CLEANUP] Error during cleanup:", error);
+      throw error; // Propager l'erreur pour la gérer plus haut si nécessaire
+    }
+  };
+
+  // Quand l'agent termine l'appel - juste déclencher disconnect
+  const endCall = () => {
+    console.log("🔴 Agent ending call - status:", telnyxCallStatus);
     if (activeConnection) {
+      // For Twilio calls
       activeConnection.disconnect();
+    } else if (telnyxCallStatus === 'call.answered') {
+      // For Telnyx calls
+      endTelnyxCall().catch(error => {
+        console.error('❌ Failed to end Telnyx call:', error);
+        setPhoneNumberError('Failed to end call');
+      });
     }
-    
-    // Reset call-related states only
-    setActiveConnection(null);
-    setActiveDevice(null);
-    setCallStatus('idle'); // Reset to idle instead of 'ended'
-    setMediaStream(null);
-    dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
-    
-    // Stop transcription
-    await stopTranscription();
-    
-    // Store call in database when it ends
-    if (currentCallSid && contact.id) {
-      await storeCall(currentCallSid, contact.id);
+  };
+
+  const {
+    callStatus: telnyxCallStatus,
+    error: telnyxCallError,
+    initiateCall: initiateTelnyxCallRaw,
+    endCall: endTelnyxCall,
+    isConnected: isTelnyxConnected,
+    mediaStream: telnyxMediaStream
+  } = useCallManager();
+
+  // Effect to sync Telnyx call status with local state
+  useEffect(() => {
+    if (!activeConnection && telnyxCallStatus) {  // Only update if not a Twilio call
+      console.log('📞 Telnyx call status:', telnyxCallStatus);
+      switch (telnyxCallStatus) {
+        case 'call.initiated':
+          console.log('📞 Call initiated');
+          setCallStatus('initiating');
+          // Set stream URL when call is initiated
+          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http', 'ws')}/audio-stream`;
+          console.log('🎧 Setting stream URL:', wsUrl);
+          setStreamUrl(wsUrl);
+          break;
+        case 'call.answered':
+          console.log('📞 Call answered');
+          setCallStatus('active');
+          dispatch({ type: 'START_CALL', participants: [], contact: contact });
+          break;
+        case 'call.hangup':
+          console.log('📞 Call ended');
+          setCallStatus('idle');
+          setStreamUrl(null); // Clear stream URL when call ends
+          dispatch({ type: 'END_CALL' });
+          break;
+      }
     }
+  }, [telnyxCallStatus, activeConnection]);
+
+  // Effect to handle Telnyx errors
+  useEffect(() => {
+    if (telnyxCallError) {
+      console.error('❌ Telnyx call error:', telnyxCallError);
+      setPhoneNumberError(telnyxCallError);
+      setCallStatus('idle');
+    }
+  }, [telnyxCallError]);
+
+  const initiateTelnyxCall = async (phoneNumber: string) => {
+    if (!isTelnyxConnected) {
+      setPhoneNumberError('WebSocket connection not ready');
+      return;
+    }
+
+    try {
+      setIsCallLoading(true);
+      console.log('📞 Initiating Telnyx call:', {
+        to: contact.phone,
+        from: phoneNumber,
+        agentId: getAgentIdFromStorage()
+      });
+      
+      await initiateTelnyxCallRaw(
+        contact.phone,           // To number (contact's number)
+        phoneNumber,             // From number (our Telnyx number)
+        getAgentIdFromStorage()  // Agent ID
+      );
+
+    } catch (error) {
+      console.error('❌ Failed to initiate Telnyx call:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate call';
+      setPhoneNumberError(errorMessage);
+      setCallStatus('idle');
+    } finally {
+      setIsCallLoading(false);
+    }
+  };
+
+  const initiateCall = async () => {
+    setPhoneNumberError(null);
+    setIsCallLoading(true);
     
-    // Ajout : dispatch END_CALL pour mettre à jour le context global
-    dispatch({ type: 'END_CALL' });
-    
-    console.log("Call ended. Contact after ending call:", contact);
-    console.log("Contact phone after ending call:", contact.phone);
+    try {
+      // Check gig phone number
+      const phoneNumberResponse = await checkPhoneNumber();
+      
+      if (!phoneNumberResponse) {
+        throw new Error('Failed to check gig phone number');
+      }
+
+      if (!phoneNumberResponse.hasNumber) {
+        throw new Error(phoneNumberResponse.message || 'No active phone number found for this gig');
+      }
+
+      const { number } = phoneNumberResponse;
+      
+      // Verify number status and features
+      if (number.provider === 'telnyx') {
+        console.log('📞 Processing Telnyx number:', {
+          status: number.status,
+          hasVoice: number.features.voice,
+          phoneNumber: number.phoneNumber
+        });
+
+        if (number.status != 'success') {
+          throw new Error(`Phone number status is ${number.status}, must be success`);
+        }
+
+        // Always check and configure voice feature for Telnyx numbers
+        if (!number.features.voice) {
+          console.log('🔧 Configuring voice feature for Telnyx number:', number);
+          
+          try {
+            const success = await configureVoiceFeature(number);
+            if (!success) {
+              throw new Error('Failed to configure voice feature for Telnyx number');
+            }
+
+            // Voice feature is now configured, proceed with call
+            return await initiateTelnyxCall(number.phoneNumber);
+          } catch (error) {
+            console.error('❌ Error during voice feature configuration:', error);
+            throw error;
+          }
+        }
+      }
+
+      // Initiate call based on provider
+      if (number.provider == 'twilio') {
+        await initiateTwilioCall(number.phoneNumber);
+      } else if (number.provider == 'telnyx') {
+        await initiateTelnyxCall(number.phoneNumber);
+      } else {
+        throw new Error(`Unsupported provider: ${number.provider}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate call';
+      setPhoneNumberError(errorMessage);
+      setCallStatus('idle');
+      console.error('Call initiation error:', error);
+    } finally {
+      setIsCallLoading(false);
+    }
   };
 
   const handleStartCall = () => {
-    initiateTwilioCall();
+    initiateCall();
   };
 
   const handleCallNow = () => {
-    initiateTwilioCall();
+    initiateCall();
   };
 
   const getStatusColor = (status: string) => {
@@ -374,12 +602,24 @@ export function ContactInfo() {
 
   return (
     <>
-      {/* Error state */}
-      {leadError && (
+
+      {/* Error states */}
+      {(leadError || phoneNumberError) && (
         <div className="w-full bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2 text-red-300">
+            <AlertCircle className="w-5 h-5" />
+            {leadError && (
+              <>
             <span className="text-sm font-medium">Error loading lead:</span>
             <span className="text-sm">{leadError}</span>
+              </>
+            )}
+            {phoneNumberError && (
+              <>
+                <span className="text-sm font-medium">Call error:</span>
+                <span className="text-sm">{phoneNumberError}</span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -412,7 +652,7 @@ export function ContactInfo() {
         </div>
         {/* Bouton Start Call + Tabs */}
         <div className="flex-1 flex flex-col items-center">
-          {callStatus === 'active' ? (
+          {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
             <button
               onClick={endCall}
               className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-red-500 hover:bg-red-600 text-white"
@@ -451,6 +691,28 @@ export function ContactInfo() {
           {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
         </button>
         </div>
+      )}
+      
+      {/* Audio Stream Components */}
+      {streamUrl && !activeConnection && (
+        <>
+          <AudioStreamPlayer
+            streamUrl={streamUrl}
+            callId={currentCallSid}
+            onError={(error) => {
+              console.error('🎧 Audio stream error:', error);
+              setPhoneNumberError(error.message);
+            }}
+          />
+          <MicrophoneStream
+            streamUrl={streamUrl}
+            isActive={callStatus === 'active' || telnyxCallStatus === 'call.answered'}
+            onError={(error) => {
+              console.error('🎤 Microphone stream error:', error);
+              setPhoneNumberError(error.message);
+            }}
+          />
+        </>
       )}
       
       {expanded && (
@@ -493,7 +755,7 @@ export function ContactInfo() {
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
                 </div>
               {/* Bouton à droite */}
-              {callStatus === 'active' ? (
+              {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
                 <button 
                   onClick={endCall}
                   className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
