@@ -1,7 +1,6 @@
 export class AudioStreamManager {
   private ws: WebSocket | null = null;
   private audioContext: AudioContext;
-  private microphoneStream: MediaStream | null = null;
   private processorNode: ScriptProcessorNode | null = null;
   private isConnected: boolean = false;
   private onErrorCallback: ((error: Error) => void) | null = null;
@@ -20,18 +19,7 @@ export class AudioStreamManager {
       // 1. Connexion WebSocket
       this.ws = new WebSocket(streamUrl);
       
-      // 2. Demander l'accès au microphone
-      this.microphoneStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,          // Mono
-          sampleRate: 8000,         // 8kHz comme requis par Telnyx
-          echoCancellation: true,   // Suppression d'écho
-          noiseSuppression: true    // Suppression de bruit
-        }
-      });
-
       // 3. Configurer le traitement audio
-      const microphoneSource = this.audioContext.createMediaStreamSource(this.microphoneStream);
       this.processorNode = this.audioContext.createScriptProcessor(2048, 1, 1);
 
       // 4. Traitement audio en temps réel
@@ -55,7 +43,6 @@ export class AudioStreamManager {
       };
 
       // 5. Connecter les nœuds audio
-      microphoneSource.connect(this.processorNode);
       this.processorNode.connect(this.audioContext.destination);
 
       // 6. Gérer les événements WebSocket
@@ -66,17 +53,46 @@ export class AudioStreamManager {
 
       this.ws.onmessage = async (event) => {
         try {
-          if (event.data instanceof Blob) {
-            // Données audio reçues
-            const arrayBuffer = await event.data.arrayBuffer();
-            await this.playAudioBuffer(arrayBuffer);
-          } else {
-            // Messages de contrôle
-            const message = JSON.parse(event.data);
-            this.handleControlMessage(message);
+          const message = JSON.parse(event.data);
+          console.log('📨 Received message type:', message.event);
+
+          switch (message.event) {
+            case 'connected':
+              console.log('🎧 Connected to audio stream with config:', message.config);
+              break;
+
+            case 'start':
+              console.log('▶️ Stream started:', message.stream_id);
+              // Stocker les informations de configuration si nécessaire
+              break;
+
+            case 'media':
+              // Décoder et jouer l'audio
+              if (message.media.track === 'inbound') {
+                const base64Audio = message.media.payload;
+                const binaryString = atob(base64Audio);
+                const audioData = new Uint8Array(binaryString.length);
+                
+                // Convertir la string binaire en Uint8Array
+                for (let i = 0; i < binaryString.length; i++) {
+                  audioData[i] = binaryString.charCodeAt(i);
+                }
+
+                // Convertir PCMU en audio et jouer
+                await this.playAudioBuffer(audioData.buffer);
+              }
+              break;
+
+            case 'stop':
+              console.log('⏹️ Stream stopped:', message.stream_id);
+              this.disconnect();
+              break;
+
+            default:
+              console.log('❓ Unknown message type:', message.event);
           }
         } catch (error) {
-          console.error('Error processing audio message:', error);
+          console.error('❌ Error processing message:', error);
           this.onErrorCallback?.(error as Error);
         }
       };
@@ -125,15 +141,20 @@ export class AudioStreamManager {
 
   private async playAudioBuffer(arrayBuffer: ArrayBuffer) {
     try {
+      console.log('🎵 Processing audio chunk...');
+      
       // 1. Convertir le buffer en Float32Array
       const pcmuData = new Uint8Array(arrayBuffer);
+      console.log('📊 PCMU data length:', pcmuData.length);
+      
       const float32Data = this.convertFromPCMU(pcmuData);
+      console.log('📊 Float32 data length:', float32Data.length);
       
       // 2. Créer un AudioBuffer
       const audioBuffer = this.audioContext.createBuffer(
         1,                    // mono
         float32Data.length,   // nombre d'échantillons
-        8000                  // fréquence d'échantillonnage
+        8000                  // fréquence d'échantillonnage (format PCMU standard)
       );
       
       // 3. Copier les données
@@ -142,13 +163,22 @@ export class AudioStreamManager {
       // 4. Créer et configurer la source
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
+      
+      // Ajouter un gain pour contrôler le volume si nécessaire
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.value = 1.0; // Ajuster si nécessaire
+      
+      // Connecter les nœuds
+      source.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
       
       // 5. Jouer l'audio
+      console.log('🔊 Playing audio chunk');
       source.start(0);
+      
     } catch (error) {
-      console.error('Error playing audio:', error);
-      this.onErrorCallback?.(new Error('Failed to play audio'));
+      console.error('❌ Error playing audio:', error);
+      this.onErrorCallback?.(new Error('Failed to play audio: ' + error.message));
     }
   }
 
@@ -203,12 +233,6 @@ export class AudioStreamManager {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
-    }
-
-    // 2. Arrêter le microphone
-    if (this.microphoneStream) {
-      this.microphoneStream.getTracks().forEach(track => track.stop());
-      this.microphoneStream = null;
     }
 
     // 3. Nettoyer le traitement audio

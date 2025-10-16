@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState,useEffect,useRef } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
@@ -12,6 +12,7 @@ import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
+import { AudioStreamManager } from '../../services/AudioStreamManager';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -50,6 +51,7 @@ export function ContactInfo() {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
+  const audioManagerRef = useRef<AudioStreamManager | null>(null);
   
   // Hook for gig phone number management
   const { 
@@ -456,8 +458,9 @@ export function ContactInfo() {
           console.log('📞 Call initiated');
           setCallStatus('initiating');
           // Set stream URL when call is initiated
-          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://')}/audio-stream`;
-          console.log('🎧 Setting stream URL:', wsUrl);
+          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://')}/frontend-audio`;
+          console.log('🔍 Generated WebSocket URL:', wsUrl); // Debug log
+          console.log('🎧 Setting stream URL for frontend audio:', wsUrl);
           setStreamUrl(wsUrl);
           break;
         case 'call.answered':
@@ -483,6 +486,35 @@ export function ContactInfo() {
       setCallStatus('idle');
     }
   }, [telnyxCallError]);
+
+  // Effect to handle audio stream connection
+  useEffect(() => {
+    if (streamUrl) {
+      console.log('🎤 Initializing audio stream manager for URL:', streamUrl);
+      
+      // Create new AudioStreamManager if not exists
+      if (!audioManagerRef.current) {
+        audioManagerRef.current = new AudioStreamManager((error) => {
+          console.error('Audio stream error:', error);
+          setPhoneNumberError(error.message);
+        });
+      }
+
+      // Connect to the WebSocket
+      audioManagerRef.current.connect(streamUrl).catch(error => {
+        console.error('Failed to connect to audio stream:', error);
+        setPhoneNumberError('Failed to connect to audio stream');
+      });
+
+      // Cleanup function
+      return () => {
+        console.log('🎤 Cleaning up audio stream manager');
+        if (audioManagerRef.current) {
+          audioManagerRef.current.disconnect();
+        }
+      };
+    }
+  }, [streamUrl]);
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
     if (!isTelnyxConnected) {
