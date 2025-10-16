@@ -12,8 +12,6 @@ import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
-import AudioStreamPlayer from '../Call/AudioStreamPlayer';
-import { MicrophoneStream } from '../Call/MicrophoneStream';
 import { 
   User, Phone, Mail, MapPin, Clock, 
   Star, Tag, Calendar, MessageSquare, Video,
@@ -458,7 +456,7 @@ export function ContactInfo() {
           console.log('📞 Call initiated');
           setCallStatus('initiating');
           // Set stream URL when call is initiated
-          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http', 'ws')}/audio-stream`;
+          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://')}/audio-stream`;
           console.log('🎧 Setting stream URL:', wsUrl);
           setStreamUrl(wsUrl);
           break;
@@ -725,35 +723,7 @@ export function ContactInfo() {
         </button>
         </div>
       )}
-      
-      {/* Audio Stream Components */}
-      {/* Composants Audio */}
-      {streamUrl && (
-        <>
-          {/* Lecture audio (toujours actif quand streamUrl existe) */}
-          <AudioStreamPlayer
-            streamUrl={streamUrl}
-            callId={currentCallSid}
-            onError={(error) => {
-              console.error('🎧 Audio stream error:', error);
-              setPhoneNumberError(error.message);
-            }}
-          />
-          
-          {/* Micro (actif uniquement quand l'appel est répondu) */}
-          {(telnyxCallStatus === 'call.answered' || (activeConnection && callStatus === 'active')) && (
-            <MicrophoneStream
-              streamUrl={streamUrl}
-              isActive={true}
-              onError={(error) => {
-                console.error('🎤 Microphone stream error:', error);
-                setPhoneNumberError(error.message);
-              }}
-            />
-          )}
-        </>
-      )}
-      
+
       {expanded && (
         <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
           <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
