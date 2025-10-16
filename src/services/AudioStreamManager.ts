@@ -1,11 +1,28 @@
 export class AudioStreamManager {
   private ws: WebSocket | null = null;
   private audioContext: AudioContext;
-  private processorNode: ScriptProcessorNode | null = null;
   private isConnected: boolean = false;
   private onErrorCallback: ((error: Error) => void) | null = null;
 
+  // Nouvelles propriétés pour le traitement par lots
+  private audioBuffer: Float32Array[] = [];
+  private readonly BUFFER_SIZE = 2048;
+  private readonly MIN_BUFFER_SIZE = 5;  // Minimum de chunks avant de commencer la lecture
+  private readonly MAX_BUFFER_SIZE = 20; // Maximum de chunks à garder
+  private readonly MU_LAW_DECODE_TABLE: Int16Array;
+
   constructor(onError?: (error: Error) => void) {
+    // Initialiser la table de conversion µ-law
+    this.MU_LAW_DECODE_TABLE = new Int16Array(256);
+    for (let i = 0; i < 256; i++) {
+      const mu = ~i; // Inversion des bits pour µ-law
+      const sign = (mu & 0x80) ? -1 : 1;
+      let magnitude = ((mu & 0x70) >> 4) * 2;
+      magnitude += ((mu & 0x0F) << 1) + 1;
+      let amplitude = magnitude << 2;
+      amplitude = ((amplitude + 33) << 3);
+      this.MU_LAW_DECODE_TABLE[i] = sign * amplitude;
+    }
     this.audioContext = new AudioContext({
       sampleRate: 8000  // Même fréquence que Telnyx
     });
@@ -19,31 +36,7 @@ export class AudioStreamManager {
       // 1. Connexion WebSocket
       this.ws = new WebSocket(streamUrl);
       
-      // 3. Configurer le traitement audio
-      this.processorNode = this.audioContext.createScriptProcessor(2048, 1, 1);
-
-      // 4. Traitement audio en temps réel
-      this.processorNode.onaudioprocess = (e) => {
-        if (this.isConnected && this.ws?.readyState === WebSocket.OPEN) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          
-          // Convertir Float32Array en PCMU (µ-law)
-          const pcmuData = this.convertToPCMU(inputData);
-          
-          // Encoder en base64 et envoyer
-          const base64Audio = btoa(String.fromCharCode.apply(null, Array.from(pcmuData)));
-          
-          this.ws.send(JSON.stringify({
-            event: 'media',
-            media: {
-              payload: base64Audio
-            }
-          }));
-        }
-      };
-
-      // 5. Connecter les nœuds audio
-      this.processorNode.connect(this.audioContext.destination);
+      // Pas besoin de processorNode car nous ne faisons que recevoir l'audio
 
       // 6. Gérer les événements WebSocket
       this.ws.onopen = () => {
@@ -115,29 +108,7 @@ export class AudioStreamManager {
     }
   }
 
-  private convertToPCMU(float32Audio: Float32Array): Uint8Array {
-    const pcmu = new Uint8Array(float32Audio.length);
-    
-    for (let i = 0; i < float32Audio.length; i++) {
-      // 1. Normaliser entre -1 et 1
-      let sample = Math.min(1, Math.max(-1, float32Audio[i]));
-      
-      // 2. Convertir en PCM 16-bit
-      sample = sample * 32768;
-      
-      // 3. Convertir en µ-law
-      const sign = (sample < 0) ? 0x80 : 0;
-      sample = Math.abs(sample);
-      
-      // Compression logarithmique
-      let magnitude = Math.min(15, Math.floor(Math.log(1 + 255 * sample / 32768) / Math.log(1 + 255) * 15));
-      
-      // Format µ-law final
-      pcmu[i] = ~(sign | (magnitude << 4) | Math.floor((sample >> ((magnitude + 1) >= 8 ? 4 : 3)) & 0x0f));
-    }
-    
-    return pcmu;
-  }
+  // Supprimé convertToPCMU car nous ne faisons que recevoir l'audio
 
   private async playAudioBuffer(arrayBuffer: ArrayBuffer) {
     try {
@@ -150,31 +121,61 @@ export class AudioStreamManager {
       const float32Data = this.convertFromPCMU(pcmuData);
       console.log('📊 Float32 data length:', float32Data.length);
       
-      // 2. Créer un AudioBuffer
-      const audioBuffer = this.audioContext.createBuffer(
-        1,                    // mono
-        float32Data.length,   // nombre d'échantillons
-        8000                  // fréquence d'échantillonnage (format PCMU standard)
-      );
+      // 2. Ajouter au buffer
+      this.audioBuffer.push(float32Data);
+      console.log('📊 Buffer status:', {
+        chunks: this.audioBuffer.length,
+        min: this.MIN_BUFFER_SIZE,
+        max: this.MAX_BUFFER_SIZE
+      });
+
+      // 3. Si nous avons assez de chunks, commencer la lecture
+      if (this.audioBuffer.length >= this.MIN_BUFFER_SIZE) {
+        // Concaténer les chunks en un seul buffer
+        const totalLength = this.audioBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
+        const combinedBuffer = new Float32Array(totalLength);
+        
+        let offset = 0;
+        for (const chunk of this.audioBuffer) {
+          combinedBuffer.set(chunk, offset);
+          offset += chunk.length;
+        }
+        
+        // Créer et configurer l'AudioBuffer
+        const audioBuffer = this.audioContext.createBuffer(
+          1,                    // mono
+          combinedBuffer.length,// nombre d'échantillons
+          8000                  // fréquence d'échantillonnage
+        );
+        
+        // Copier les données
+        audioBuffer.getChannelData(0).set(combinedBuffer);
+        
+        // Créer et configurer la source
+        const source = this.audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        
+        // Ajouter un gain pour contrôler le volume
+        const gainNode = this.audioContext.createGain();
+        gainNode.gain.value = 1.0;
+        
+        // Connecter les nœuds
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        // Jouer l'audio
+        console.log('🔊 Playing combined audio chunks');
+        source.start(0);
+        
+        // Vider le buffer
+        this.audioBuffer = [];
+      }
       
-      // 3. Copier les données
-      audioBuffer.getChannelData(0).set(float32Data);
-      
-      // 4. Créer et configurer la source
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      
-      // Ajouter un gain pour contrôler le volume si nécessaire
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = 1.0; // Ajuster si nécessaire
-      
-      // Connecter les nœuds
-      source.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-      
-      // 5. Jouer l'audio
-      console.log('🔊 Playing audio chunk');
-      source.start(0);
+      // 4. Éviter l'overflow du buffer
+      while (this.audioBuffer.length > this.MAX_BUFFER_SIZE) {
+        this.audioBuffer.shift();
+        console.log('⚠️ Buffer overflow, dropping oldest chunk');
+      }
       
     } catch (error) {
       console.error('❌ Error playing audio:', error);
@@ -186,19 +187,8 @@ export class AudioStreamManager {
     const float32 = new Float32Array(pcmuData.length);
     
     for (let i = 0; i < pcmuData.length; i++) {
-      // Inverser le µ-law
-      const ulaw = ~pcmuData[i];
-      
-      // Extraire le signe et la magnitude
-      const sign = (ulaw & 0x80) ? -1 : 1;
-      const magnitude = ((ulaw & 0x70) >> 4);
-      const mantissa = ((ulaw & 0x0f) << 3) + 0x84;
-      
-      // Reconstruire la valeur
-      let sample = sign * mantissa * Math.pow(2, magnitude) / 32768.0;
-      
-      // Limiter entre -1 et 1
-      float32[i] = Math.max(-1, Math.min(1, sample));
+      // Utiliser la table de conversion précalculée
+      float32[i] = this.MU_LAW_DECODE_TABLE[pcmuData[i]] / 32768.0;
     }
     
     return float32;
@@ -235,10 +225,9 @@ export class AudioStreamManager {
       this.ws = null;
     }
 
-    // 3. Nettoyer le traitement audio
-    if (this.processorNode) {
-      this.processorNode.disconnect();
-      this.processorNode = null;
+    // Nettoyer le contexte audio si nécessaire
+    if (this.audioContext.state !== 'closed') {
+      this.audioContext.close();
     }
 
     this.isConnected = false;
