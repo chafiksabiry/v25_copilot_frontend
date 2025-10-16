@@ -12,6 +12,7 @@ import { useLead } from '../../hooks/useLead';
 import { useUrlParam } from '../../hooks/useUrlParams';
 import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
+import { MicrophoneService } from '../../services/MicrophoneService';
 import { AudioStreamManager } from '../../services/AudioStreamManager';
 import { 
   User, Phone, Mail, MapPin, Clock, 
@@ -51,6 +52,7 @@ export function ContactInfo() {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
+  const [microphoneService, setMicrophoneService] = useState<MicrophoneService | null>(null);
   const audioManagerRef = useRef<AudioStreamManager | null>(null);
   
   // Hook for gig phone number management
@@ -401,6 +403,13 @@ export function ContactInfo() {
     });
 
     try {
+      // Arrêter la capture micro
+      if (microphoneService) {
+        console.log('🎤 Arrêt de la capture micro');
+        microphoneService.stopCapture();
+        setMicrophoneService(null);
+      }
+
       if (activeConnection) {
         // Pour les appels Twilio
         console.log("📞 Ending Twilio call...");
@@ -462,6 +471,27 @@ export function ContactInfo() {
           console.log('🔍 Generated WebSocket URL:', wsUrl); // Debug log
           console.log('🎧 Setting stream URL for frontend audio:', wsUrl);
           setStreamUrl(wsUrl);
+
+          // Créer une connexion WebSocket unique pour l'audio
+          const ws = new WebSocket(wsUrl);
+          
+          ws.onopen = async () => {
+            console.log('🎤 WebSocket connecté pour l\'audio');
+            // Créer le service micro avec le WebSocket existant
+            const mic = new MicrophoneService(ws);
+            setMicrophoneService(mic);
+            
+            try {
+              await mic.startCapture();
+              console.log('🎤 Capture micro démarrée');
+            } catch (error) {
+              console.error('❌ Erreur démarrage micro:', error);
+            }
+          };
+
+          ws.onerror = (error) => {
+            console.error('❌ Erreur WebSocket audio:', error);
+          };
           break;
         case 'call.answered':
           console.log('📞 Call answered');
