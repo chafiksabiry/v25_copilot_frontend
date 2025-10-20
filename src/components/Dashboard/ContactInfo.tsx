@@ -605,6 +605,10 @@ export function ContactInfo() {
 
       const { number } = phoneNumberResponse;
       
+      if (!number) {
+        throw new Error('Phone number not found in response');
+      }
+      
       // Verify number status and features
       if (number.provider === 'telnyx') {
         console.log('📞 Processing Telnyx number:', {

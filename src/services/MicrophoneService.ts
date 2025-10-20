@@ -26,8 +26,10 @@ export class MicrophoneService {
       }
 
       // 2) Capture microphone
+      // Note: Most browsers don't support 8kHz AudioContext, so we use default (usually 48kHz)
+      // and let the worklet handle downsampling to 8kHz
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 8000 });
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const source = this.audioContext.createMediaStreamSource(this.stream);
 
       // 3) Load and create worklet
@@ -68,33 +70,6 @@ export class MicrophoneService {
     this.stream = null;
     this.audioContext = null;
     // keep ws reference (still owned by caller)
-  }
-
-  // Float32 -> PCMU (G.711 µ-law)
-  private floatToMuLaw(float32Array: Float32Array): Uint8Array {
-    const pcmu = new Uint8Array(float32Array.length);
-    for (let i = 0; i < float32Array.length; i++) {
-      let sample = Math.max(-1, Math.min(1, float32Array[i]));
-      pcmu[i] = this.encodeMuLawSample(sample);
-    }
-    return pcmu;
-  }
-
-  private encodeMuLawSample(sample: number): number {
-    const BIAS = 0x84;
-    const MAX = 32635;
-    const sign = sample < 0 ? 0x80 : 0;
-    let s = Math.abs(sample);
-    s = Math.min(s, 1.0);
-    let s16 = Math.floor(s * 32767);
-    if (s16 > MAX) s16 = MAX;
-
-    s16 = s16 + BIAS;
-    let exponent = 7;
-    for (let expMask = 0x4000; (s16 & expMask) === 0 && exponent > 0; expMask >>= 1) exponent--;
-    const mantissa = (s16 >> (exponent + 3)) & 0x0F;
-    const muLaw = ~(sign | (exponent << 4) | mantissa);
-    return muLaw & 0xff;
   }
 
   // RTP header creation (PT=0 PCMU)
