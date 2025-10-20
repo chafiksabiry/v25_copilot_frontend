@@ -1,180 +1,129 @@
 export class MicrophoneService {
-  private ws: WebSocket;
+  private ws: WebSocket | null = null;
   private audioContext: AudioContext | null = null;
-  private mediaStream: MediaStream | null = null;
-  private micProcessor: ScriptProcessorNode | null = null;
-  private sequence = 0;
+  private node: AudioWorkletNode | null = null;
+  private stream: MediaStream | null = null;
+
+  private seq = 0;
   private timestamp = 0;
   private ssrc = Math.floor(Math.random() * 0xffffffff);
 
   constructor(ws: WebSocket) {
     this.ws = ws;
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: 8000
-    });
-  }
-
-  private handleMessage(message: any) {
-    if (!message || typeof message !== 'object') return;
-
-    switch (message.event) {
-      case 'connected':
-        console.log('🎤 Configuration audio reçue:', message.config);
-        if (message.config?.format === 'PCMU' && message.config?.sampleRate === 8000) {
-          this.isConfigured = true;
-          this.startCaptureResolve?.();
-        }
-        break;
-
-      case 'start':
-        console.log('🎤 Stream démarré, ID:', message.stream_id);
-        break;
-
-      case 'stop':
-        console.log('🎤 Stream arrêté');
-        this.stopCapture();
-        break;
-
-      case 'error':
-        console.error('🎤 Erreur stream:', message.payload);
-        break;
-    }
   }
 
   async startCapture() {
     try {
+      // 1) Ensure WebSocket provided and open (we reuse frontend-audio WS)
+      if (!this.ws) throw new Error('WebSocket instance not provided');
       if (this.ws.readyState !== WebSocket.OPEN) {
-        throw new Error("WebSocket non connecté");
+        await new Promise<void>((resolve, reject) => {
+          const onOpen = () => { this.ws?.removeEventListener('open', onOpen as any); resolve(); };
+          const onError = () => { this.ws?.removeEventListener('error', onError as any); reject(new Error('WebSocket error')); };
+          this.ws?.addEventListener('open', onOpen as any);
+          this.ws?.addEventListener('error', onError as any);
+        });
       }
-      // Demander l'accès au microphone
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,          // Mono
-          sampleRate: 8000,         // 8kHz comme requis
-          echoCancellation: true,   // Suppression d'écho
-          noiseSuppression: true    // Suppression de bruit
+
+      // 2) Capture microphone
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 8000 });
+      const source = this.audioContext.createMediaStreamSource(this.stream);
+
+      // 3) Load and create worklet
+      const workletUrl = new URL('../worklets/mic-processor.worklet.js', import.meta.url);
+      await this.audioContext.audioWorklet.addModule(workletUrl);
+      this.node = new AudioWorkletNode(this.audioContext, 'mic-processor', { numberOfInputs: 1, numberOfOutputs: 0 });
+      source.connect(this.node);
+
+      // 4) Receive PCMU chunks from worklet and send over WS with RTP
+      this.node.port.onmessage = (ev: MessageEvent) => {
+        const pcmu: Uint8Array = ev.data;
+        if (!pcmu || !(pcmu instanceof Uint8Array)) return;
+        const rtp = this.createRtpPacket(pcmu);
+        const base64 = this.uint8ToBase64(rtp);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ event: 'media', media: { payload: base64 } }));
+          this.seq = (this.seq + 1) % 65536;
+          this.timestamp += pcmu.length;
         }
-      });
-
-      // Créer la source audio depuis le micro
-      const source = this.audioContext!.createMediaStreamSource(this.mediaStream);
-
-      // Créer le processeur pour traiter l'audio
-      const bufferSize = 256; // La plus petite taille de buffer valide
-      this.micProcessor = this.audioContext!.createScriptProcessor(bufferSize, 1, 1);
-
-      // Connecter la source au processeur
-      source.connect(this.micProcessor);
-      this.micProcessor.connect(this.audioContext!.destination);
-
-      // Traiter l'audio capturé
-      this.micProcessor.onaudioprocess = (ev) => {
-        const inputData = ev.inputBuffer.getChannelData(0);
-        const pcm16 = this.floatTo16BitPCM(inputData);
-        const muLaw = this.pcm16ToMuLaw(pcm16);
-        const rtpPacket = this.buildRtpPacket(muLaw);
-        
-        // Convertir en base64 et envoyer
-        const payload = btoa(String.fromCharCode(...rtpPacket));
-        if (this.ws?.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({
-            event: "media",
-            media: {
-              payload
-            }
-          }));
-        }
-
-        // Incrémenter sequence et timestamp
-        this.sequence = (this.sequence + 1) & 0xffff;
-        this.timestamp += muLaw.length;
       };
 
-      console.log('🎤 Capture micro démarrée');
-    } catch (error) {
-      console.error('❌ Erreur lors du démarrage de la capture micro:', error);
-      this.stopCapture();
-      throw error;
+      console.log('🎧 Microphone capture started');
+    } catch (err) {
+      console.error('❌ Error starting microphone stream:', err);
+      await this.stopCapture();
+      throw err;
     }
   }
 
-  stopCapture() {
-    // Arrêter le processeur
-    if (this.micProcessor) {
-      this.micProcessor.disconnect();
-      this.micProcessor = null;
-    }
+  async stopCapture() {
+    console.log('⏹️ Stopping microphone stream');
+    try { this.node?.disconnect(); } catch (_) {}
+    try { this.stream?.getTracks().forEach(t => t.stop()); } catch (_) {}
+    try { await this.audioContext?.close(); } catch (_) {}
+    // We do NOT close the shared WebSocket here; it's managed by the caller
 
-    // Arrêter les tracks du mediaStream
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
-    }
-
-    // Fermer le WebSocket
-    if (this.ws) {
-      try {
-        this.ws.close();
-      } catch (error) {
-        console.error('❌ Erreur lors de la fermeture du WebSocket:', error);
-      }
-      this.ws = null;
-    }
-
-    // Réinitialiser l'état
-    this.isConfigured = false;
-    this.startCapturePromise = null;
-    this.startCaptureResolve = null;
-
-    console.log('🎤 Capture micro arrêtée');
+    this.node = null;
+    this.stream = null;
+    this.audioContext = null;
+    // keep ws reference (still owned by caller)
   }
 
-  private floatTo16BitPCM(input: Float32Array): Int16Array {
-    const output = new Int16Array(input.length);
-    for (let i = 0; i < input.length; i++) {
-      let s = Math.max(-1, Math.min(1, input[i]));
-      output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  // Float32 -> PCMU (G.711 µ-law)
+  private floatToMuLaw(float32Array: Float32Array): Uint8Array {
+    const pcmu = new Uint8Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+      let sample = Math.max(-1, Math.min(1, float32Array[i]));
+      pcmu[i] = this.encodeMuLawSample(sample);
     }
-    return output;
+    return pcmu;
   }
 
-  private pcm16ToMuLaw(pcm16: Int16Array): Uint8Array {
-    const output = new Uint8Array(pcm16.length);
-    const MAX = 32768;
+  private encodeMuLawSample(sample: number): number {
+    const BIAS = 0x84;
+    const MAX = 32635;
+    const sign = sample < 0 ? 0x80 : 0;
+    let s = Math.abs(sample);
+    s = Math.min(s, 1.0);
+    let s16 = Math.floor(s * 32767);
+    if (s16 > MAX) s16 = MAX;
 
-    for (let i = 0; i < pcm16.length; i++) {
-      let pcmVal = pcm16[i];
-      let sign = (pcmVal < 0) ? 0x80 : 0;
-      if (pcmVal < 0) pcmVal = -pcmVal;
-      if (pcmVal > MAX) pcmVal = MAX;
-
-      // Algorithme µ-law
-      const exponent = Math.floor(Math.log2(pcmVal / 256 + 1));
-      const mantissa = (pcmVal >> (exponent + 3)) & 0x0F;
-      const muByte = ~(sign | (exponent << 4) | mantissa);
-      output[i] = muByte & 0xFF;
-    }
-    return output;
+    s16 = s16 + BIAS;
+    let exponent = 7;
+    for (let expMask = 0x4000; (s16 & expMask) === 0 && exponent > 0; expMask >>= 1) exponent--;
+    const mantissa = (s16 >> (exponent + 3)) & 0x0F;
+    const muLaw = ~(sign | (exponent << 4) | mantissa);
+    return muLaw & 0xff;
   }
 
-  private buildRtpPacket(muLawPayload: Uint8Array): Uint8Array {
-    const header = new Uint8Array(12);
-    header[0] = 0x80; // version=2, no padding, no extension, CC=0
-    header[1] = 0x00; // marker=0, payload type = 0 (PCMU)
-    header[2] = (this.sequence >> 8) & 0xFF;
-    header[3] = this.sequence & 0xFF;
-    header[4] = (this.timestamp >> 24) & 0xFF;
-    header[5] = (this.timestamp >> 16) & 0xFF;
-    header[6] = (this.timestamp >> 8) & 0xFF;
-    header[7] = this.timestamp & 0xFF;
-    header[8] = (this.ssrc >> 24) & 0xFF;
-    header[9] = (this.ssrc >> 16) & 0xFF;
-    header[10] = (this.ssrc >> 8) & 0xFF;
-    header[11] = this.ssrc & 0xFF;
-
-    const packet = new Uint8Array(12 + muLawPayload.length);
-    packet.set(header, 0);
-    packet.set(muLawPayload, 12);
+  // RTP header creation (PT=0 PCMU)
+  private createRtpPacket(payload: Uint8Array): Uint8Array {
+    const packet = new Uint8Array(12 + payload.length);
+    packet[0] = 0x80; // V=2
+    packet[1] = 0x00; // PT=0 PCMU
+    packet[2] = (this.seq >> 8) & 0xff;
+    packet[3] = this.seq & 0xff;
+    packet[4] = (this.timestamp >> 24) & 0xff;
+    packet[5] = (this.timestamp >> 16) & 0xff;
+    packet[6] = (this.timestamp >> 8) & 0xff;
+    packet[7] = this.timestamp & 0xff;
+    packet[8] = (this.ssrc >> 24) & 0xff;
+    packet[9] = (this.ssrc >> 16) & 0xff;
+    packet[10] = (this.ssrc >> 8) & 0xff;
+    packet[11] = this.ssrc & 0xff;
+    packet.set(payload, 12);
     return packet;
+  }
+
+  // Uint8Array -> base64
+  private uint8ToBase64(u8: Uint8Array): string {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < u8.length; i += chunkSize) {
+      const chunk = u8.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, chunk as unknown as number[]);
+    }
+    return btoa(binary);
   }
 }

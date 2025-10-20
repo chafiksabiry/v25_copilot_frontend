@@ -471,32 +471,14 @@ export function ContactInfo() {
           console.log('🔍 Generated WebSocket URL:', wsUrl); // Debug log
           console.log('🎧 Setting stream URL for frontend audio:', wsUrl);
           setStreamUrl(wsUrl);
-
-          // Créer une connexion WebSocket unique pour l'audio
-          const ws = new WebSocket(wsUrl);
-          
-          ws.onopen = async () => {
-            console.log('🎤 WebSocket connecté pour l\'audio');
-            // Créer le service micro avec le WebSocket existant
-            const mic = new MicrophoneService(ws);
-            setMicrophoneService(mic);
-            
-            try {
-              await mic.startCapture();
-              console.log('🎤 Capture micro démarrée');
-            } catch (error) {
-              console.error('❌ Erreur démarrage micro:', error);
-            }
-          };
-
-          ws.onerror = (error) => {
-            console.error('❌ Erreur WebSocket audio:', error);
-          };
           break;
         case 'call.answered':
           console.log('📞 Call answered');
           setCallStatus('active');
           dispatch({ type: 'START_CALL', participants: [], contact: contact });
+          
+          // Démarrer la capture micro quand l'appel est répondu
+          startMicrophoneCapture();
           break;
         case 'call.hangup':
           console.log('📞 Call ended');
@@ -507,6 +489,18 @@ export function ContactInfo() {
       }
     }
   }, [telnyxCallStatus, activeConnection]);
+
+  // Fonction pour démarrer le micro
+  const startMicrophoneCapture = async () => {
+    if (microphoneService) {
+      try {
+        await microphoneService.startCapture();
+        console.log('🎤 Capture micro démarrée');
+      } catch (error) {
+        console.error('❌ Erreur démarrage micro:', error);
+      }
+    }
+  };
 
   // Effect to handle Telnyx errors
   useEffect(() => {
@@ -536,11 +530,28 @@ export function ContactInfo() {
         setPhoneNumberError('Failed to connect to audio stream');
       });
 
+      // Create WebSocket for microphone service
+      const ws = new WebSocket(streamUrl);
+      
+      ws.onopen = () => {
+        console.log('🎤 WebSocket connecté pour le micro');
+        // Créer le service micro avec le WebSocket connecté
+        const mic = new MicrophoneService(ws);
+        setMicrophoneService(mic);
+      };
+
+      ws.onerror = (error) => {
+        console.error('❌ Erreur WebSocket micro:', error);
+      };
+
       // Cleanup function
       return () => {
         console.log('🎤 Cleaning up audio stream manager');
         if (audioManagerRef.current) {
           audioManagerRef.current.disconnect();
+        }
+        if (microphoneService) {
+          microphoneService.stopCapture();
         }
       };
     }
