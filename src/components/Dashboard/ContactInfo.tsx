@@ -51,6 +51,7 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [outboundStreamUrl, setOutboundStreamUrl] = useState<string | null>(null);
   const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
   const [microphoneService, setMicrophoneService] = useState<MicrophoneService | null>(null);
   const audioManagerRef = useRef<AudioStreamManager | null>(null);
@@ -466,11 +467,15 @@ export function ContactInfo() {
         case 'call.initiated':
           console.log('📞 Call initiated');
           setCallStatus('initiating');
-          // Set stream URL when call is initiated
-          const wsUrl = `${import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://')}/frontend-audio`;
-          console.log('🔍 Generated WebSocket URL:', wsUrl); // Debug log
-          console.log('🎧 Setting stream URL for frontend audio:', wsUrl);
-          setStreamUrl(wsUrl);
+          // Set stream URLs when call is initiated
+          const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
+          const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
+          const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
+          
+          console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
+          console.log('🎧 Setting stream URLs for audio streaming');
+          setStreamUrl(inboundWsUrl);
+          setOutboundStreamUrl(outboundWsUrl);
           break;
         case 'call.answered':
           console.log('📞 Call answered');
@@ -483,7 +488,8 @@ export function ContactInfo() {
         case 'call.hangup':
           console.log('📞 Call ended');
           setCallStatus('idle');
-          setStreamUrl(null); // Clear stream URL when call ends
+          setStreamUrl(null); // Clear inbound stream URL when call ends
+          setOutboundStreamUrl(null); // Clear outbound stream URL when call ends
           dispatch({ type: 'END_CALL' });
           break;
       }
@@ -494,10 +500,20 @@ export function ContactInfo() {
   const startMicrophoneCapture = async () => {
     if (microphoneService) {
       try {
+        // Test permissions first
+        const permissionTest = await MicrophoneService.testMicrophonePermissions();
+        if (!permissionTest.success) {
+          console.error('❌ Microphone permission test failed:', permissionTest.error);
+          setPhoneNumberError(`Microphone error: ${permissionTest.error}`);
+          return;
+        }
+
         await microphoneService.startCapture();
         console.log('🎤 Capture micro démarrée');
       } catch (error) {
         console.error('❌ Erreur démarrage micro:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown microphone error';
+        setPhoneNumberError(`Microphone error: ${errorMessage}`);
       }
     }
   };
@@ -511,51 +527,71 @@ export function ContactInfo() {
     }
   }, [telnyxCallError]);
 
-  // Effect to handle audio stream connection
+  // Effect to handle inbound audio stream connection (frontend-audio)
   useEffect(() => {
     if (streamUrl) {
-      console.log('🎤 Initializing audio stream manager for URL:', streamUrl);
+      console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
       
       // Create new AudioStreamManager if not exists
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioStreamManager((error) => {
-          console.error('Audio stream error:', error);
+          console.error('Inbound audio stream error:', error);
           setPhoneNumberError(error.message);
         });
       }
 
-      // Connect to the WebSocket
+      // Connect to the inbound WebSocket
       audioManagerRef.current.connect(streamUrl).catch(error => {
-        console.error('Failed to connect to audio stream:', error);
-        setPhoneNumberError('Failed to connect to audio stream');
+        console.error('Failed to connect to inbound audio stream:', error);
+        setPhoneNumberError('Failed to connect to inbound audio stream');
       });
-
-      // Create WebSocket for microphone service
-      const ws = new WebSocket(streamUrl);
-      
-      ws.onopen = () => {
-        console.log('🎤 WebSocket connecté pour le micro');
-        // Créer le service micro avec le WebSocket connecté
-        const mic = new MicrophoneService(ws);
-        setMicrophoneService(mic);
-      };
-
-      ws.onerror = (error) => {
-        console.error('❌ Erreur WebSocket micro:', error);
-      };
 
       // Cleanup function
       return () => {
-        console.log('🎤 Cleaning up audio stream manager');
+        console.log('🎧 Cleaning up inbound audio stream manager');
         if (audioManagerRef.current) {
           audioManagerRef.current.disconnect();
-        }
-        if (microphoneService) {
-          microphoneService.stopCapture();
         }
       };
     }
   }, [streamUrl]);
+
+  // Effect to handle outbound audio stream connection (outbound-audio)
+  useEffect(() => {
+    if (outboundStreamUrl) {
+      console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
+      
+      // Create WebSocket for microphone service (outbound audio)
+      const outboundWs = new WebSocket(outboundStreamUrl);
+      
+      outboundWs.onopen = () => {
+        console.log('🎤 Outbound WebSocket connected for microphone');
+        // Créer le service micro avec le WebSocket outbound connecté
+        const mic = new MicrophoneService(outboundWs);
+        setMicrophoneService(mic);
+      };
+
+      outboundWs.onerror = (error) => {
+        console.error('❌ Erreur outbound WebSocket micro:', error);
+        setPhoneNumberError('Failed to connect to outbound audio stream');
+      };
+
+      outboundWs.onclose = () => {
+        console.log('🎤 Outbound WebSocket closed');
+      };
+
+      // Cleanup function
+      return () => {
+        console.log('🎤 Cleaning up outbound audio stream');
+        if (microphoneService) {
+          microphoneService.stopCapture();
+        }
+        if (outboundWs.readyState === WebSocket.OPEN) {
+          outboundWs.close();
+        }
+      };
+    }
+  }, [outboundStreamUrl]);
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
     if (!isTelnyxConnected) {
@@ -664,6 +700,30 @@ export function ContactInfo() {
 
   const handleCallNow = () => {
     initiateCall();
+  };
+
+  // Fonction pour tester les permissions microphone
+  const testMicrophonePermissions = async () => {
+    try {
+      console.log('🧪 Testing microphone permissions...');
+      const result = await MicrophoneService.testMicrophonePermissions();
+      
+      if (result.success) {
+        console.log('✅ Microphone permissions OK');
+        setPhoneNumberError(null);
+        // Optionally show success message
+        alert('✅ Microphone permissions are working correctly!');
+      } else {
+        console.error('❌ Microphone permissions failed:', result.error);
+        setPhoneNumberError(`Microphone test failed: ${result.error}`);
+        alert(`❌ Microphone test failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Error testing microphone permissions:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setPhoneNumberError(`Microphone test error: ${errorMessage}`);
+      alert(`❌ Microphone test error: ${errorMessage}`);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -786,6 +846,13 @@ export function ContactInfo() {
         </div>
         {/* Actions à droite */}
               <div className="flex items-center space-x-3">
+          <button 
+            onClick={testMicrophonePermissions}
+            className="bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg"
+            title="Test Microphone Permissions"
+          >
+            🎤
+          </button>
           <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
           <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
           <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
