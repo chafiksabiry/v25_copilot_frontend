@@ -116,5 +116,5 @@ export const useCallStorage = () => {
     }
   }, [leadIdFromUrl]);
 
-  return { storeCall };
+  return { storeCall, getGigIdFromCookie };
 }; 
