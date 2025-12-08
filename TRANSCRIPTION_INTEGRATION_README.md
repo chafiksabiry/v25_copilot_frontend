@@ -60,8 +60,8 @@ Cette fonctionnalité permet d'afficher la transcription en temps réel dans le 
 
 ### Variables d'environnement requises
 ```env
-VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
-VITE_WS_URL=wss://preprod-api-dash-calls.harx.ai/speech-to-text
+VITE_API_URL_CALL=https://prod-api-dash-calls.harx.ai
+VITE_WS_URL=wss://prod-api-dash-calls.harx.ai/speech-to-text
 ```
 
 ### Configuration Speech-to-Text
