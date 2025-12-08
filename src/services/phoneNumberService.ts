@@ -90,11 +90,12 @@ export class PhoneNumberService {
       
       console.log('🔍 Using API base URL:', baseUrl);
 
-      // Si l'URL contient déjà /api, ne pas ajouter le préfixe
-      // Sinon, ajouter /api pour VITE_API_URL_CALL ou localhost
+      // Construire l'URL complète
+      // Si baseUrl contient déjà /api, l'utiliser tel quel, sinon ajouter /api
       const hasApiPrefix = baseUrl.includes('/api');
-      const apiPrefix = (!hasApiPrefix && (baseUrl === import.meta.env.VITE_API_URL_CALL || baseUrl.startsWith('http://localhost'))) ? '/api' : '';
-      const url = `${baseUrl}${apiPrefix}/phone-numbers/gig/${gigId}/check`;
+      const url = hasApiPrefix 
+        ? `${baseUrl}/phone-numbers/gig/${gigId}/check`
+        : `${baseUrl}/api/phone-numbers/gig/${gigId}/check`;
       console.log('🔍 Checking gig phone number at:', url);
 
       const response = await axios.get<PhoneNumberResponse>(url);
@@ -126,11 +127,12 @@ export class PhoneNumberService {
       }
 
       console.log('📞 Configuring voice feature for number:', phoneNumber);
-      // Si l'URL contient déjà /api, ne pas ajouter le préfixe
-      // Sinon, ajouter /api pour VITE_API_URL_CALL ou localhost
+      // Construire l'URL complète
+      // Si baseUrl contient déjà /api, l'utiliser tel quel, sinon ajouter /api
       const hasApiPrefix = baseUrl.includes('/api');
-      const apiPrefix = (!hasApiPrefix && (baseUrl === import.meta.env.VITE_API_URL_CALL || baseUrl.startsWith('http://localhost'))) ? '/api' : '';
-      const url = `${baseUrl}${apiPrefix}/phone-numbers/${phoneNumber}/configure-voice`;
+      const url = hasApiPrefix 
+        ? `${baseUrl}/phone-numbers/${phoneNumber}/configure-voice`
+        : `${baseUrl}/api/phone-numbers/${phoneNumber}/configure-voice`;
       console.log('🔧 Configuring voice at:', url);
       
       const response = await axios.post<VoiceConfigResponse>(url);
