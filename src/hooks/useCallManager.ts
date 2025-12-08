@@ -1,8 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CallEvent } from '../types/call';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
-const WS_URL = `${BACKEND_URL?.replace('http', 'ws')}/call-events`;
+// En mode standalone, forcer localhost même si VITE_API_URL_CALL est défini
+const getBackendUrl = (): string => {
+  const runMode = import.meta.env.VITE_RUN_MODE;
+  const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
+  
+  // En mode standalone, utiliser prod-api-dash-calls.harx.ai
+  if (runMode === 'standalone' || isStandalone) {
+    return 'https://prod-api-dash-calls.harx.ai';
+  }
+  
+  // En mode in-app, utiliser VITE_API_URL_CALL
+  return import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
+};
+
+const BACKEND_URL = getBackendUrl();
+const WS_URL = BACKEND_URL 
+  ? `${BACKEND_URL.replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://')}/ws/call-events`
+  : '';
 
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
 

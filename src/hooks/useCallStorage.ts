@@ -6,8 +6,12 @@ import { useUrlParam } from './useUrlParams';
 const getGigIdFromCookie = (): string | null => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   
-  if (runMode === 'sandbox') {
-    return '686e8ddcf74ddc5ba5d4b493'; // GigId fixe pour sandbox
+  // Détecter le mode standalone via window.__POWERED_BY_QIANKUN__ (comme dans main.tsx)
+  const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
+  
+  // Mode standalone ou sandbox: utiliser le gigId fixe
+  if (runMode === 'sandbox' || runMode === 'standalone' || isStandalone) {
+    return '68b5b12701557c476f728ea4'; // GigId fixe pour sandbox/standalone
   } else if (runMode === 'in-app') {
     const cookies = document.cookie.split(';');
     const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
