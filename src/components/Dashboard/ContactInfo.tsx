@@ -564,11 +564,28 @@ export function ContactInfo() {
       // Create WebSocket for microphone service (outbound audio)
       const outboundWs = new WebSocket(outboundStreamUrl);
       
-      outboundWs.onopen = () => {
+      outboundWs.onopen = async () => {
         console.log('🎤 Outbound WebSocket connected for microphone');
         // Créer le service micro avec le WebSocket outbound connecté
         const mic = new MicrophoneService(outboundWs);
         setMicrophoneService(mic);
+        
+        // Démarrer la capture micro maintenant qu'il est créé et le WebSocket est connecté
+        try {
+          const permissionTest = await MicrophoneService.testMicrophonePermissions();
+          if (!permissionTest.success) {
+            console.error('❌ Microphone permission test failed:', permissionTest.error);
+            setPhoneNumberError(`Microphone error: ${permissionTest.error}`);
+            return;
+          }
+          
+          await mic.startCapture();
+          console.log('🎤 Capture micro démarrée automatiquement');
+        } catch (error) {
+          console.error('❌ Erreur démarrage micro:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown microphone error';
+          setPhoneNumberError(`Microphone error: ${errorMessage}`);
+        }
       };
 
       outboundWs.onerror = (error) => {
