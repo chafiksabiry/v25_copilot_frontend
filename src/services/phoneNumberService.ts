@@ -31,19 +31,43 @@ export interface VoiceConfigResponse {
 
 export class PhoneNumberService {
   // Utiliser VITE_COMP_ORCH_API si disponible, sinon VITE_API_URL_CALL, sinon VITE_GIGS_API
-  // En mode standalone, forcer localhost même si VITE_API_URL_CALL est défini
+  // En mode standalone, utiliser localhost pour le développement local
   private static getBaseUrl(): string {
     const runMode = import.meta.env.VITE_RUN_MODE;
     const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
+    const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
     
-    // En mode standalone, utiliser api-dash-calls.harx.ai/api
+    // Debug logging
+    console.log('🔍 [getBaseUrl] Environment check:', {
+      VITE_API_URL_CALL: import.meta.env.VITE_API_URL_CALL,
+      VITE_RUN_MODE: runMode,
+      isStandalone,
+      isDev,
+      DEV: import.meta.env.DEV,
+      MODE: import.meta.env.MODE
+    });
+    
+    // Si VITE_API_URL_CALL est défini explicitement, l'utiliser avec /api
+    if (import.meta.env.VITE_API_URL_CALL) {
+      const baseUrl = import.meta.env.VITE_API_URL_CALL;
+      console.log('🔍 [getBaseUrl] Using VITE_API_URL_CALL:', baseUrl);
+      return baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`;
+    }
+    
+    // En mode standalone ou développement, utiliser localhost
+    if ((runMode === 'standalone' || isStandalone) && isDev) {
+      console.log('🔍 [Standalone dev mode] Using localhost:5006/api');
+      return 'http://localhost:5006/api';
+    }
+    
+    // En mode standalone production, utiliser api-dash-calls.harx.ai/api
     if (runMode === 'standalone' || isStandalone) {
       console.log('🔍 [Standalone mode] Using api-dash-calls.harx.ai/api');
       return 'https://api-dash-calls.harx.ai/api';
     }
     
-    // En mode in-app, utiliser les URLs de production
-    return import.meta.env.VITE_COMP_ORCH_API || import.meta.env.VITE_API_URL_CALL || import.meta.env.VITE_GIGS_API || 'http://localhost:3000';
+    // En mode in-app, utiliser les URLs de production ou localhost
+    return import.meta.env.VITE_COMP_ORCH_API || import.meta.env.VITE_GIGS_API || 'http://localhost:5006/api';
   }
   
   // baseUrl sera recalculé dynamiquement via getBaseUrl()
@@ -77,8 +101,8 @@ export class PhoneNumberService {
       console.log('✅ Phone number check response:', response.data);
       
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
+    } catch (error: any) {
+      if (error?.response) {
         console.error('❌ API Error checking gig phone number:', {
           status: error.response?.status,
           data: error.response?.data,
@@ -87,7 +111,7 @@ export class PhoneNumberService {
         throw new Error(`API Error: ${error.response?.data?.message || error.message}`);
       }
       console.error('❌ Error checking gig phone number:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error('Unknown error occurred');
     }
   }
 
@@ -112,8 +136,8 @@ export class PhoneNumberService {
       const response = await axios.post<VoiceConfigResponse>(url);
       console.log('✅ Voice feature configuration response:', response.data);
       return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
+    } catch (error: any) {
+      if (error?.response) {
         console.error('❌ API Error configuring voice feature:', {
           status: error.response?.status,
           data: error.response?.data,
@@ -122,7 +146,7 @@ export class PhoneNumberService {
         throw new Error(`API Error: ${error.response?.data?.message || error.message}`);
       }
       console.error('❌ Error configuring voice feature:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error('Unknown error occurred');
     }
   }
 }

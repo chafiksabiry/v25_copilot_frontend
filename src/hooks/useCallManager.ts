@@ -1,23 +1,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CallEvent } from '../types/call';
 
-// En mode standalone, forcer localhost même si VITE_API_URL_CALL est défini
+// En mode standalone, utiliser localhost pour le développement local
 const getBackendUrl = (): string => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
+  const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
   
-  // En mode standalone, utiliser api-dash-calls.harx.ai
+  // Debug logging
+  console.log('🔍 [getBackendUrl] Environment check:', {
+    VITE_API_URL_CALL: import.meta.env.VITE_API_URL_CALL,
+    VITE_RUN_MODE: runMode,
+    isStandalone,
+    isDev,
+    DEV: import.meta.env.DEV,
+    MODE: import.meta.env.MODE
+  });
+  
+  // Si VITE_API_URL_CALL est défini explicitement, l'utiliser
+  if (import.meta.env.VITE_API_URL_CALL) {
+    console.log('🔍 [getBackendUrl] Using VITE_API_URL_CALL:', import.meta.env.VITE_API_URL_CALL);
+    return import.meta.env.VITE_API_URL_CALL;
+  }
+  
+  // En mode standalone ou développement, utiliser localhost
+  if ((runMode === 'standalone' || isStandalone) && isDev) {
+    return 'http://localhost:5006';
+  }
+  
+  // En mode standalone production, utiliser api-dash-calls.harx.ai
   if (runMode === 'standalone' || isStandalone) {
     return 'https://api-dash-calls.harx.ai';
   }
   
-  // En mode in-app, utiliser VITE_API_URL_CALL
-  return import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
+  // En mode in-app, utiliser localhost par défaut
+  return 'http://localhost:5006';
 };
 
 const BACKEND_URL = getBackendUrl();
 const WS_URL = BACKEND_URL 
-  ? `${BACKEND_URL.replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://')}/ws/call-events`
+  ? `${BACKEND_URL.replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://')}/call-events`
   : '';
 
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
