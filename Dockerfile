@@ -38,8 +38,8 @@ ENV NODE_ENV=development
 ENV VITE_RUN_MODE=in-app
 ENV VITE_ENVIRONMENT=sandbox
 ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
-ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
-ENV VITE_PROD_FRONT_URL=https://copilot.harx.ai/
+ENV VITE_SANDBOX_FRONT_URL=https://prod-copilot.harx.ai/
+ENV VITE_PROD_FRONT_URL=https://prod-copilot.harx.ai/
 ENV VITE_DASH_COMPANY_API_URL=https://prod-api-dashboard.harx.ai/api
 ENV VITE_COMP_ORCH_API=http://localhost:3003/api
 # Construire l'application
