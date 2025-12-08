@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => {
     base: process.env.VITE_ENVIRONMENT === 'local' 
       ? 'http://localhost:5186/'
       : process.env.VITE_ENVIRONMENT === 'sandbox'
-        ? 'https://prod-copilot.harx.ai/'
-        : 'https://prod-copilot.harx.ai/',
+        ? 'https://copilot.harx.ai/'
+        : 'https://copilot.harx.ai/',
     plugins: [
       react({
         jsxRuntime: 'classic',

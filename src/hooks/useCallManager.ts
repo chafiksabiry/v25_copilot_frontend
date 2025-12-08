@@ -6,9 +6,9 @@ const getBackendUrl = (): string => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
   
-  // En mode standalone, utiliser prod-api-dash-calls.harx.ai
+  // En mode standalone, utiliser api-dash-calls.harx.ai
   if (runMode === 'standalone' || isStandalone) {
-    return 'https://prod-api-dash-calls.harx.ai';
+    return 'https://api-dash-calls.harx.ai';
   }
   
   // En mode in-app, utiliser VITE_API_URL_CALL

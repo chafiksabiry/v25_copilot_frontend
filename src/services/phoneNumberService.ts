@@ -36,10 +36,10 @@ export class PhoneNumberService {
     const runMode = import.meta.env.VITE_RUN_MODE;
     const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
     
-    // En mode standalone, utiliser prod-api-dash-calls.harx.ai/api
+    // En mode standalone, utiliser api-dash-calls.harx.ai/api
     if (runMode === 'standalone' || isStandalone) {
-      console.log('🔍 [Standalone mode] Using prod-api-dash-calls.harx.ai/api');
-      return 'https://prod-api-dash-calls.harx.ai/api';
+      console.log('🔍 [Standalone mode] Using api-dash-calls.harx.ai/api');
+      return 'https://api-dash-calls.harx.ai/api';
     }
     
     // En mode in-app, utiliser les URLs de production

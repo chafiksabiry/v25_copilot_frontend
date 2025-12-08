@@ -25,6 +25,20 @@ interface TokenResponse {
   token: string;
 }
 
+// Helper function to get backend URL (consistent with useCallManager and phoneNumberService)
+const getBackendUrl = (): string => {
+  const runMode = import.meta.env.VITE_RUN_MODE;
+  const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
+  
+  // En mode standalone, utiliser api-dash-calls.harx.ai
+  if (runMode === 'standalone' || isStandalone) {
+    return 'https://api-dash-calls.harx.ai';
+  }
+  
+  // En mode in-app, utiliser VITE_API_URL_CALL
+  return import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
+};
+
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
   const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
@@ -150,7 +164,7 @@ export function ContactInfo() {
 
     try {
       // Get Twilio token
-      const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
+      const apiUrl = getBackendUrl();
       const tokenUrl = `${apiUrl}/api/calls/token`;
       console.log("Fetching token from:", tokenUrl);
       
@@ -468,7 +482,7 @@ export function ContactInfo() {
           console.log('📞 Call initiated');
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
-          const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
+          const baseWsUrl = getBackendUrl().replace('http://', 'ws://').replace('https://', 'wss://');
           const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
           const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
           
