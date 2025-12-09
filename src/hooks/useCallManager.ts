@@ -58,63 +58,80 @@ export const useCallManager = () => {
       return;
     }
 
-    console.log('🔌 Connecting to WebSocket:', WS_URL);
-    const websocket = new WebSocket(WS_URL);
+    let websocket: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let isIntentionalClose = false;
 
-    // Set ws immediately to handle the "not ready" error
-    setWs(websocket);
+    const connect = () => {
+      console.log('🔌 Connecting to WebSocket:', WS_URL);
+      websocket = new WebSocket(WS_URL);
 
-    websocket.onopen = () => {
-      console.log('✅ Connected to call events WebSocket');
-    };
+      websocket.onopen = () => {
+        console.log('✅ Connected to call events WebSocket');
+        setError(null);
+      };
 
-    websocket.onmessage = (event) => {
-      const data: CallEvent = JSON.parse(event.data);
-      console.log('📞 Received call event:', data);
-      
-      switch (data.type) {
-        case 'welcome':
-          console.log('🤝 WebSocket connection established');
-          break;
+      websocket.onmessage = (event) => {
+        const data: CallEvent = JSON.parse(event.data);
+        console.log('📞 Received call event:', data);
         
-        case 'call.initiated':
-          console.log('📞 Call initiated:', data.payload.call_control_id);
-          setCallStatus('call.initiated');
-          setCurrentCallId(data.payload.call_control_id);
-          break;
+        switch (data.type) {
+          case 'welcome':
+            console.log('🤝 WebSocket connection established');
+            break;
+          
+          case 'call.initiated':
+            console.log('📞 Call initiated:', data.payload.call_control_id);
+            setCallStatus('call.initiated');
+            setCurrentCallId(data.payload.call_control_id);
+            break;
+          
+          case 'call.answered':
+            console.log('📞 Call answered');
+            setCallStatus('call.answered');
+            break;
+          
+          case 'call.hangup':
+            console.log('📞 Call ended');
+            setCallStatus('call.hangup');
+            setCurrentCallId(null);
+            break;
+        }
+      };
+
+      websocket.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        setError('WebSocket connection error');
+      };
+
+      websocket.onclose = (event) => {
+        console.log('🔌 WebSocket connection closed', event.code, event.reason);
+        setWs(null);
         
-        case 'call.answered':
-          console.log('📞 Call answered');
-          setCallStatus('call.answered');
-          break;
-        
-        case 'call.hangup':
-          console.log('📞 Call ended');
-          setCallStatus('call.hangup');
-          setCurrentCallId(null);
-          break;
-      }
+        // Tentative de reconnexion seulement si ce n'est pas une fermeture intentionnelle
+        if (!isIntentionalClose && event.code !== 1000) {
+          reconnectTimeout = setTimeout(() => {
+            console.log('🔄 Attempting to reconnect...');
+            connect();
+          }, 5000);
+        }
+      };
+
+      setWs(websocket);
     };
 
-    websocket.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
-      setError('WebSocket connection error');
-    };
-
-    websocket.onclose = () => {
-      console.log('🔌 WebSocket connection closed');
-      // Tentative de reconnexion
-      setTimeout(() => {
-        console.log('🔄 Attempting to reconnect...');
-        setWs(new WebSocket(WS_URL));
-      }, 5000);
-    };
-
-    setWs(websocket);
+    connect();
 
     return () => {
-      console.log('🔌 Closing WebSocket connection');
-      websocket.close();
+      isIntentionalClose = true;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (websocket) {
+        console.log('🔌 Closing WebSocket connection');
+        websocket.onclose = null; // Empêcher la reconnexion lors du cleanup
+        websocket.close(1000, 'Component unmounting');
+      }
     };
   }, []);
 
