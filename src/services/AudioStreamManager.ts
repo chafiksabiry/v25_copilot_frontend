@@ -17,7 +17,7 @@ export class AudioStreamManager {
   private readonly CHUNKS_PER_ITERATION = 8; // Augmenté pour traiter plus vite et éviter les débordements
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
-  private animationFrameId: number | null = null; // Pour requestAnimationFrame
+  private animationFrameId: number | null = null; // Pour setTimeout (au lieu de requestAnimationFrame pour éviter les violations)
   private lastChunkEndSample: number | undefined = undefined; // Pour crossfade entre chunks
 
   // sécurité
@@ -355,46 +355,50 @@ export class AudioStreamManager {
       }
 
       // Traiter plusieurs chunks par itération pour être plus rapide
-      // Augmenter le nombre de chunks traités si la queue est pleine pour éviter le backpressure
+      // Optimiser pour éviter les violations de performance (< 16ms par frame)
       let processedCount = 0;
       const startTime = performance.now(); // Mesurer le temps de traitement
       const queueLength = this.chunkQueue.length;
       
       // Si la queue est presque pleine, traiter plus de chunks par itération
+      // Mais limiter pour éviter les violations de performance
       const chunksToProcess = queueLength > this.MAX_QUEUE * 0.7 
         ? this.CHUNKS_PER_ITERATION * 2  // Traiter 2x plus si la queue est pleine
         : this.CHUNKS_PER_ITERATION;
       
+      // Limite de temps stricte : ne pas dépasser 8ms pour éviter les violations
+      const MAX_PROCESSING_TIME = 8; // ms
+      
       while (this.chunkQueue.length > 0 && processedCount < chunksToProcess) {
+        // Vérifier le temps avant chaque chunk pour éviter les violations
+        if (performance.now() - startTime > MAX_PROCESSING_TIME) {
+          break;
+        }
+        
         const chunk = this.chunkQueue.shift();
         if (chunk) {
           this.scheduleChunk(chunk);
           processedCount++;
         }
-        
-        // Limite de sécurité : ne pas traiter plus de 12ms par frame (augmenté pour traiter plus vite)
-        if (performance.now() - startTime > 12) {
-          break;
-        }
       }
 
-      // Utiliser requestAnimationFrame pour un meilleur timing
-      // Si la queue est encore pleine, continuer immédiatement sans attendre
+      // Utiliser setTimeout au lieu de requestAnimationFrame pour éviter les violations
+      // requestAnimationFrame doit se terminer en < 16ms, mais notre traitement peut prendre plus
+      // setTimeout(0) permet de traiter sans violer les contraintes de performance
       if (this.chunkQueue.length > 0) {
-        // Si la queue est presque pleine, utiliser setTimeout(0) pour traiter immédiatement
-        // Sinon, utiliser requestAnimationFrame pour un meilleur timing
-        if (this.chunkQueue.length > this.MAX_QUEUE * 0.7) {
-          this.animationFrameId = requestAnimationFrame(process);
-        } else {
-          this.animationFrameId = requestAnimationFrame(process);
-        }
+        // Utiliser setTimeout pour éviter les violations de requestAnimationFrame
+        // Si la queue est presque pleine, traiter immédiatement (setTimeout 0)
+        // Sinon, utiliser un petit délai pour laisser le navigateur respirer
+        const delay = this.chunkQueue.length > this.MAX_QUEUE * 0.7 ? 0 : 1;
+        this.animationFrameId = setTimeout(process, delay) as any;
       } else {
         this.isPlaying = false;
         this.animationFrameId = null;
       }
     };
 
-    this.animationFrameId = requestAnimationFrame(process);
+    // Utiliser setTimeout au lieu de requestAnimationFrame pour éviter les violations de performance
+    this.animationFrameId = setTimeout(process, 0) as any;
   }
 
   private scheduleChunk(float32: Float32Array) {
@@ -454,9 +458,9 @@ export class AudioStreamManager {
   private stopAndClear() {
     this.isStopping = true;
     
-    // Annuler requestAnimationFrame si actif
+    // Annuler setTimeout si actif
     if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId);
+      clearTimeout(this.animationFrameId);
       this.animationFrameId = null;
     }
     
