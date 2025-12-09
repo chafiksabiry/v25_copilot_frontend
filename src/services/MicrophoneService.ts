@@ -192,27 +192,12 @@ export class MicrophoneService {
       this.recorderScriptNode.onaudioprocess = (e) => {
         if (!this.isRecording || !this.audioContext) return; // Vérifier que audioContext existe et qu'on enregistre encore
         
-        const inputData = e.inputBuffer.getChannelData(0);
-        // Make a copy of the audio data
-        this.rawAudioBuffer.push(new Float32Array(inputData));
+        // NOTE: La sauvegarde automatique des fichiers audio a été désactivée
+        // pour éviter les interruptions et bruits dans le flux audio en temps réel.
+        // Le ScriptProcessorNode reste actif uniquement pour maintenir le flux audio.
         
-        // Log moins fréquemment pour réduire le bruit dans la console
-        if (this.rawAudioBuffer.length % 10 === 0) {
-          console.log(`🎙️ Recording chunk ${this.rawAudioBuffer.length}: ${inputData.length} samples`);
-        }
-        
-        // Check if we have 3 seconds of audio (assuming 48000 Hz sample rate)
-        const samplesFor3Seconds = this.audioContext.sampleRate * 3;
-        const totalSamples = this.rawAudioBuffer.length * bufferSize;
-        
-        if (this.rawAudioBuffer.length % 10 === 0) {
-          console.log(`📊 Buffer: ${totalSamples} / ${samplesFor3Seconds} samples`);
-        }
-        
-        if (totalSamples >= samplesFor3Seconds) {
-          console.log(`✨ Triggering 3-second save with ${this.rawAudioBuffer.length} chunks`);
-          this.saveAudioAsMP3();
-        }
+        // Ne plus accumuler les données dans rawAudioBuffer pour économiser la mémoire
+        // et éviter les interruptions de traitement
       };
       
       // 6) Load and create worklet for RTP encoding FIRST (before connecting)
@@ -241,6 +226,11 @@ export class MicrophoneService {
       
       // Store recording start time
       this.recordingStartTime = Date.now();
+      
+      // Nettoyer le buffer audio pour éviter les données résiduelles
+      // (la sauvegarde automatique est désactivée)
+      this.rawAudioBuffer = [];
+      this.recordingCounter = 0;
 
       // 4) Receive RTP packets from worklet and send over WS (RTP PCMU with headers)
       // SYSTÈME DE BACKPRESSURE : Limiter le nombre de paquets en attente
@@ -396,11 +386,8 @@ export class MicrophoneService {
     // Arrêter l'enregistrement d'abord pour éviter les callbacks après le cleanup
     this.isRecording = false;
     
-    // Save any remaining audio buffer before stopping
-    if (this.rawAudioBuffer.length > 0) {
-      console.log('💾 Saving final audio buffer...');
-      this.saveAudioAsMP3();
-    }
+    // NOTE: La sauvegarde automatique des fichiers audio a été désactivée
+    // pour éviter les interruptions et bruits dans le flux audio en temps réel.
     
     // Clear interval if set
     if (this.recordingInterval) {

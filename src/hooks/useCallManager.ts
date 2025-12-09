@@ -128,8 +128,28 @@ export const useCallManager = () => {
               setCurrentCallId(null);
               break;
             
+            case 'streaming.started':
+              console.log('🎵 Streaming started event received!');
+              console.log('🎵 Stream ID:', data.payload?.stream_id);
+              console.log('🎵 Stream params:', data.payload?.stream_params);
+              // Le streaming audio est maintenant actif
+              break;
+            
+            case 'streaming.stopped':
+              console.log('🎵 Streaming stopped event received!');
+              console.log('🎵 Stream ID:', data.payload?.stream_id);
+              // Le streaming audio s'est arrêté
+              break;
+            
+            case 'streaming.failed':
+              console.error('❌ Streaming failed event received!');
+              console.error('❌ Failure reason:', data.payload?.failure_reason);
+              setError('Audio streaming failed');
+              break;
+            
             default:
-              console.log('📞 Unknown event type:', data.type, data);
+              // Ignorer silencieusement les événements non gérés (pour éviter le spam dans les logs)
+              // console.log('📞 Unknown event type:', data.type, data);
           }
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error);
