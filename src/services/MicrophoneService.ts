@@ -161,11 +161,34 @@ export class MicrophoneService {
       }
 
       // 4) Create AudioContext with optimized settings for call quality
-      // Utiliser la latence minimale pour réduire la latence totale
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 48000,  // Haute qualité
-        latencyHint: 'interactive' // Latence minimale pour appels en temps réel
-      });
+      // IMPORTANT: Essayer de créer à 8kHz pour correspondre au codec PCMA/PCMU
+      // Cela réduit les artefacts de resampling et les bruits
+      let targetSampleRate = 8000; // Cible : 8kHz pour correspondre au codec
+      
+      try {
+        // Essayer de créer l'AudioContext à 8kHz
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+          sampleRate: targetSampleRate,
+          latencyHint: 'interactive' // Latence minimale pour appels en temps réel
+        });
+        
+        // Vérifier si le sample rate demandé a été accepté
+        const actualSampleRate = this.audioContext.sampleRate;
+        if (Math.abs(actualSampleRate - targetSampleRate) > 100) {
+          // Le navigateur n'a pas accepté 8kHz, utiliser le sample rate par défaut
+          console.warn(`⚠️ AudioContext created at ${actualSampleRate}Hz instead of ${targetSampleRate}Hz (browser limitation)`);
+          console.warn('💡 Le downsampling sera effectué dans le worklet pour correspondre au codec 8kHz');
+        } else {
+          console.log(`✅ AudioContext créé à ${actualSampleRate}Hz (correspond au codec PCMA/PCMU)`);
+        }
+      } catch (error) {
+        // Fallback : créer avec le sample rate par défaut du navigateur
+        console.warn('⚠️ Impossible de créer AudioContext à 8kHz, utilisation du sample rate par défaut:', error);
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+          latencyHint: 'interactive'
+        });
+        console.log(`🔊 AudioContext créé à ${this.audioContext.sampleRate}Hz (downsampling dans worklet)`);
+      }
       
       // S'assurer que l'AudioContext est actif
       if (this.audioContext.state === 'suspended') {

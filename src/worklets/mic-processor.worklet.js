@@ -37,9 +37,11 @@ class MicProcessor extends AudioWorkletProcessor {
     this.filterIndex = (this.filterIndex + 1) % this.filterOrder;
     
     // Appliquer le filtre FIR (convolution)
+    // Le filtre est appliqué de manière causale (utilise seulement les échantillons passés)
     let output = 0;
     for (let i = 0; i < this.filterCoefficients.length; i++) {
-      const bufferIndex = (this.filterIndex - i - 1 + this.filterOrder) % this.filterOrder;
+      // Calculer l'index dans le buffer circulaire (échantillons passés)
+      const bufferIndex = (this.filterIndex - 1 - i + this.filterOrder) % this.filterOrder;
       output += this.filterBuffer[bufferIndex] * this.filterCoefficients[i];
     }
     
