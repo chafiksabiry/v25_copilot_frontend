@@ -47,27 +47,29 @@ export class PhoneNumberService {
       MODE: import.meta.env.MODE
     });
     
-    // Si VITE_API_URL_CALL est défini explicitement, l'utiliser avec /api
+    // Si VITE_API_URL_CALL est défini explicitement, l'utiliser tel quel (sans /api)
     if (import.meta.env.VITE_API_URL_CALL) {
       const baseUrl = import.meta.env.VITE_API_URL_CALL;
       console.log('🔍 [getBaseUrl] Using VITE_API_URL_CALL:', baseUrl);
-      return baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`;
+      // Retourner l'URL de base sans /api, on l'ajoutera lors de la construction de l'URL complète
+      return baseUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
     }
     
     // En mode standalone ou développement, utiliser localhost
     if ((runMode === 'standalone' || isStandalone) && isDev) {
-      console.log('🔍 [Standalone dev mode] Using localhost:5006/api');
-      return 'http://localhost:5006/api';
+      console.log('🔍 [Standalone dev mode] Using localhost:5006');
+      return 'http://localhost:5006';
     }
     
-    // En mode standalone production, utiliser api-dash-calls.harx.ai/api
+    // En mode standalone production, utiliser api-dash-calls.harx.ai
     if (runMode === 'standalone' || isStandalone) {
-      console.log('🔍 [Standalone mode] Using api-dash-calls.harx.ai/api');
-      return 'https://api-dash-calls.harx.ai/api';
+      console.log('🔍 [Standalone mode] Using api-dash-calls.harx.ai');
+      return 'https://api-dash-calls.harx.ai';
     }
     
-    // En mode in-app, utiliser les URLs de production ou localhost
-    return import.meta.env.VITE_COMP_ORCH_API || import.meta.env.VITE_GIGS_API || 'http://localhost:5006/api';
+    // En mode in-app, utiliser les URLs de production ou localhost (sans /api)
+    const fallbackUrl = import.meta.env.VITE_COMP_ORCH_API || import.meta.env.VITE_GIGS_API || 'http://localhost:5006';
+    return fallbackUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
   }
   
   // baseUrl sera recalculé dynamiquement via getBaseUrl()
@@ -90,12 +92,10 @@ export class PhoneNumberService {
       
       console.log('🔍 Using API base URL:', baseUrl);
 
-      // Construire l'URL complète
-      // Si baseUrl contient déjà /api, l'utiliser tel quel, sinon ajouter /api
-      const hasApiPrefix = baseUrl.includes('/api');
-      const url = hasApiPrefix 
-        ? `${baseUrl}/phone-numbers/gig/${gigId}/check`
-        : `${baseUrl}/api/phone-numbers/gig/${gigId}/check`;
+      // Construire l'URL complète - toujours ajouter /api avant le chemin
+      // Nettoyer baseUrl pour éviter les doubles slashes
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Enlever les slashes à la fin
+      const url = `${cleanBaseUrl}/api/phone-numbers/gig/${gigId}/check`;
       console.log('🔍 Checking gig phone number at:', url);
 
       const response = await axios.get<PhoneNumberResponse>(url);
@@ -127,12 +127,10 @@ export class PhoneNumberService {
       }
 
       console.log('📞 Configuring voice feature for number:', phoneNumber);
-      // Construire l'URL complète
-      // Si baseUrl contient déjà /api, l'utiliser tel quel, sinon ajouter /api
-      const hasApiPrefix = baseUrl.includes('/api');
-      const url = hasApiPrefix 
-        ? `${baseUrl}/phone-numbers/${phoneNumber}/configure-voice`
-        : `${baseUrl}/api/phone-numbers/${phoneNumber}/configure-voice`;
+      // Construire l'URL complète - toujours ajouter /api avant le chemin
+      // Nettoyer baseUrl pour éviter les doubles slashes
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Enlever les slashes à la fin
+      const url = `${cleanBaseUrl}/api/phone-numbers/${phoneNumber}/configure-voice`;
       console.log('🔧 Configuring voice at:', url);
       
       const response = await axios.post<VoiceConfigResponse>(url);
