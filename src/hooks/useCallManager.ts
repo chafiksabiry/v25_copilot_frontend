@@ -42,6 +42,10 @@ const WS_URL = BACKEND_URL
   ? `${BACKEND_URL.replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://')}/call-events`
   : '';
 
+// Référence partagée pour éviter les doubles connexions en mode StrictMode
+let sharedWebSocket: WebSocket | null = null;
+let sharedWebSocketRefCount = 0;
+
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
 
 export const useCallManager = () => {
@@ -58,80 +62,101 @@ export const useCallManager = () => {
       return;
     }
 
-    let websocket: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
-    let isIntentionalClose = false;
+    // Utiliser la connexion partagée si elle existe déjà
+    if (sharedWebSocket && sharedWebSocket.readyState === WebSocket.OPEN) {
+      console.log('🔌 Reusing existing WebSocket connection');
+      setWs(sharedWebSocket);
+      sharedWebSocketRefCount++;
+    } else if (sharedWebSocket && sharedWebSocket.readyState === WebSocket.CONNECTING) {
+      // Attendre que la connexion existante soit établie
+      console.log('🔌 Waiting for existing WebSocket connection...');
+      const openHandler = () => {
+        setWs(sharedWebSocket);
+        sharedWebSocketRefCount++;
+      };
+      sharedWebSocket.addEventListener('open', openHandler, { once: true });
+    } else {
+      // Créer une nouvelle connexion
+      console.log('🔌 Creating new WebSocket connection:', WS_URL);
+      sharedWebSocket = new WebSocket(WS_URL);
+      sharedWebSocketRefCount = 1;
 
-    const connect = () => {
-      console.log('🔌 Connecting to WebSocket:', WS_URL);
-      websocket = new WebSocket(WS_URL);
-
-      websocket.onopen = () => {
+      sharedWebSocket.onopen = () => {
         console.log('✅ Connected to call events WebSocket');
         setError(null);
+        setWs(sharedWebSocket);
       };
 
-      websocket.onmessage = (event) => {
-        const data: CallEvent = JSON.parse(event.data);
-        console.log('📞 Received call event:', data);
-        
-        switch (data.type) {
-          case 'welcome':
-            console.log('🤝 WebSocket connection established');
-            break;
+      sharedWebSocket.onmessage = (event) => {
+        try {
+          const data: CallEvent = JSON.parse(event.data);
+          console.log('📞 Received call event:', data);
           
-          case 'call.initiated':
-            console.log('📞 Call initiated:', data.payload.call_control_id);
-            setCallStatus('call.initiated');
-            setCurrentCallId(data.payload.call_control_id);
-            break;
-          
-          case 'call.answered':
-            console.log('📞 Call answered');
-            setCallStatus('call.answered');
-            break;
-          
-          case 'call.hangup':
-            console.log('📞 Call ended');
-            setCallStatus('call.hangup');
-            setCurrentCallId(null);
-            break;
+          switch (data.type) {
+            case 'welcome':
+              console.log('🤝 WebSocket connection established');
+              break;
+            
+            case 'call.initiated':
+              console.log('📞 Call initiated:', data.payload.call_control_id);
+              setCallStatus('call.initiated');
+              setCurrentCallId(data.payload.call_control_id);
+              break;
+            
+            case 'call.answered':
+              console.log('📞 Call answered');
+              setCallStatus('call.answered');
+              break;
+            
+            case 'call.hangup':
+              console.log('📞 Call ended');
+              setCallStatus('call.hangup');
+              setCurrentCallId(null);
+              break;
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
         }
       };
 
-      websocket.onerror = (error) => {
+      sharedWebSocket.onerror = (error) => {
         console.error('❌ WebSocket error:', error);
         setError('WebSocket connection error');
       };
 
-      websocket.onclose = (event) => {
+      sharedWebSocket.onclose = (event) => {
         console.log('🔌 WebSocket connection closed', event.code, event.reason);
         setWs(null);
+        sharedWebSocket = null;
+        sharedWebSocketRefCount = 0;
         
         // Tentative de reconnexion seulement si ce n'est pas une fermeture intentionnelle
-        if (!isIntentionalClose && event.code !== 1000) {
-          reconnectTimeout = setTimeout(() => {
-            console.log('🔄 Attempting to reconnect...');
-            connect();
+        if (event.code !== 1000) {
+          setTimeout(() => {
+            if (sharedWebSocketRefCount > 0) {
+              console.log('🔄 Attempting to reconnect...');
+              // La reconnexion sera gérée par le prochain composant qui monte
+            }
           }, 5000);
         }
       };
-
-      setWs(websocket);
-    };
-
-    connect();
+    }
 
     return () => {
-      isIntentionalClose = true;
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
+      sharedWebSocketRefCount--;
+      
+      // Ne fermer la connexion que si aucun autre composant ne l'utilise
+      if (sharedWebSocketRefCount <= 0 && sharedWebSocket) {
+        console.log('🔌 Closing shared WebSocket connection (last user)');
+        const currentWs = sharedWebSocket;
+        currentWs.onclose = null; // Empêcher la reconnexion lors du cleanup
+        currentWs.close(1000, 'Component unmounting');
+        sharedWebSocket = null;
+        sharedWebSocketRefCount = 0;
+      } else {
+        console.log(`🔌 Keeping WebSocket connection (${sharedWebSocketRefCount} users remaining)`);
       }
-      if (websocket) {
-        console.log('🔌 Closing WebSocket connection');
-        websocket.onclose = null; // Empêcher la reconnexion lors du cleanup
-        websocket.close(1000, 'Component unmounting');
-      }
+      setWs(null);
     };
   }, []);
 
