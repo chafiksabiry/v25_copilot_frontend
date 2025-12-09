@@ -11,32 +11,26 @@ class MicProcessor extends AudioWorkletProcessor {
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
     
-    // Filtre passe-bas pour anti-aliasing (filtre FIR simple)
-    // Fréquence de coupure = sampleRate / (2 * ratio) pour éviter l'aliasing
-    // Pour 48kHz -> 8kHz: ratio=6, donc coupure à ~4kHz
-    this.lowPassBuffer = new Float32Array(8); // Buffer circulaire pour le filtre
+    // Filtre passe-bas simple et rapide pour anti-aliasing
+    // Utiliser une moyenne mobile simple (plus rapide qu'un FIR complet)
+    this.lowPassBuffer = new Float32Array(4); // Buffer réduit pour performance
     this.lowPassIndex = 0;
-    // Coefficients du filtre passe-bas (FIR simple, 8 taps)
-    // Calculés pour une fréquence de coupure à ~4kHz pour 48kHz
-    this.lowPassCoeffs = new Float32Array([
-      0.05, 0.1, 0.15, 0.2, 0.2, 0.15, 0.1, 0.05
-    ]);
+    this.lowPassSum = 0; // Maintenir la somme pour éviter de recalculer
   }
 
-  // Filtre passe-bas FIR pour réduire l'aliasing avant le downsampling
+  // Filtre passe-bas simple et rapide (moyenne mobile optimisée)
   applyLowPassFilter(sample) {
-    // Ajouter le nouvel échantillon au buffer circulaire
+    // Soustraire l'ancien échantillon de la somme
+    const oldSample = this.lowPassBuffer[this.lowPassIndex];
+    this.lowPassSum -= oldSample;
+    
+    // Ajouter le nouvel échantillon
     this.lowPassBuffer[this.lowPassIndex] = sample;
+    this.lowPassSum += sample;
     this.lowPassIndex = (this.lowPassIndex + 1) % this.lowPassBuffer.length;
     
-    // Calculer la convolution (produit scalaire)
-    let filtered = 0;
-    for (let i = 0; i < this.lowPassCoeffs.length; i++) {
-      const bufferIdx = (this.lowPassIndex + i) % this.lowPassBuffer.length;
-      filtered += this.lowPassBuffer[bufferIdx] * this.lowPassCoeffs[i];
-    }
-    
-    return filtered;
+    // Retourner la moyenne
+    return this.lowPassSum / this.lowPassBuffer.length;
   }
 
   process(inputs) {
@@ -45,12 +39,18 @@ class MicProcessor extends AudioWorkletProcessor {
 
     // Appliquer le filtre passe-bas et downsampler en une seule passe
     // pour optimiser les performances
-    for (let i = 0; i < input.length; i += this.ratio) {
-      const idx = Math.floor(i);
-      // Appliquer le filtre passe-bas avant de prendre l'échantillon
-      const filteredSample = this.applyLowPassFilter(input[idx]);
-      const mu = this.encodeMuLaw(filteredSample);
-      this.buffer.push(mu);
+    let sampleCounter = 0; // Compteur pour le downsampling
+    for (let i = 0; i < input.length; i++) {
+      // Appliquer le filtre passe-bas sur chaque échantillon
+      const filteredSample = this.applyLowPassFilter(input[i]);
+      
+      // Downsampler : prendre seulement 1 échantillon sur 'ratio'
+      sampleCounter++;
+      if (sampleCounter >= this.ratio) {
+        sampleCounter = 0;
+        const mu = this.encodeMuLaw(filteredSample);
+        this.buffer.push(mu);
+      }
     }
 
     // Send in RTP chunks (160 samples = 20 ms @ 8 kHz)

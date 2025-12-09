@@ -7,6 +7,7 @@ export class MicrophoneService {
   private recordingStartTime: number = 0;
   private recordingInterval: number | null = null;
   private recorderScriptNode: ScriptProcessorNode | null = null;
+  private recorderWorkletNode: AudioWorkletNode | null = null; // Nouveau worklet pour enregistrement
   private recordingCounter: number = 0;
   private isRecording: boolean = false;
 
@@ -182,7 +183,11 @@ export class MicrophoneService {
       this.recordingStartTime = Date.now();
 
       // 4) Receive RTP packets from worklet and send over WS (RTP PCMU with headers)
+      // SYSTÈME DE BACKPRESSURE : Limiter le nombre de paquets en attente
       let chunkCount = 0;
+      let pendingPackets = 0; // Compteur de paquets en attente d'envoi
+      const MAX_PENDING_PACKETS = 10; // Maximum de paquets en attente
+      
       this.node.port.onmessage = (ev: MessageEvent) => {
         // Arrêter si on n'enregistre plus
         if (!this.isRecording) return;
@@ -191,31 +196,50 @@ export class MicrophoneService {
         if (!rtpPacket || !(rtpPacket instanceof Uint8Array)) return;
         
         chunkCount++;
+        
+        // BACKPRESSURE : Si trop de paquets en attente, drop ce paquet
+        if (pendingPackets >= MAX_PENDING_PACKETS) {
+          if (chunkCount % 100 === 0) {
+            console.warn(`⚠️ Backpressure: dropping RTP packet #${chunkCount} (${pendingPackets} packets pending)`);
+          }
+          return; // Drop ce paquet pour éviter la saturation
+        }
+        
         // Log moins fréquemment pour réduire le bruit
         if (chunkCount === 1 || chunkCount % 100 === 0) {
-          console.log(`📦 RTP packet #${chunkCount}: ${rtpPacket.length} bytes (12 header + ${rtpPacket.length - 12} payload)`);
+          console.log(`📦 RTP packet #${chunkCount}: ${rtpPacket.length} bytes`);
         }
         
         // Vérifier que le WebSocket est ouvert avant d'envoyer
         if (!this.outboundWs || this.outboundWs.readyState !== WebSocket.OPEN) {
-          // Ne pas logger chaque paquet manqué, seulement le premier
           if (chunkCount === 1) {
             console.warn(`⚠️ Outbound WebSocket not ready, stopping RTP packet sending. State: ${this.outboundWs?.readyState}`);
           }
-          return; // Arrêter d'envoyer si le WebSocket n'est pas prêt
+          return;
         }
         
-        // Encode RTP packet to base64 (includes RTP header + PCMU payload)
+        // Encode RTP packet to base64
         const base64 = this.uint8ToBase64(rtpPacket);
         
         try {
+          // Incrémenter le compteur de paquets en attente
+          pendingPackets++;
+          
           this.outboundWs.send(JSON.stringify({ event: 'media', media: { payload: base64 } }));
+          
+          // Décrémenter après l'envoi (simuler l'acknowledgment)
+          // En réalité, on ne peut pas savoir quand le paquet est vraiment envoyé,
+          // donc on décrémente après un court délai
+          setTimeout(() => {
+            pendingPackets = Math.max(0, pendingPackets - 1);
+          }, 20); // 20ms = temps approximatif d'envoi d'un paquet
           
           // Log moins fréquemment
           if (chunkCount === 1 || chunkCount % 100 === 0) {
             console.log(`✅ Sent RTP packet #${chunkCount} via outbound WebSocket`);
           }
         } catch (error) {
+          pendingPackets = Math.max(0, pendingPackets - 1);
           console.error(`❌ Error sending RTP packet #${chunkCount}:`, error);
         }
       };

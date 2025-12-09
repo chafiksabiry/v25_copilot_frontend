@@ -7,7 +7,7 @@ export class AudioStreamManager {
   private onErrorCallback: ((error: Error) => void) | null = null;
   
   // Audio quality settings
-  private readonly GAIN_VALUE = 0.7; // Réduire le gain pour éviter le feedback (70% au lieu de 100%)
+  private readonly GAIN_VALUE = 0.55; // Gain optimisé pour éviter le feedback et la distorsion (55%)
 
   // Jitter buffer / queue (Float32Array chunks)
   private chunkQueue: Float32Array[] = [];
@@ -16,6 +16,7 @@ export class AudioStreamManager {
   private readonly CHUNKS_PER_ITERATION = 5; // Traiter plusieurs chunks par itération pour être plus rapide
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
+  private animationFrameId: number | null = null; // Pour requestAnimationFrame
 
   // sécurité
   private isPlaying = false;
@@ -138,43 +139,48 @@ export class AudioStreamManager {
   }
 
   // Convertit Uint8Array PCMU -> Float32Array (valeurs dans [-1, 1])
-  // Avec filtre de débruitement pour réduire les artefacts
+  // Version optimisée sans filtre supplémentaire pour meilleure performance
   private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
     const out = new Float32Array(pcmuData.length);
-    let prevSample = 0;
-    
     for (let i = 0; i < pcmuData.length; i++) {
       const s16 = this.decodeMuLawByte(pcmuData[i]);
-      let normalized = s16 / 32768; // normaliser à [-1, 1]
-      
-      // Appliquer un filtre de débruitement simple (moyenne avec l'échantillon précédent)
-      // Cela réduit les artefacts de quantification PCMU
-      if (i > 0) {
-        normalized = normalized * 0.7 + prevSample * 0.3; // Mix 70% nouveau, 30% ancien
-      }
-      
-      out[i] = normalized;
-      prevSample = normalized;
+      out[i] = s16 / 32768; // normaliser à [-1, 1]
     }
     return out;
   }
 
-  // --- Queue / Jitter buffer management ---
+  // --- Queue / Jitter buffer management avec backpressure ---
   private enqueueChunk(float32: Float32Array) {
     // Safety: drop if stopping
     if (this.isStopping) return;
 
+    // SYSTÈME DE BACKPRESSURE : Si la queue est presque pleine, ne pas ajouter
+    // Cela évite les overflows et force le traitement à accélérer
+    if (this.chunkQueue.length >= this.MAX_QUEUE * 0.9) {
+      // Queue presque pleine : forcer le traitement immédiat
+      if (this.isPlaying) {
+        // Le traitement est déjà en cours, on drop ce chunk pour éviter l'overflow
+        this.overflowLogCount++;
+        if (this.overflowLogCount % 50 === 0) {
+          console.warn(`⚠️ Backpressure: dropped ${this.overflowLogCount} chunks (queue at ${this.chunkQueue.length}/${this.MAX_QUEUE})`);
+        }
+        return; // Ne pas ajouter ce chunk
+      } else {
+        // Le traitement n'est pas démarré, démarrer immédiatement
+        this.ensureAudioContext();
+        this.startProcessingQueue();
+      }
+    }
+
     this.chunkQueue.push(float32);
 
-    // Drop oldest if overflow (mais seulement si vraiment nécessaire)
+    // Drop oldest if overflow (seulement en dernier recours)
     if (this.chunkQueue.length > this.MAX_QUEUE) {
-      // Supprimer plusieurs chunks anciens pour faire de la place
-      const chunksToRemove = Math.min(10, this.chunkQueue.length - this.MAX_QUEUE + 20);
+      const chunksToRemove = Math.min(20, this.chunkQueue.length - this.MAX_QUEUE + 10);
       for (let i = 0; i < chunksToRemove; i++) {
         this.chunkQueue.shift();
       }
       this.overflowLogCount += chunksToRemove;
-      // Logger seulement tous les 50 overflows pour éviter le spam
       if (this.overflowLogCount % 50 === 0) {
         console.warn(`⚠️ chunkQueue overflow — dropped ${this.overflowLogCount} chunks (queue size: ${this.chunkQueue.length})`);
       }
@@ -184,14 +190,6 @@ export class AudioStreamManager {
     if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
       this.ensureAudioContext();
       this.startProcessingQueue();
-    } else if (this.isPlaying && this.chunkQueue.length > this.MAX_QUEUE * 0.8) {
-      // Si la queue devient trop pleine même pendant la lecture, accélérer le traitement
-      // En forçant une nouvelle itération immédiate
-      requestAnimationFrame(() => {
-        if (this.chunkQueue.length > 0 && this.isPlaying) {
-          this.startProcessingQueue();
-        }
-      });
     }
   }
 
@@ -240,33 +238,48 @@ export class AudioStreamManager {
 
     // Processer la queue en "batch" non-blocant : traiter plusieurs chunks par itération
     const process = () => {
-      if (!this.audioContext) return;
+      if (!this.audioContext || this.isStopping) {
+        this.isPlaying = false;
+        this.animationFrameId = null;
+        return;
+      }
+      
       if (this.chunkQueue.length === 0) {
         // pas de données -> on arrête la boucle de scheduling ; on remet isPlaying à false
         this.isPlaying = false;
+        this.animationFrameId = null;
         return;
       }
 
       // Traiter plusieurs chunks par itération pour être plus rapide
-      const chunksToProcess = Math.min(this.CHUNKS_PER_ITERATION, this.chunkQueue.length);
-      for (let i = 0; i < chunksToProcess; i++) {
+      // Limiter à CHUNKS_PER_ITERATION pour éviter les violations de performance
+      let processedCount = 0;
+      const startTime = performance.now(); // Mesurer le temps de traitement
+      
+      while (this.chunkQueue.length > 0 && processedCount < this.CHUNKS_PER_ITERATION) {
         const chunk = this.chunkQueue.shift();
         if (chunk) {
           this.scheduleChunk(chunk);
+          processedCount++;
+        }
+        
+        // Limite de sécurité : ne pas traiter plus de 10ms par frame
+        if (performance.now() - startTime > 10) {
+          break;
         }
       }
 
-      // Utiliser requestAnimationFrame pour une meilleure performance que setTimeout
-      // Si la queue est encore pleine, continuer immédiatement
+      // Utiliser requestAnimationFrame pour un meilleur timing
+      // mais avec une limite de temps pour éviter les violations
       if (this.chunkQueue.length > 0) {
-        requestAnimationFrame(process);
+        this.animationFrameId = requestAnimationFrame(process);
       } else {
-        // Si la queue est vide, utiliser setTimeout pour vérifier périodiquement
-        setTimeout(process, 1);
+        this.isPlaying = false;
+        this.animationFrameId = null;
       }
     };
 
-    process();
+    this.animationFrameId = requestAnimationFrame(process);
   }
 
   private scheduleChunk(float32: Float32Array) {
@@ -311,6 +324,13 @@ export class AudioStreamManager {
   // --- Stop & clear (appelé à la fin ou sur stop event) ---
   private stopAndClear() {
     this.isStopping = true;
+    
+    // Annuler requestAnimationFrame si actif
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    
     // vider queue
     this.chunkQueue = [];
     this.isPlaying = false;
