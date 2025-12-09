@@ -175,29 +175,32 @@ export class MicrophoneService {
       }
 
       // 4) Create AudioContext with optimized settings for call quality
-      // IMPORTANT: Essayer de créer à 8kHz pour correspondre au codec PCMA/PCMU
-      // Cela réduit les artefacts de resampling et les bruits
-      let targetSampleRate = 8000; // Cible : 8kHz pour correspondre au codec
+      // IMPORTANT: Créer l'AudioContext au même sample rate que le micro (généralement 48kHz)
+      // pour éviter le resampling automatique du navigateur qui peut introduire des artefacts.
+      // Le worklet fera le resampling optimisé avec un filtre FIR anti-aliasing.
+      const audioTracks = this.stream.getAudioTracks();
+      const microphoneSampleRate = audioTracks[0]?.getSettings()?.sampleRate || 48000;
       
       try {
-        // Essayer de créer l'AudioContext à 8kHz
+        // Créer l'AudioContext au même sample rate que le micro pour éviter le resampling automatique
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: targetSampleRate,
+          sampleRate: microphoneSampleRate,
           latencyHint: 'interactive' // Latence minimale pour appels en temps réel
         });
         
-        // Vérifier si le sample rate demandé a été accepté
         const actualSampleRate = this.audioContext.sampleRate;
-        if (Math.abs(actualSampleRate - targetSampleRate) > 100) {
-          // Le navigateur n'a pas accepté 8kHz, utiliser le sample rate par défaut
-          console.warn(`⚠️ AudioContext created at ${actualSampleRate}Hz instead of ${targetSampleRate}Hz (browser limitation)`);
-          console.warn('💡 Le downsampling sera effectué dans le worklet pour correspondre au codec 8kHz');
+        console.log(`🔊 AudioContext créé à ${actualSampleRate}Hz (correspond au micro: ${microphoneSampleRate}Hz)`);
+        
+        if (Math.abs(actualSampleRate - microphoneSampleRate) > 100) {
+          console.warn(`⚠️ AudioContext sample rate (${actualSampleRate}Hz) diffère du micro (${microphoneSampleRate}Hz)`);
+          console.warn('💡 Le navigateur fera un resampling automatique, ce qui peut introduire des artefacts.');
         } else {
-          console.log(`✅ AudioContext créé à ${actualSampleRate}Hz (correspond au codec PCMA/PCMU)`);
+          console.log(`✅ AudioContext correspond au micro: ${actualSampleRate}Hz`);
+          console.log('💡 Le worklet effectuera le resampling optimisé vers 8kHz avec filtre FIR anti-aliasing');
         }
       } catch (error) {
         // Fallback : créer avec le sample rate par défaut du navigateur
-        console.warn('⚠️ Impossible de créer AudioContext à 8kHz, utilisation du sample rate par défaut:', error);
+        console.warn('⚠️ Impossible de créer AudioContext au sample rate du micro, utilisation du sample rate par défaut:', error);
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
           latencyHint: 'interactive'
         });
