@@ -27,15 +27,25 @@ class MicProcessor extends AudioWorkletProcessor {
     }
     
     // Filtre de réduction de bruit adaptatif amélioré : estimation plus précise du bruit
-    this.noiseLevel = 0.003; // Estimation initiale réduite (0.3% au lieu de 0.5%)
+    this.noiseLevel = 0.002; // Estimation initiale réduite (0.2% au lieu de 0.3%) pour gate plus strict
     this.signalLevel = 0; // Niveau du signal actuel
     this.alpha = 0.98; // Facteur de lissage par défaut (98% ancien, 2% nouveau) pour stabilité
-    this.alphaFast = 0.90; // Alpha rapide pour adaptation initiale (90% ancien, 10% nouveau)
+    this.alphaFast = 0.85; // Alpha rapide pour adaptation initiale (85% ancien, 15% nouveau) - plus rapide
     this.alphaSlow = 0.98; // Alpha lent pour stabilité (98% ancien, 2% nouveau)
     this.samplesProcessed = 0; // Compteur d'échantillons traités (pour adaptation initiale)
     this.silenceDuration = 0; // Durée du silence détecté (en nombre de buffers)
     this.signalHistory = new Float32Array(10); // Historique des niveaux de signal
     this.historyIndex = 0;
+    
+    // Filtre passe-haut pour éliminer les basses fréquences (< 80Hz) qui causent du bruit
+    // Utiliser un filtre passe-haut simple de premier ordre (filtre RC)
+    // Fréquence de coupure ~80Hz pour 8kHz (ou ~480Hz pour 48kHz)
+    const cutoffFreq = 80; // Hz
+    const dt = 1.0 / sampleRate; // Période d'échantillonnage
+    const rc = 1.0 / (2.0 * Math.PI * cutoffFreq); // Constante de temps RC
+    this.highpassAlpha = rc / (rc + dt); // Coefficient du filtre passe-haut
+    this.highpassPrevInput = 0; // Échantillon d'entrée précédent
+    this.highpassPrevOutput = 0; // Échantillon de sortie précédent
     
     // Log pour debug
     if (this.ratio === 1) {
@@ -49,14 +59,15 @@ class MicProcessor extends AudioWorkletProcessor {
     // Filtre passe-bas amélioré pour anti-aliasing (réduit les artefacts de downsampling)
     // Utiliser un filtre à réponse impulsionnelle finie (FIR) pour une meilleure qualité
     // Ordre augmenté pour meilleure atténuation des fréquences > 4kHz (Nyquist à 4kHz pour 8kHz)
-    // Coefficients du filtre FIR passe-bas optimisé (cutoff ~3.2kHz pour 48kHz input, downsampling à 8kHz)
-    // Fréquence de coupure à 3.2kHz (sous Nyquist 4kHz) pour éliminer complètement l'aliasing
+    // Coefficients du filtre FIR passe-bas optimisé (cutoff ~3.0kHz pour 48kHz input, downsampling à 8kHz)
+    // Fréquence de coupure réduite à 3.0kHz (sous Nyquist 4kHz) pour éliminer plus agressivement l'aliasing
     // Coefficients générés avec fenêtre de Kaiser pour meilleure atténuation stopband
     // Ordre 29 pour transition plus raide et meilleure suppression des bruits haute fréquence
+    // Coefficients ajustés pour une atténuation plus forte des fréquences > 3kHz
     this.filterCoefficients = new Float32Array([
-      -0.001, -0.002, 0.003, 0.008, 0.012, 0.010, -0.002, -0.022, -0.038, -0.035,
-      0.000, 0.062, 0.140, 0.210, 0.250, 0.210, 0.140, 0.062, 0.000, -0.035,
-      -0.038, -0.022, -0.002, 0.010, 0.012, 0.008, 0.003, -0.002, -0.001
+      -0.002, -0.003, 0.002, 0.006, 0.010, 0.008, -0.003, -0.025, -0.042, -0.038,
+      0.002, 0.068, 0.145, 0.215, 0.255, 0.215, 0.145, 0.068, 0.002, -0.038,
+      -0.042, -0.025, -0.003, 0.008, 0.010, 0.006, 0.002, -0.003, -0.002
     ]);
     this.filterOrder = this.filterCoefficients.length; // Ordre = nombre de coefficients
     this.filterBuffer = new Float32Array(this.filterOrder);
@@ -70,11 +81,18 @@ class MicProcessor extends AudioWorkletProcessor {
 
   // Filtre passe-bas FIR amélioré pour réduire l'aliasing
   applyLowPassFilter(sample) {
-    // Ajouter le nouvel échantillon au buffer circulaire
-    this.filterBuffer[this.filterIndex] = sample;
+    // Appliquer d'abord le filtre passe-haut pour éliminer les basses fréquences (< 80Hz)
+    // Filtre passe-haut de premier ordre (filtre RC) : y[n] = alpha * (y[n-1] + x[n] - x[n-1])
+    const highpassOutput = this.highpassAlpha * (this.highpassPrevOutput + sample - this.highpassPrevInput);
+    this.highpassPrevInput = sample;
+    this.highpassPrevOutput = highpassOutput;
+    const filteredSample = sample - highpassOutput; // Sortie du passe-haut (élimine les basses fréquences)
+    
+    // Ajouter l'échantillon filtré passe-haut au buffer circulaire
+    this.filterBuffer[this.filterIndex] = filteredSample;
     this.filterIndex = (this.filterIndex + 1) % this.filterOrder;
     
-    // Appliquer le filtre FIR (convolution)
+    // Appliquer le filtre FIR passe-bas (convolution)
     // Le filtre est appliqué de manière causale (utilise seulement les échantillons passés)
     let output = 0;
     for (let i = 0; i < this.filterCoefficients.length; i++) {
@@ -142,9 +160,10 @@ class MicProcessor extends AudioWorkletProcessor {
       this.noiseLevel = this.noiseLevel * this.alpha + rms * (1 - this.alpha);
     }
     
-    // Seuil de gate adaptatif amélioré : 4x le niveau de bruit estimé avec minimum plus bas
+    // Seuil de gate adaptatif amélioré : 5x le niveau de bruit estimé avec minimum plus bas
     // Utiliser le maximum entre le seuil adaptatif et un seuil absolu bas pour éviter les bruits
-    const adaptiveGateThreshold = Math.max(0.010, Math.max(this.noiseLevel * 4, 0.008)); // Minimum 0.8% à 1%
+    // Multiplicateur augmenté de 4x à 5x pour gate plus strict
+    const adaptiveGateThreshold = Math.max(0.012, Math.max(this.noiseLevel * 5, 0.010)); // Minimum 1.0% à 1.2%
     
     // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
     if (this.ratio === 1) {
@@ -260,8 +279,9 @@ class MicProcessor extends AudioWorkletProcessor {
     
     // Filtre de réduction de bruit haute fréquence amélioré
     // Supprimer les composantes très faibles qui sont probablement du bruit
-    if (Math.abs(s) < 0.003) {
-      // Si le signal est très faible (< 0.3%), c'est probablement du bruit - le supprimer
+    // Seuil réduit de 0.3% à 0.25% pour suppression plus agressive
+    if (Math.abs(s) < 0.0025) {
+      // Si le signal est très faible (< 0.25%), c'est probablement du bruit - le supprimer
       s = 0;
     }
     

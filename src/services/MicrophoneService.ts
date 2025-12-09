@@ -274,7 +274,7 @@ export class MicrophoneService {
       // Le filtre Biquad ici pré-filtre avant le worklet pour réduire la charge de traitement
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3500; // Limite à 3.5kHz (sous Nyquist 4kHz pour 8kHz)
+      lowpassFilter.frequency.value = 3000; // Limite réduite à 3kHz (sous Nyquist 4kHz) pour suppression plus agressive
       lowpassFilter.Q.value = 0.707; // Q optimal (Butterworth) pour transition douce sans résonance
 
       // 5) Create script processor for raw audio recording (before worklet)
