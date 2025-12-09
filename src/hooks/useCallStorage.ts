@@ -3,17 +3,25 @@ import { TwilioCallService } from '../services/twilioCallService';
 import { useUrlParam } from './useUrlParams';
 
 // Fonction pour récupérer le gigId depuis les cookies
+// Utilise toujours le gigId du document MongoDB fourni comme valeur par défaut
 const getGigIdFromCookie = (): string | null => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   
+  // GigId du document MongoDB fourni (gigId.$oid: "68e3dca594628dcffb5f6fa3")
+  const defaultGigId = '68e3dca594628dcffb5f6fa3';
+  
   if (runMode === 'sandbox') {
     return '686e8ddcf74ddc5ba5d4b493'; // GigId fixe pour sandbox
+  } else if (runMode === 'standalone') {
+    // Utiliser le gigId du document MongoDB fourni
+    return defaultGigId;
   } else if (runMode === 'in-app') {
     const cookies = document.cookie.split(';');
     const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
-    return gigIdCookie ? gigIdCookie.split('=')[1] : null;
+    return gigIdCookie ? gigIdCookie.split('=')[1] : defaultGigId; // Fallback vers le gigId MongoDB si pas de cookie
   }
-  return null;
+  // Fallback par défaut: utiliser le gigId du document MongoDB
+  return defaultGigId;
 };
 
 // Fonction pour récupérer l'ID de l'agent depuis localStorage
