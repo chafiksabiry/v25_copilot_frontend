@@ -175,36 +175,89 @@ export class MicrophoneService {
       }
 
       // 4) Create AudioContext with optimized settings for call quality
-      // IMPORTANT: Créer l'AudioContext au même sample rate que le micro (généralement 48kHz)
-      // pour éviter le resampling automatique du navigateur qui peut introduire des artefacts.
-      // Le worklet fera le resampling optimisé avec un filtre FIR anti-aliasing.
+      // IMPORTANT: Forcer le sampleRate à 8000Hz ou 48000Hz pour éviter les ratios non entiers
+      // qui causent une dérive d'horloge RTP. Le worklet fera le resampling optimisé avec un filtre FIR anti-aliasing.
       const audioTracks = this.stream.getAudioTracks();
       const microphoneSampleRate = audioTracks[0]?.getSettings()?.sampleRate || 48000;
       
+      // Ordre de priorité pour le sampleRate :
+      // 1. 8000Hz (idéal, pas de resampling nécessaire)
+      // 2. 48000Hz (ratio entier 6:1, resampling optimal)
+      // 3. SampleRate du micro (si 8kHz ou 48kHz ne sont pas supportés)
+      const preferredRates = [8000, 48000];
+      let selectedRate: number | null = null;
+      
+      // Vérifier si le micro est déjà à 8kHz ou 48kHz
+      if (Math.abs(microphoneSampleRate - 8000) < 100) {
+        selectedRate = 8000;
+      } else if (Math.abs(microphoneSampleRate - 48000) < 100) {
+        selectedRate = 48000;
+      } else {
+        // Essayer les taux préférés dans l'ordre
+        for (const rate of preferredRates) {
+          try {
+            const testContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+              sampleRate: rate,
+              latencyHint: 'interactive'
+            });
+            const actualRate = testContext.sampleRate;
+            testContext.close();
+            
+            if (Math.abs(actualRate - rate) < 100) {
+              selectedRate = rate;
+              break;
+            }
+          } catch (e) {
+            // Continuer avec le taux suivant
+            continue;
+          }
+        }
+      }
+      
       try {
-        // Créer l'AudioContext au même sample rate que le micro pour éviter le resampling automatique
+        // Créer l'AudioContext avec le taux sélectionné ou le taux du micro
+        const targetRate = selectedRate || microphoneSampleRate;
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: microphoneSampleRate,
+          sampleRate: targetRate,
           latencyHint: 'interactive' // Latence minimale pour appels en temps réel
         });
         
         const actualSampleRate = this.audioContext.sampleRate;
-        console.log(`🔊 AudioContext créé à ${actualSampleRate}Hz (correspond au micro: ${microphoneSampleRate}Hz)`);
+        const ratio = actualSampleRate / 8000;
+        const isIntegerRatio = Math.abs(ratio - Math.round(ratio)) < 0.001;
+        
+        console.log(`🔊 AudioContext créé à ${actualSampleRate}Hz (micro: ${microphoneSampleRate}Hz)`);
+        
+        if (actualSampleRate === 8000) {
+          console.log(`✅ AudioContext à 8kHz - Pas de resampling nécessaire (ratio: 1)`);
+        } else if (isIntegerRatio) {
+          console.log(`✅ AudioContext à ${actualSampleRate}Hz - Ratio entier (${ratio.toFixed(0)}:1) pour resampling optimal`);
+        } else {
+          console.warn(`⚠️ AudioContext à ${actualSampleRate}Hz - Ratio non entier (${ratio.toFixed(4)}:1)`);
+          console.warn(`💡 Le worklet utilisera le resampling fractionnaire pour éviter la dérive d'horloge RTP`);
+          console.warn(`💡 Recommandation: Le navigateur devrait supporter 8kHz ou 48kHz pour un ratio entier`);
+        }
         
         if (Math.abs(actualSampleRate - microphoneSampleRate) > 100) {
-          console.warn(`⚠️ AudioContext sample rate (${actualSampleRate}Hz) diffère du micro (${microphoneSampleRate}Hz)`);
-          console.warn('💡 Le navigateur fera un resampling automatique, ce qui peut introduire des artefacts.');
-        } else {
-          console.log(`✅ AudioContext correspond au micro: ${actualSampleRate}Hz`);
-          console.log('💡 Le worklet effectuera le resampling optimisé vers 8kHz avec filtre FIR anti-aliasing');
+          console.log(`💡 Le navigateur fera un resampling automatique du micro (${microphoneSampleRate}Hz → ${actualSampleRate}Hz)`);
+          console.log(`💡 Le worklet effectuera ensuite le resampling optimisé vers 8kHz avec filtre FIR anti-aliasing`);
         }
       } catch (error) {
         // Fallback : créer avec le sample rate par défaut du navigateur
-        console.warn('⚠️ Impossible de créer AudioContext au sample rate du micro, utilisation du sample rate par défaut:', error);
+        console.warn('⚠️ Impossible de créer AudioContext avec taux préféré, utilisation du sample rate par défaut:', error);
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
           latencyHint: 'interactive'
         });
-        console.log(`🔊 AudioContext créé à ${this.audioContext.sampleRate}Hz (downsampling dans worklet)`);
+        const actualRate = this.audioContext.sampleRate;
+        const ratio = actualRate / 8000;
+        const isIntegerRatio = Math.abs(ratio - Math.round(ratio)) < 0.001;
+        
+        console.log(`🔊 AudioContext créé à ${actualRate}Hz (sample rate par défaut)`);
+        if (isIntegerRatio) {
+          console.log(`✅ Ratio entier (${ratio.toFixed(0)}:1) pour resampling optimal`);
+        } else {
+          console.warn(`⚠️ Ratio non entier (${ratio.toFixed(4)}:1) - Le worklet utilisera le resampling fractionnaire`);
+        }
       }
       
       // S'assurer que l'AudioContext est actif
@@ -217,10 +270,12 @@ export class MicrophoneService {
       
       // Créer un filtre passe-bas supplémentaire pour réduire les bruits haute fréquence
       // (le navigateur fait déjà du noise suppression, mais on peut améliorer)
+      // IMPORTANT: Ce filtre est complémentaire au filtre FIR dans le worklet
+      // Le filtre Biquad ici pré-filtre avant le worklet pour réduire la charge de traitement
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3000; // Limite haute réduite à 3kHz pour mieux éliminer les bruits haute fréquence
-      lowpassFilter.Q.value = 0.7; // Q réduit pour un filtre plus doux (moins de résonance)
+      lowpassFilter.frequency.value = 3500; // Limite à 3.5kHz (sous Nyquist 4kHz pour 8kHz)
+      lowpassFilter.Q.value = 0.707; // Q optimal (Butterworth) pour transition douce sans résonance
 
       // 5) Create script processor for raw audio recording (before worklet)
       const bufferSize = 4096;
