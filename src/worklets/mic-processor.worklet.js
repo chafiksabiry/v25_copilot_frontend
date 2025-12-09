@@ -27,20 +27,23 @@ class MicProcessor extends AudioWorkletProcessor {
     }
     
     // Filtre de réduction de bruit adaptatif amélioré : estimation plus précise du bruit
-    this.noiseLevel = 0.002; // Estimation initiale réduite (0.2% au lieu de 0.3%) pour gate plus strict
+    this.noiseLevel = 0.003; // Estimation initiale modérée (0.3%) pour permettre la voix au début
+    this.maxNoiseLevel = 0.008; // Niveau de bruit maximum autorisé (0.8%) pour éviter que le gate devienne trop permissif
     this.signalLevel = 0; // Niveau du signal actuel
     this.alpha = 0.98; // Facteur de lissage par défaut (98% ancien, 2% nouveau) pour stabilité
-    this.alphaFast = 0.85; // Alpha rapide pour adaptation initiale (85% ancien, 15% nouveau) - plus rapide
+    this.alphaFast = 0.90; // Alpha rapide pour adaptation initiale (90% ancien, 10% nouveau)
     this.alphaSlow = 0.98; // Alpha lent pour stabilité (98% ancien, 2% nouveau)
     this.samplesProcessed = 0; // Compteur d'échantillons traités (pour adaptation initiale)
     this.silenceDuration = 0; // Durée du silence détecté (en nombre de buffers)
+    this.voiceDetected = false; // Flag pour détecter la présence de voix
+    this.voiceLevel = 0; // Niveau estimé de la voix
     this.signalHistory = new Float32Array(10); // Historique des niveaux de signal
     this.historyIndex = 0;
     
-    // Filtre passe-haut pour éliminer les basses fréquences (< 80Hz) qui causent du bruit
+    // Filtre passe-haut pour éliminer les basses fréquences (< 100Hz) qui causent du bruit
     // Utiliser un filtre passe-haut simple de premier ordre (filtre RC)
-    // Fréquence de coupure ~80Hz pour 8kHz (ou ~480Hz pour 48kHz)
-    const cutoffFreq = 80; // Hz
+    // Fréquence de coupure ~100Hz (au lieu de 80Hz) pour être moins agressif et préserver la voix
+    const cutoffFreq = 100; // Hz (augmenté de 80Hz à 100Hz pour moins d'artefacts)
     const dt = 1.0 / sampleRate; // Période d'échantillonnage
     const rc = 1.0 / (2.0 * Math.PI * cutoffFreq); // Constante de temps RC
     this.highpassAlpha = rc / (rc + dt); // Coefficient du filtre passe-haut
@@ -153,17 +156,43 @@ class MicProcessor extends AudioWorkletProcessor {
       this.alpha = this.alphaSlow; // Stabilité
     }
     
-    // Mettre à jour l'estimation du niveau de bruit (seulement si le signal est faible et stable)
-    // Utiliser le niveau médian pour éviter les faux positifs dus aux pics de bruit
-    if (rms < 0.08 && Math.abs(rms - medianLevel) < 0.02) {
-      // Si le signal est faible et stable, c'est probablement du bruit
-      this.noiseLevel = this.noiseLevel * this.alpha + rms * (1 - this.alpha);
+    // Détecter la présence de voix (signal fort et variable)
+    // Critères ajustés pour mieux détecter la voix : RMS > 0.015, amplitude max > 0.03, variation > 0.008
+    const isVoiceLikely = rms > 0.015 && maxAmplitude > 0.03 && Math.abs(rms - medianLevel) > 0.008;
+    
+    if (isVoiceLikely) {
+      this.voiceDetected = true;
+      // Estimer le niveau de voix (moyenne mobile)
+      this.voiceLevel = this.voiceLevel * 0.95 + rms * 0.05;
+    } else {
+      // Si pas de voix détectée depuis longtemps, réinitialiser
+      if (this.silenceDuration > 50) { // ~1 seconde de silence
+        this.voiceDetected = false;
+        this.voiceLevel = 0;
+      }
     }
     
-    // Seuil de gate adaptatif amélioré : 5x le niveau de bruit estimé avec minimum plus bas
-    // Utiliser le maximum entre le seuil adaptatif et un seuil absolu bas pour éviter les bruits
-    // Multiplicateur augmenté de 4x à 5x pour gate plus strict
-    const adaptiveGateThreshold = Math.max(0.012, Math.max(this.noiseLevel * 5, 0.010)); // Minimum 1.0% à 1.2%
+    // Mettre à jour l'estimation du niveau de bruit (seulement si le signal est faible et stable)
+    // Utiliser le niveau médian pour éviter les faux positifs dus aux pics de bruit
+    // Ne pas mettre à jour si la voix est détectée pour éviter de confondre voix et bruit
+    if (!isVoiceLikely && rms < 0.08 && Math.abs(rms - medianLevel) < 0.02) {
+      // Si le signal est faible et stable, c'est probablement du bruit
+      const newNoiseLevel = this.noiseLevel * this.alpha + rms * (1 - this.alpha);
+      // Limiter le niveau de bruit maximum pour éviter que le gate devienne trop permissif
+      this.noiseLevel = Math.min(newNoiseLevel, this.maxNoiseLevel);
+    }
+    
+    // Seuil de gate adaptatif amélioré avec détection de voix
+    // Au début (pas de voix détectée) : seuil bas pour permettre la voix
+    // Après détection de voix : seuil adaptatif basé sur le bruit estimé
+    let adaptiveGateThreshold;
+    if (!this.voiceDetected || this.samplesProcessed < 96000) {
+      // Phase initiale : seuil bas pour permettre la voix (0.5% à 0.8%)
+      adaptiveGateThreshold = Math.max(0.005, Math.max(this.noiseLevel * 3, 0.004));
+    } else {
+      // Phase normale : seuil adaptatif basé sur le bruit (4x le bruit, minimum 0.8%)
+      adaptiveGateThreshold = Math.max(0.008, Math.max(this.noiseLevel * 4, 0.006));
+    }
     
     // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
     if (this.ratio === 1) {
