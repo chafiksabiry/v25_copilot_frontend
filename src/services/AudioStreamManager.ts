@@ -18,6 +18,7 @@ export class AudioStreamManager {
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
   private animationFrameId: number | null = null; // Pour requestAnimationFrame
+  private lastChunkEndSample: number | undefined = undefined; // Pour crossfade entre chunks
 
   // sécurité
   private isPlaying = false;
@@ -111,6 +112,11 @@ export class AudioStreamManager {
           
           // Utiliser la fonction de décodage qui supporte PCMU et PCMA
           const float32 = this.convertFromG711(u8, codec);
+          
+          // Appliquer un léger smoothing pour réduire les bruits de quantification
+          // (surtout important pour PCMA/PCMU qui sont des codecs à faible résolution)
+          this.applySmoothing(float32);
+          
           this.enqueueChunk(float32);
         }
         break;
@@ -194,6 +200,26 @@ export class AudioStreamManager {
   // Alias pour compatibilité (ancien code)
   private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
     return this.convertFromG711(pcmuData, 'PCMU');
+  }
+
+  // Appliquer un smoothing léger pour réduire les bruits de quantification
+  // (filtre passe-bas simple pour lisser les transitions brusques)
+  private applySmoothing(float32: Float32Array): void {
+    if (float32.length < 2) return;
+    
+    // Filtre de lissage simple : moyenne avec les échantillons adjacents
+    const smoothed = new Float32Array(float32.length);
+    smoothed[0] = (float32[0] + float32[1]) / 2; // Premier échantillon
+    
+    for (let i = 1; i < float32.length - 1; i++) {
+      // Moyenne pondérée : 50% échantillon actuel, 25% précédent, 25% suivant
+      smoothed[i] = float32[i] * 0.5 + float32[i - 1] * 0.25 + float32[i + 1] * 0.25;
+    }
+    
+    smoothed[float32.length - 1] = (float32[float32.length - 2] + float32[float32.length - 1]) / 2; // Dernier échantillon
+    
+    // Remplacer les valeurs originales
+    float32.set(smoothed);
   }
 
   // --- Queue / Jitter buffer management avec backpressure ---
@@ -350,6 +376,19 @@ export class AudioStreamManager {
   private scheduleChunk(float32: Float32Array) {
     if (!this.audioContext || !this.gainNode) return;
 
+    // Appliquer un crossfade doux pour éviter les clics entre chunks
+    // Cela réduit les bruits de transition et les artefacts audio
+    const fadeLength = Math.min(10, Math.floor(float32.length * 0.1)); // 10% du chunk ou 10 samples max
+    if (fadeLength > 0 && this.lastChunkEndSample !== undefined) {
+      // Crossfade : mélanger le début de ce chunk avec la fin du précédent
+      for (let i = 0; i < fadeLength; i++) {
+        const fadeRatio = i / fadeLength;
+        float32[i] = float32[i] * fadeRatio + this.lastChunkEndSample * (1 - fadeRatio);
+      }
+    }
+    // Stocker le dernier échantillon pour le crossfade suivant
+    this.lastChunkEndSample = float32[float32.length - 1];
+
     // Créer un AudioBuffer avec la longueur exacte
     const buffer = this.audioContext.createBuffer(1, float32.length, this.SAMPLE_RATE);
     buffer.getChannelData(0).set(float32);
@@ -401,6 +440,7 @@ export class AudioStreamManager {
     this.chunkQueue = [];
     this.isPlaying = false;
     this.playbackTime = 0;
+    this.lastChunkEndSample = undefined; // Réinitialiser le crossfade
 
     // close audioContext but keep reference nullified after close
     if (this.audioContext && this.audioContext.state !== 'closed') {
