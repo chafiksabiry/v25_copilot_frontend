@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CallEvent } from '../types/call';
 
 // En mode standalone, utiliser localhost pour le développement local
@@ -54,6 +54,7 @@ export const useCallManager = () => {
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Établir la connexion WebSocket
   useEffect(() => {
@@ -62,24 +63,30 @@ export const useCallManager = () => {
       return;
     }
 
+    // Nettoyer le timeout précédent s'il existe
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
+
+    // Marquer cette instance comme utilisateur de la connexion
+    sharedWebSocketRefCount++;
+    
     // Utiliser la connexion partagée si elle existe déjà
     if (sharedWebSocket && sharedWebSocket.readyState === WebSocket.OPEN) {
       console.log('🔌 Reusing existing WebSocket connection');
       setWs(sharedWebSocket);
-      sharedWebSocketRefCount++;
     } else if (sharedWebSocket && sharedWebSocket.readyState === WebSocket.CONNECTING) {
       // Attendre que la connexion existante soit établie
       console.log('🔌 Waiting for existing WebSocket connection...');
       const openHandler = () => {
         setWs(sharedWebSocket);
-        sharedWebSocketRefCount++;
       };
       sharedWebSocket.addEventListener('open', openHandler, { once: true });
     } else {
       // Créer une nouvelle connexion
       console.log('🔌 Creating new WebSocket connection:', WS_URL);
       sharedWebSocket = new WebSocket(WS_URL);
-      sharedWebSocketRefCount = 1;
 
       sharedWebSocket.onopen = () => {
         console.log('✅ Connected to call events WebSocket');
@@ -143,20 +150,69 @@ export const useCallManager = () => {
     }
 
     return () => {
-      sharedWebSocketRefCount--;
-      
-      // Ne fermer la connexion que si aucun autre composant ne l'utilise
-      if (sharedWebSocketRefCount <= 0 && sharedWebSocket) {
-        console.log('🔌 Closing shared WebSocket connection (last user)');
-        const currentWs = sharedWebSocket;
-        currentWs.onclose = null; // Empêcher la reconnexion lors du cleanup
-        currentWs.close(1000, 'Component unmounting');
-        sharedWebSocket = null;
-        sharedWebSocketRefCount = 0;
-      } else {
-        console.log(`🔌 Keeping WebSocket connection (${sharedWebSocketRefCount} users remaining)`);
+      // Ne pas décrémenter en dessous de 0
+      if (sharedWebSocketRefCount > 0) {
+        sharedWebSocketRefCount--;
       }
+      
+      // En mode StrictMode, le cleanup peut se déclencher avant le deuxième montage
+      // Attendre un peu pour voir si un autre composant va utiliser la connexion
+      cleanupTimeoutRef.current = setTimeout(() => {
+        // Ne fermer la connexion que si aucun autre composant ne l'utilise après le délai
+        if (sharedWebSocketRefCount <= 0 && sharedWebSocket) {
+          const currentWs = sharedWebSocket;
+          const readyState = currentWs.readyState;
+          
+          // Ne pas fermer si la connexion est encore en cours d'établissement
+          if (readyState === WebSocket.CONNECTING) {
+            console.log('🔌 WebSocket is still connecting, will close after connection');
+            // Attendre que la connexion soit établie avant de la fermer
+            const openHandler = () => {
+              console.log('🔌 Closing WebSocket connection (was connecting, now open)');
+              currentWs.onclose = null;
+              currentWs.close(1000, 'Component unmounting');
+              if (sharedWebSocket === currentWs) {
+                sharedWebSocket = null;
+                sharedWebSocketRefCount = 0;
+              }
+            };
+            currentWs.addEventListener('open', openHandler, { once: true });
+            
+            // Timeout de sécurité : fermer après 5 secondes même si pas encore ouvert
+            setTimeout(() => {
+              if (sharedWebSocket === currentWs && currentWs.readyState !== WebSocket.CLOSED) {
+                console.log('🔌 Force closing WebSocket connection (timeout)');
+                currentWs.removeEventListener('open', openHandler);
+                currentWs.onclose = null;
+                currentWs.close(1000, 'Component unmounting');
+                sharedWebSocket = null;
+                sharedWebSocketRefCount = 0;
+              }
+            }, 5000);
+          } else if (readyState === WebSocket.OPEN) {
+            console.log('🔌 Closing shared WebSocket connection (last user)');
+            currentWs.onclose = null; // Empêcher la reconnexion lors du cleanup
+            currentWs.close(1000, 'Component unmounting');
+            sharedWebSocket = null;
+            sharedWebSocketRefCount = 0;
+          } else {
+            // CLOSED ou CLOSING - juste nettoyer la référence
+            console.log('🔌 WebSocket already closed or closing');
+            sharedWebSocket = null;
+            sharedWebSocketRefCount = 0;
+          }
+        } else if (sharedWebSocketRefCount > 0) {
+          console.log(`🔌 Keeping WebSocket connection (${sharedWebSocketRefCount} users remaining)`);
+        }
+      }, 100); // Délai de 100ms pour laisser le temps au deuxième montage en StrictMode
+      
       setWs(null);
+      
+      // Nettoyer le timeout si le composant remonte avant le délai
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+        cleanupTimeoutRef.current = null;
+      }
     };
   }, []);
 
