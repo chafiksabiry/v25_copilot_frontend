@@ -95,7 +95,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+33423340775', // Default French number
+    phone: '+33123456789', // Default French number (different from Telnyx number)
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -643,16 +643,31 @@ export function ContactInfo() {
 
     try {
       setIsCallLoading(true);
+      
+      const toNumber = contact.phone;
+      const fromNumber = phoneNumber;
+      const agentId = getAgentIdFromStorage();
+      
+      // Validation: vérifier que from et to sont différents
+      if (toNumber === fromNumber) {
+        throw new Error('From and To numbers cannot be the same. Please check your Telnyx phone number configuration.');
+      }
+      
+      // Validation: vérifier que l'agentId est valide
+      if (!agentId || agentId === 'unknown-agent') {
+        throw new Error('Invalid agent ID. Please ensure you are logged in or in a valid session.');
+      }
+      
       console.log('📞 Initiating Telnyx call:', {
-        to: contact.phone,
-        from: phoneNumber,
-        agentId: getAgentIdFromStorage()
+        to: toNumber,
+        from: fromNumber,
+        agentId: agentId
       });
       
       await initiateTelnyxCallRaw(
-        contact.phone,           // To number (contact's number)
-        phoneNumber,             // From number (our Telnyx number)
-        getAgentIdFromStorage()  // Agent ID
+        toNumber,    // To number (contact's number)
+        fromNumber,  // From number (our Telnyx number)
+        agentId      // Agent ID
       );
 
     } catch (error) {
