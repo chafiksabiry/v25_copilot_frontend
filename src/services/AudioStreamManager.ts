@@ -12,13 +12,14 @@ export class AudioStreamManager {
   // Jitter buffer / queue (Float32Array chunks)
   private chunkQueue: Float32Array[] = [];
   private readonly START_THRESHOLD = 3; // combien de chunks accumuler avant de démarrer
-  private readonly MAX_QUEUE = 60; // maximum chunks à stocker (drop oldest si >)
+  private readonly MAX_QUEUE = 120; // maximum chunks à stocker (augmenté pour éviter les débordements)
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
 
   // sécurité
   private isPlaying = false;
   private isStopping = false;
+  private overflowLogCount = 0; // Compteur pour limiter les logs d'overflow
 
   constructor(onError?: (error: Error) => void) {
     this.onErrorCallback = onError || null;
@@ -155,7 +156,11 @@ export class AudioStreamManager {
     // Drop oldest if overflow
     if (this.chunkQueue.length > this.MAX_QUEUE) {
       this.chunkQueue.shift();
-      console.warn('⚠️ chunkQueue overflow — dropping oldest chunk');
+      this.overflowLogCount++;
+      // Logger seulement tous les 10 overflows pour éviter le spam
+      if (this.overflowLogCount % 10 === 0) {
+        console.warn(`⚠️ chunkQueue overflow — dropped ${this.overflowLogCount} chunks (queue size: ${this.chunkQueue.length})`);
+      }
     }
 
     // If we have enough to start, start processing

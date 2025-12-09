@@ -8,6 +8,7 @@ export class MicrophoneService {
   private recordingInterval: number | null = null;
   private recorderScriptNode: ScriptProcessorNode | null = null;
   private recordingCounter: number = 0;
+  private isRecording: boolean = false;
 
   constructor(outboundWs: WebSocket) {
     this.outboundWs = outboundWs;
@@ -127,23 +128,28 @@ export class MicrophoneService {
       const bufferSize = 4096;
       this.recorderScriptNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
       
-      // Flag to track if we're recording
-      let isRecording = true;
+      // Flag to track if we're recording (utiliser une référence partagée)
+      this.isRecording = true;
       
       this.recorderScriptNode.onaudioprocess = (e) => {
-        if (!isRecording) return;
+        if (!this.isRecording || !this.audioContext) return; // Vérifier que audioContext existe et qu'on enregistre encore
         
         const inputData = e.inputBuffer.getChannelData(0);
         // Make a copy of the audio data
         this.rawAudioBuffer.push(new Float32Array(inputData));
         
-        console.log(`🎙️ Recording chunk ${this.rawAudioBuffer.length}: ${inputData.length} samples`);
+        // Log moins fréquemment pour réduire le bruit dans la console
+        if (this.rawAudioBuffer.length % 10 === 0) {
+          console.log(`🎙️ Recording chunk ${this.rawAudioBuffer.length}: ${inputData.length} samples`);
+        }
         
         // Check if we have 3 seconds of audio (assuming 48000 Hz sample rate)
-        const samplesFor3Seconds = this.audioContext!.sampleRate * 3;
+        const samplesFor3Seconds = this.audioContext.sampleRate * 3;
         const totalSamples = this.rawAudioBuffer.length * bufferSize;
         
-        console.log(`📊 Buffer: ${totalSamples} / ${samplesFor3Seconds} samples`);
+        if (this.rawAudioBuffer.length % 10 === 0) {
+          console.log(`📊 Buffer: ${totalSamples} / ${samplesFor3Seconds} samples`);
+        }
         
         if (totalSamples >= samplesFor3Seconds) {
           console.log(`✨ Triggering 3-second save with ${this.rawAudioBuffer.length} chunks`);
@@ -178,27 +184,39 @@ export class MicrophoneService {
       // 4) Receive RTP packets from worklet and send over WS (RTP PCMU with headers)
       let chunkCount = 0;
       this.node.port.onmessage = (ev: MessageEvent) => {
+        // Arrêter si on n'enregistre plus
+        if (!this.isRecording) return;
+        
         const rtpPacket: Uint8Array = ev.data;
         if (!rtpPacket || !(rtpPacket instanceof Uint8Array)) return;
         
         chunkCount++;
-        // Log premier chunk et ensuite tous les 50 chunks
-        if (chunkCount === 1 || chunkCount % 50 === 0) {
+        // Log moins fréquemment pour réduire le bruit
+        if (chunkCount === 1 || chunkCount % 100 === 0) {
           console.log(`📦 RTP packet #${chunkCount}: ${rtpPacket.length} bytes (12 header + ${rtpPacket.length - 12} payload)`);
+        }
+        
+        // Vérifier que le WebSocket est ouvert avant d'envoyer
+        if (!this.outboundWs || this.outboundWs.readyState !== WebSocket.OPEN) {
+          // Ne pas logger chaque paquet manqué, seulement le premier
+          if (chunkCount === 1) {
+            console.warn(`⚠️ Outbound WebSocket not ready, stopping RTP packet sending. State: ${this.outboundWs?.readyState}`);
+          }
+          return; // Arrêter d'envoyer si le WebSocket n'est pas prêt
         }
         
         // Encode RTP packet to base64 (includes RTP header + PCMU payload)
         const base64 = this.uint8ToBase64(rtpPacket);
         
-        if (this.outboundWs && this.outboundWs.readyState === WebSocket.OPEN) {
+        try {
           this.outboundWs.send(JSON.stringify({ event: 'media', media: { payload: base64 } }));
           
-          // Log premier envoi et ensuite tous les 50 envois
-          if (chunkCount === 1 || chunkCount % 50 === 0) {
-            console.log(`✅ Sent RTP packet #${chunkCount} via outbound WebSocket (RTP: ${rtpPacket.length} bytes, base64: ${base64.length} chars)`);
+          // Log moins fréquemment
+          if (chunkCount === 1 || chunkCount % 100 === 0) {
+            console.log(`✅ Sent RTP packet #${chunkCount} via outbound WebSocket`);
           }
-        } else {
-          console.error(`❌ Outbound WebSocket not ready for RTP packet #${chunkCount}, state: ${this.outboundWs?.readyState}`);
+        } catch (error) {
+          console.error(`❌ Error sending RTP packet #${chunkCount}:`, error);
         }
       };
 
@@ -291,6 +309,9 @@ export class MicrophoneService {
   async stopCapture() {
     console.log('⏹️ Stopping microphone stream');
     
+    // Arrêter l'enregistrement d'abord pour éviter les callbacks après le cleanup
+    this.isRecording = false;
+    
     // Save any remaining audio buffer before stopping
     if (this.rawAudioBuffer.length > 0) {
       console.log('💾 Saving final audio buffer...');
@@ -303,9 +324,26 @@ export class MicrophoneService {
       this.recordingInterval = null;
     }
     
-    try { this.recorderScriptNode?.disconnect(); } catch (_) {}
-    try { this.node?.disconnect(); } catch (_) {}
+    // Arrêter le worklet d'abord pour éviter l'envoi de paquets après la fermeture
+    if (this.node) {
+      try {
+        this.node.port.onmessage = null; // Arrêter les callbacks
+        this.node.disconnect();
+      } catch (_) {}
+    }
+    
+    // Arrêter le recorderScriptNode
+    if (this.recorderScriptNode) {
+      try {
+        this.recorderScriptNode.onaudioprocess = null; // Arrêter les callbacks
+        this.recorderScriptNode.disconnect();
+      } catch (_) {}
+    }
+    
+    // Arrêter le stream
     try { this.stream?.getTracks().forEach(t => t.stop()); } catch (_) {}
+    
+    // Fermer l'audioContext en dernier
     try { await this.audioContext?.close(); } catch (_) {}
     // We do NOT close the outbound WebSocket here; it's managed by the caller
 
