@@ -96,8 +96,12 @@ export const useCallManager = () => {
 
       sharedWebSocket.onmessage = (event) => {
         try {
-          const data: CallEvent = JSON.parse(event.data);
-          console.log('📞 Received call event:', data);
+          const rawData = event.data;
+          console.log('📨 Raw WebSocket message received:', rawData);
+          
+          const data: CallEvent = JSON.parse(rawData);
+          console.log('📞 Parsed call event:', data);
+          console.log('📞 Event type:', data.type);
           
           switch (data.type) {
             case 'welcome':
@@ -105,24 +109,31 @@ export const useCallManager = () => {
               break;
             
             case 'call.initiated':
-              console.log('📞 Call initiated:', data.payload.call_control_id);
+              console.log('📞 Call initiated event received!');
+              console.log('📞 Call Control ID:', data.payload?.call_control_id);
               setCallStatus('call.initiated');
-              setCurrentCallId(data.payload.call_control_id);
+              if (data.payload?.call_control_id) {
+                setCurrentCallId(data.payload.call_control_id);
+              }
               break;
             
             case 'call.answered':
-              console.log('📞 Call answered');
+              console.log('📞 Call answered event received!');
               setCallStatus('call.answered');
               break;
             
             case 'call.hangup':
-              console.log('📞 Call ended');
+              console.log('📞 Call hangup event received!');
               setCallStatus('call.hangup');
               setCurrentCallId(null);
               break;
+            
+            default:
+              console.log('📞 Unknown event type:', data.type, data);
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('❌ Error parsing WebSocket message:', error);
+          console.error('❌ Raw message was:', event.data);
         }
       };
 

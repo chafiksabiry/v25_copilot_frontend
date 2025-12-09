@@ -493,9 +493,9 @@ export function ContactInfo() {
           console.log('📞 Call initiated');
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
-          const baseWsUrl = getBackendUrl().replace('http://', 'ws://').replace('https://', 'wss://');
-          const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
-          const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
+          const baseWsUrl = getBackendUrl().replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://');
+          const inboundWsUrl = `${baseWsUrl}/audio-stream`;
+          const outboundWsUrl = `${baseWsUrl}/audio-stream`;
           
           console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
           console.log('🎧 Setting stream URLs for audio streaming');
@@ -681,6 +681,17 @@ export function ContactInfo() {
   };
 
   const initiateCall = async () => {
+    // Protection contre les appels multiples simultanés
+    if (isCallLoading) {
+      console.log('⏳ Call already in progress, ignoring duplicate call request');
+      return;
+    }
+    
+    if (callStatus !== 'idle' && callStatus !== 'error') {
+      console.log('⏳ Call already active, ignoring duplicate call request');
+      return;
+    }
+    
     setPhoneNumberError(null);
     setIsCallLoading(true);
     
