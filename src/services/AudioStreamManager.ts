@@ -320,16 +320,24 @@ export class AudioStreamManager {
       // Créer un filtre passe-bas pour réduire les bruits haute fréquence lors de la lecture
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3200; // Limite haute réduite à 3.2kHz pour mieux éliminer les bruits
+      lowpassFilter.frequency.value = 3000; // Limite haute réduite à 3kHz pour mieux éliminer les bruits haute fréquence
       lowpassFilter.Q.value = 0.7; // Q réduit pour un filtre plus doux (moins de résonance)
+      
+      // Ajouter un filtre passe-haut pour supprimer les bruits basse fréquence (< 80Hz)
+      const highpassFilter = this.audioContext.createBiquadFilter();
+      highpassFilter.type = 'highpass';
+      highpassFilter.frequency.value = 80; // Supprimer les bruits très basse fréquence (rumeurs, vibrations)
+      highpassFilter.Q.value = 0.7;
       
       this.gainNode = this.audioContext.createGain();
       // Ajuster le gain pour équilibrer volume et feedback
       // Gain à 55% pour réduire la distorsion et le feedback
       this.gainNode.gain.value = this.GAIN_VALUE;
       
-      // Chaîne audio optimisée : gain → filtre → destination
-      this.gainNode.connect(lowpassFilter);
+      // Chaîne audio optimisée : gain → filtre passe-haut → filtre passe-bas → destination
+      // Le filtre passe-haut supprime les bruits basse fréquence, le filtre passe-bas supprime les bruits haute fréquence
+      this.gainNode.connect(highpassFilter);
+      highpassFilter.connect(lowpassFilter);
       lowpassFilter.connect(this.audioContext.destination);
       
       this.playbackTime = this.audioContext.currentTime;

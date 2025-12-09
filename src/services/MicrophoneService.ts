@@ -219,8 +219,8 @@ export class MicrophoneService {
       // (le navigateur fait déjà du noise suppression, mais on peut améliorer)
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3400; // Limite haute pour voix téléphonique (réduit bruits > 3.4kHz)
-      lowpassFilter.Q.value = 1; // Qualité du filtre (modérée pour éviter artefacts)
+      lowpassFilter.frequency.value = 3000; // Limite haute réduite à 3kHz pour mieux éliminer les bruits haute fréquence
+      lowpassFilter.Q.value = 0.7; // Q réduit pour un filtre plus doux (moins de résonance)
 
       // 5) Create script processor for raw audio recording (before worklet)
       const bufferSize = 4096;

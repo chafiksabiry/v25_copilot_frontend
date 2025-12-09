@@ -172,18 +172,25 @@ class MicProcessor extends AudioWorkletProcessor {
     // Normaliser et limiter le signal pour éviter la distorsion
     let s = Math.max(-1.0, Math.min(1.0, sample));
     
-    // Réduire légèrement le niveau global AVANT la compression pour éviter la saturation
-    s = s * 0.88; // Réduire de 12% pour éviter la saturation (augmenté de 8% à 12%)
+    // Réduction globale plus agressive pour éviter la saturation et les bruits
+    s = s * 0.85; // Réduire de 15% pour éviter la saturation (augmenté de 12% à 15%)
+    
+    // Filtre de réduction de bruit haute fréquence supplémentaire
+    // Supprimer les composantes très haute fréquence qui peuvent causer des bruits
+    if (Math.abs(s) < 0.005) {
+      // Si le signal est très faible, c'est probablement du bruit - le supprimer complètement
+      s = 0;
+    }
     
     // Appliquer un soft limiter amélioré pour éviter la saturation brutale
     // Cela réduit les bruits de clipping tout en préservant la dynamique
-    const threshold = 0.90; // Seuil de compression douce (réduit de 0.95 à 0.90)
+    const threshold = 0.85; // Seuil de compression douce réduit (de 0.90 à 0.85)
     if (Math.abs(s) > threshold) {
       const sign = s < 0 ? -1 : 1;
       const excess = Math.abs(s) - threshold;
       // Compression douce au-delà du seuil (au lieu de clipping dur)
       // Réduction progressive : plus le signal est fort, plus on compresse
-      const compressionRatio = 0.25; // Compression plus agressive (réduit de 0.3 à 0.25)
+      const compressionRatio = 0.20; // Compression encore plus agressive (réduit de 0.25 à 0.20)
       s = sign * (threshold + excess * compressionRatio);
     }
     
