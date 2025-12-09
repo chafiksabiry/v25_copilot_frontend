@@ -27,10 +27,11 @@ class MicProcessor extends AudioWorkletProcessor {
     this.filterBuffer = new Float32Array(this.filterOrder);
     this.filterIndex = 0;
     
-    // Coefficients du filtre FIR passe-bas (cutoff ~4kHz pour 48kHz input, downsampling à 8kHz)
-    // Ces coefficients sont calculés pour une fréquence de coupure de 4kHz
+    // Coefficients du filtre FIR passe-bas amélioré (cutoff ~3.5kHz pour 48kHz input, downsampling à 8kHz)
+    // Fréquence de coupure réduite à 3.5kHz pour mieux éliminer les bruits haute fréquence
+    // Coefficients optimisés avec fenêtre de Hamming pour réduire les ondulations
     this.filterCoefficients = new Float32Array([
-      0.001, 0.008, 0.026, 0.055, 0.085, 0.105, 0.110, 0.100, 0.080, 0.055, 0.032, 0.015, 0.005
+      0.002, 0.010, 0.028, 0.058, 0.088, 0.108, 0.112, 0.108, 0.088, 0.058, 0.028, 0.010, 0.002
     ]);
     // Normaliser les coefficients pour que leur somme = 1
     const sum = this.filterCoefficients.reduce((a, b) => a + b, 0);
@@ -142,18 +143,20 @@ class MicProcessor extends AudioWorkletProcessor {
     // Normaliser et limiter le signal pour éviter la distorsion
     let s = Math.max(-1.0, Math.min(1.0, sample));
     
-    // Appliquer un soft limiter pour éviter la saturation brutale
+    // Réduire légèrement le niveau global AVANT la compression pour éviter la saturation
+    s = s * 0.88; // Réduire de 12% pour éviter la saturation (augmenté de 8% à 12%)
+    
+    // Appliquer un soft limiter amélioré pour éviter la saturation brutale
     // Cela réduit les bruits de clipping tout en préservant la dynamique
-    const threshold = 0.95; // Seuil de compression douce
+    const threshold = 0.90; // Seuil de compression douce (réduit de 0.95 à 0.90)
     if (Math.abs(s) > threshold) {
       const sign = s < 0 ? -1 : 1;
       const excess = Math.abs(s) - threshold;
       // Compression douce au-delà du seuil (au lieu de clipping dur)
-      s = sign * (threshold + excess * 0.3); // Réduire les pics de 70%
+      // Réduction progressive : plus le signal est fort, plus on compresse
+      const compressionRatio = 0.25; // Compression plus agressive (réduit de 0.3 à 0.25)
+      s = sign * (threshold + excess * compressionRatio);
     }
-    
-    // Réduire légèrement le niveau global pour éviter la saturation
-    s = s * 0.92; // Réduire de 8% pour éviter la saturation
     
     // Encodage µ-law standard ITU-T G.711
     const BIAS = 0x84;

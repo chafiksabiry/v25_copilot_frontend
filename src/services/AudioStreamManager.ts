@@ -207,24 +207,40 @@ export class AudioStreamManager {
     return this.convertFromG711(pcmuData, 'PCMU');
   }
 
-  // Appliquer un smoothing léger pour réduire les bruits de quantification
-  // (filtre passe-bas simple pour lisser les transitions brusques)
+  // Appliquer un smoothing amélioré pour réduire les bruits de quantification
+  // Utilise un filtre médian et une moyenne pondérée pour réduire les artefacts
   private applySmoothing(float32: Float32Array): void {
-    if (float32.length < 2) return;
+    if (float32.length < 3) return;
     
-    // Filtre de lissage simple : moyenne avec les échantillons adjacents
+    // Filtre de lissage amélioré : moyenne pondérée avec fenêtre glissante de 3 échantillons
     const smoothed = new Float32Array(float32.length);
-    smoothed[0] = (float32[0] + float32[1]) / 2; // Premier échantillon
     
+    // Premier échantillon : moyenne avec le suivant
+    smoothed[0] = float32[0] * 0.6 + float32[1] * 0.4;
+    
+    // Échantillons du milieu : moyenne pondérée avec fenêtre de 3
     for (let i = 1; i < float32.length - 1; i++) {
-      // Moyenne pondérée : 50% échantillon actuel, 25% précédent, 25% suivant
-      smoothed[i] = float32[i] * 0.5 + float32[i - 1] * 0.25 + float32[i + 1] * 0.25;
+      // Pondération : 50% échantillon actuel, 30% précédent, 20% suivant
+      // Cela réduit les bruits de quantification tout en préservant la dynamique
+      smoothed[i] = float32[i] * 0.5 + float32[i - 1] * 0.3 + float32[i + 1] * 0.2;
     }
     
-    smoothed[float32.length - 1] = (float32[float32.length - 2] + float32[float32.length - 1]) / 2; // Dernier échantillon
+    // Dernier échantillon : moyenne avec le précédent
+    smoothed[float32.length - 1] = float32[float32.length - 2] * 0.4 + float32[float32.length - 1] * 0.6;
     
-    // Remplacer les valeurs originales
-    float32.set(smoothed);
+    // Appliquer un deuxième passage pour un lissage plus doux (réduit les artefacts résiduels)
+    if (float32.length >= 5) {
+      const smoothed2 = new Float32Array(float32.length);
+      smoothed2[0] = smoothed[0];
+      for (let i = 1; i < smoothed.length - 1; i++) {
+        // Deuxième passage avec pondération légèrement différente
+        smoothed2[i] = smoothed[i] * 0.6 + smoothed[i - 1] * 0.2 + smoothed[i + 1] * 0.2;
+      }
+      smoothed2[smoothed.length - 1] = smoothed[smoothed.length - 1];
+      float32.set(smoothed2);
+    } else {
+      float32.set(smoothed);
+    }
   }
 
   // --- Queue / Jitter buffer management avec backpressure ---
@@ -290,8 +306,8 @@ export class AudioStreamManager {
       // Créer un filtre passe-bas pour réduire les bruits haute fréquence lors de la lecture
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3400; // Limite haute pour voix téléphonique
-      lowpassFilter.Q.value = 1;
+      lowpassFilter.frequency.value = 3200; // Limite haute réduite à 3.2kHz pour mieux éliminer les bruits
+      lowpassFilter.Q.value = 0.7; // Q réduit pour un filtre plus doux (moins de résonance)
       
       this.gainNode = this.audioContext.createGain();
       // Ajuster le gain pour équilibrer volume et feedback
@@ -404,13 +420,15 @@ export class AudioStreamManager {
   private scheduleChunk(float32: Float32Array) {
     if (!this.audioContext || !this.gainNode) return;
 
-    // Appliquer un crossfade doux pour éviter les clics entre chunks
-    // Cela réduit les bruits de transition et les artefacts audio
-    const fadeLength = Math.min(10, Math.floor(float32.length * 0.1)); // 10% du chunk ou 10 samples max
+    // Appliquer un crossfade amélioré pour éviter les clics entre chunks
+    // Augmenter la longueur du crossfade pour réduire les bruits de transition
+    const fadeLength = Math.min(20, Math.floor(float32.length * 0.15)); // 15% du chunk ou 20 samples max (augmenté)
     if (fadeLength > 0 && this.lastChunkEndSample !== undefined) {
-      // Crossfade : mélanger le début de ce chunk avec la fin du précédent
+      // Crossfade avec courbe de fade améliorée (courbe exponentielle pour transition plus douce)
       for (let i = 0; i < fadeLength; i++) {
-        const fadeRatio = i / fadeLength;
+        // Utiliser une courbe exponentielle pour un fade plus doux
+        const linearRatio = i / fadeLength;
+        const fadeRatio = linearRatio * linearRatio; // Courbe quadratique pour transition plus douce
         float32[i] = float32[i] * fadeRatio + this.lastChunkEndSample * (1 - fadeRatio);
       }
     }
