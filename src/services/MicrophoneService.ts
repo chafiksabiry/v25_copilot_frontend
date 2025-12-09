@@ -105,18 +105,48 @@ export class MicrophoneService {
         throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.');
       }
 
-      // 3) Capture microphone with better error handling
+      // 3) Capture microphone with optimized audio constraints for call quality
       console.log('🎤 Requesting microphone access...');
       try {
+        // Configuration optimale pour réduire les bruits automatiquement
         this.stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            echoCancellation: true,  // Annulation d'écho pour éviter le feedback
-            noiseSuppression: true,  // Suppression de bruit
-            autoGainControl: true,   // Contrôle automatique du gain
-            sampleRate: 48000        // Taux d'échantillonnage explicite
+            // Traitement audio natif du navigateur (priorité haute)
+            echoCancellation: true,        // Annulation d'écho pour éviter le feedback
+            noiseSuppression: true,        // Suppression de bruit de fond
+            autoGainControl: true,         // Contrôle automatique du gain (évite saturation)
+            
+            // Paramètres avancés pour meilleure qualité
+            sampleRate: 48000,            // Taux d'échantillonnage haute qualité
+            channelCount: 1,              // Mono (suffisant pour la voix)
+            latency: 0.01,                // Latence minimale (10ms)
+            
+            // Contraintes pour forcer l'activation des fonctionnalités
+            googEchoCancellation: true,   // Google-specific (Chrome)
+            googNoiseSuppression: true,   // Google-specific (Chrome)
+            googAutoGainControl: true,    // Google-specific (Chrome)
+            googHighpassFilter: true,     // Filtre passe-haut pour réduire basses fréquences
+            googTypingNoiseDetection: true, // Détection bruit de frappe clavier
+            
+            // Paramètres de qualité
+            volume: 1.0,                  // Volume maximum (le navigateur ajustera automatiquement)
+            suppressLocalAudioPlayback: false // Permettre la lecture locale si nécessaire
           } 
         });
-        console.log('✅ Microphone access granted');
+        console.log('✅ Microphone access granted with optimized audio settings');
+        
+        // Vérifier les contraintes appliquées (pour debug)
+        const audioTracks = this.stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const settings = audioTracks[0].getSettings();
+          console.log('🎤 Applied audio settings:', {
+            echoCancellation: settings.echoCancellation,
+            noiseSuppression: settings.noiseSuppression,
+            autoGainControl: settings.autoGainControl,
+            sampleRate: settings.sampleRate,
+            channelCount: settings.channelCount
+          });
+        }
       } catch (mediaError: any) {
         console.error('❌ Microphone access error:', mediaError);
         if (mediaError.name === 'NotAllowedError') {
@@ -130,9 +160,27 @@ export class MicrophoneService {
         }
       }
 
-      // 4) Create AudioContext
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // 4) Create AudioContext with optimized settings for call quality
+      // Utiliser la latence minimale pour réduire la latence totale
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: 48000,  // Haute qualité
+        latencyHint: 'interactive' // Latence minimale pour appels en temps réel
+      });
+      
+      // S'assurer que l'AudioContext est actif
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('🔊 AudioContext resumed');
+      }
+      
       const source = this.audioContext.createMediaStreamSource(this.stream);
+      
+      // Créer un filtre passe-bas supplémentaire pour réduire les bruits haute fréquence
+      // (le navigateur fait déjà du noise suppression, mais on peut améliorer)
+      const lowpassFilter = this.audioContext.createBiquadFilter();
+      lowpassFilter.type = 'lowpass';
+      lowpassFilter.frequency.value = 3400; // Limite haute pour voix téléphonique (réduit bruits > 3.4kHz)
+      lowpassFilter.Q.value = 1; // Qualité du filtre (modérée pour éviter artefacts)
 
       // 5) Create script processor for raw audio recording (before worklet)
       const bufferSize = 4096;
@@ -172,17 +220,20 @@ export class MicrophoneService {
       await this.audioContext.audioWorklet.addModule(workletUrl);
       this.node = new AudioWorkletNode(this.audioContext, 'mic-processor', { numberOfInputs: 1, numberOfOutputs: 0 });
       
-      // 7) Connect audio chain in parallel:
-      //    CRITICAL: Both nodes must be connected to receive audio
-      //    - Worklet: source → worklet (encodes RTP)
-      //    - Recorder: source → recorder → analyser (records audio without feedback)
+      // 7) Connect audio chain with noise reduction filter:
+      //    OPTIMIZED: source → lowpassFilter → worklet (encodes RTP with noise reduction)
+      //    PARALLEL: source → recorder → analyser (records audio without feedback)
       
       // Créer un AnalyserNode qui ne produit pas de sortie audio mais maintient le ScriptProcessorNode actif
       // L'AnalyserNode permet au ScriptProcessorNode de fonctionner sans créer de feedback
       const analyser = this.audioContext.createAnalyser();
       analyser.fftSize = 2048;
       
-      source.connect(this.node);
+      // Chaîne principale avec filtre passe-bas pour réduire les bruits haute fréquence
+      source.connect(lowpassFilter);
+      lowpassFilter.connect(this.node);
+      
+      // Chaîne parallèle pour l'enregistrement (sans filtre pour garder la qualité originale)
       source.connect(this.recorderScriptNode);
       // Connecter à un AnalyserNode au lieu de la destination pour éviter le feedback
       this.recorderScriptNode.connect(analyser);

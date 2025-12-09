@@ -243,18 +243,36 @@ export class AudioStreamManager {
   // --- Assurer creation et état AudioContext et nodes ---
   private ensureAudioContext() {
     if (!this.audioContext || this.audioContext.state === 'closed') {
-      // Si le navigateur exige une interaction utilisateur pour démarrer audio,
-      // l'appelant devra appeler resumeAudio() après un click.
+      // Créer AudioContext avec latence minimale pour appels en temps réel
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: this.SAMPLE_RATE
+        sampleRate: this.SAMPLE_RATE,
+        latencyHint: 'interactive' // Latence minimale pour appels
       });
+      
+      // Créer un filtre passe-bas pour réduire les bruits haute fréquence lors de la lecture
+      const lowpassFilter = this.audioContext.createBiquadFilter();
+      lowpassFilter.type = 'lowpass';
+      lowpassFilter.frequency.value = 3400; // Limite haute pour voix téléphonique
+      lowpassFilter.Q.value = 1;
+      
       this.gainNode = this.audioContext.createGain();
       // Ajuster le gain pour équilibrer volume et feedback
       // Gain à 55% pour réduire la distorsion et le feedback
-      this.gainNode.gain.value = 0.55;
-      this.gainNode.connect(this.audioContext.destination);
+      this.gainNode.gain.value = this.GAIN_VALUE;
+      
+      // Chaîne audio optimisée : gain → filtre → destination
+      this.gainNode.connect(lowpassFilter);
+      lowpassFilter.connect(this.audioContext.destination);
+      
       this.playbackTime = this.audioContext.currentTime;
-      console.log('🔊 AudioContext initialisé (sampleRate:', this.SAMPLE_RATE, ')');
+      console.log('🔊 AudioContext initialisé avec filtre passe-bas (sampleRate:', this.SAMPLE_RATE, ')');
+      
+      // S'assurer que l'AudioContext est actif
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume().then(() => {
+          console.log('🔊 AudioContext resumed');
+        });
+      }
     }
   }
 
@@ -338,6 +356,7 @@ export class AudioStreamManager {
 
     const src = this.audioContext.createBufferSource();
     src.buffer = buffer;
+    // Connecter directement au gainNode (qui est déjà connecté au filtre passe-bas)
     src.connect(this.gainNode);
 
     // Assurer playbackTime minimal devant currentTime pour éviter start in past
