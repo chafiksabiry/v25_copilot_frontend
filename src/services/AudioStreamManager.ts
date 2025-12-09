@@ -86,7 +86,12 @@ export class AudioStreamManager {
     const ev = message.event;
     switch (ev) {
       case 'connected':
-        console.log('🎧 Connected to audio stream with config:', message.config);
+        // Le message connected peut contenir des infos de configuration
+        if (message.config) {
+          console.log('🎧 Connected to audio stream with config:', message.config);
+        } else {
+          console.log('🎧 Connected to audio stream');
+        }
         break;
       case 'start':
         console.log('▶️ Stream started:', message.stream_id);
