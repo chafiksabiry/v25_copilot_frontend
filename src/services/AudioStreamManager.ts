@@ -88,6 +88,13 @@ export class AudioStreamManager {
         break;
       case 'start':
         console.log('▶️ Stream started:', message.stream_id);
+        // Détecter le codec depuis le message start
+        const mediaFormat = message.start?.media_format;
+        if (mediaFormat) {
+          const codec = mediaFormat.encoding || 'PCMU';
+          const sampleRate = mediaFormat.sample_rate || 8000;
+          console.log(`🎵 Stream codec: ${codec}, sample rate: ${sampleRate}Hz`);
+        }
         break;
       case 'media':
         // message.media.payload est base64
