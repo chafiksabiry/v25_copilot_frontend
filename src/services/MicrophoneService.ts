@@ -99,10 +99,10 @@ export class MicrophoneService {
       try {
         this.stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 48000 // Explicit sample rate
+            echoCancellation: true,  // Annulation d'écho pour éviter le feedback
+            noiseSuppression: true,  // Suppression de bruit
+            autoGainControl: true,   // Contrôle automatique du gain
+            sampleRate: 48000        // Taux d'échantillonnage explicite
           } 
         });
         console.log('✅ Microphone access granted');
@@ -159,10 +159,18 @@ export class MicrophoneService {
       // 7) Connect audio chain in parallel:
       //    CRITICAL: Both nodes must be connected to receive audio
       //    - Worklet: source → worklet (encodes RTP)
-      //    - Recorder: source → recorder → destination (records audio)
+      //    - Recorder: source → recorder → analyser (records audio without feedback)
+      
+      // Créer un AnalyserNode qui ne produit pas de sortie audio mais maintient le ScriptProcessorNode actif
+      // L'AnalyserNode permet au ScriptProcessorNode de fonctionner sans créer de feedback
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      
       source.connect(this.node);
       source.connect(this.recorderScriptNode);
-      this.recorderScriptNode.connect(this.audioContext.destination);
+      // Connecter à un AnalyserNode au lieu de la destination pour éviter le feedback
+      this.recorderScriptNode.connect(analyser);
+      // L'AnalyserNode n'a pas besoin d'être connecté à la destination
       
       // Store recording start time
       this.recordingStartTime = Date.now();

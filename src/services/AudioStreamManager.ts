@@ -5,6 +5,9 @@ export class AudioStreamManager {
 
   private isConnected: boolean = false;
   private onErrorCallback: ((error: Error) => void) | null = null;
+  
+  // Audio quality settings
+  private readonly GAIN_VALUE = 0.7; // Réduire le gain pour éviter le feedback (70% au lieu de 100%)
 
   // Jitter buffer / queue (Float32Array chunks)
   private chunkQueue: Float32Array[] = [];
@@ -172,7 +175,8 @@ export class AudioStreamManager {
       });
       this.gainNode = this.audioContext.createGain();
       // Ajuster le gain si nécessaire (prévenir saturation)
-      this.gainNode.gain.value = 0.95;
+      // Réduire le gain pour éviter le feedback audio (50% au lieu de 95%)
+      this.gainNode.gain.value = 0.5;
       this.gainNode.connect(this.audioContext.destination);
       this.playbackTime = this.audioContext.currentTime;
       console.log('🔊 AudioContext initialisé (sampleRate:', this.SAMPLE_RATE, ')');

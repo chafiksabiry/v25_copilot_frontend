@@ -552,7 +552,7 @@ export function ContactInfo() {
     }
   }, [telnyxCallError]);
 
-  // Effect to handle inbound audio stream connection (frontend-audio)
+  // Effect to handle inbound audio stream connection (audio-stream)
   useEffect(() => {
     if (streamUrl) {
       console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
