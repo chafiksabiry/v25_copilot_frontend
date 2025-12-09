@@ -11,30 +11,31 @@ class MicProcessor extends AudioWorkletProcessor {
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
     
-    // Filtre anti-aliasing : buffer pour moyenne mobile
-    this.antiAliasBuffer = [];
-    this.antiAliasSize = Math.ceil(this.ratio); // Taille du filtre = ratio de downsampling
+    // Filtre passe-bas pour anti-aliasing (filtre FIR simple)
+    // Fréquence de coupure = sampleRate / (2 * ratio) pour éviter l'aliasing
+    // Pour 48kHz -> 8kHz: ratio=6, donc coupure à ~4kHz
+    this.lowPassBuffer = new Float32Array(8); // Buffer circulaire pour le filtre
+    this.lowPassIndex = 0;
+    // Coefficients du filtre passe-bas (FIR simple, 8 taps)
+    // Calculés pour une fréquence de coupure à ~4kHz pour 48kHz
+    this.lowPassCoeffs = new Float32Array([
+      0.05, 0.1, 0.15, 0.2, 0.2, 0.15, 0.1, 0.05
+    ]);
   }
 
-  // Filtre passe-bas simple (moyenne mobile) pour réduire l'aliasing
-  applyAntiAliasFilter(samples) {
-    const filtered = [];
-    for (let i = 0; i < samples.length; i++) {
-      this.antiAliasBuffer.push(samples[i]);
-      
-      // Garder seulement les derniers N échantillons
-      if (this.antiAliasBuffer.length > this.antiAliasSize) {
-        this.antiAliasBuffer.shift();
-      }
-      
-      // Calculer la moyenne (filtre passe-bas)
-      let sum = 0;
-      for (let j = 0; j < this.antiAliasBuffer.length; j++) {
-        sum += this.antiAliasBuffer[j];
-      }
-      const average = sum / this.antiAliasBuffer.length;
-      filtered.push(average);
+  // Filtre passe-bas FIR pour réduire l'aliasing avant le downsampling
+  applyLowPassFilter(sample) {
+    // Ajouter le nouvel échantillon au buffer circulaire
+    this.lowPassBuffer[this.lowPassIndex] = sample;
+    this.lowPassIndex = (this.lowPassIndex + 1) % this.lowPassBuffer.length;
+    
+    // Calculer la convolution (produit scalaire)
+    let filtered = 0;
+    for (let i = 0; i < this.lowPassCoeffs.length; i++) {
+      const bufferIdx = (this.lowPassIndex + i) % this.lowPassBuffer.length;
+      filtered += this.lowPassBuffer[bufferIdx] * this.lowPassCoeffs[i];
     }
+    
     return filtered;
   }
 
@@ -42,14 +43,13 @@ class MicProcessor extends AudioWorkletProcessor {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // Appliquer le filtre anti-aliasing avant le downsampling
-    const filteredInput = this.applyAntiAliasFilter(input);
-
-    // Downsample from 48kHz -> 8kHz avec échantillonnage régulier
-    for (let i = 0; i < filteredInput.length; i += this.ratio) {
+    // Appliquer le filtre passe-bas et downsampler en une seule passe
+    // pour optimiser les performances
+    for (let i = 0; i < input.length; i += this.ratio) {
       const idx = Math.floor(i);
-      const sample = filteredInput[idx];
-      const mu = this.encodeMuLaw(sample);
+      // Appliquer le filtre passe-bas avant de prendre l'échantillon
+      const filteredSample = this.applyLowPassFilter(input[idx]);
+      const mu = this.encodeMuLaw(filteredSample);
       this.buffer.push(mu);
     }
 
@@ -104,9 +104,9 @@ class MicProcessor extends AudioWorkletProcessor {
     // Normaliser et limiter le signal pour éviter la distorsion
     let s = Math.max(-1.0, Math.min(1.0, sample));
     
-    // Appliquer une légère compression pour réduire les pics
-    const compressionRatio = 0.95; // Réduire légèrement les pics
-    s = Math.sign(s) * Math.pow(Math.abs(s), 1.0 / compressionRatio);
+    // Réduire légèrement le niveau pour éviter la saturation
+    // Mais sans compression excessive qui introduit de la distorsion
+    s = s * 0.9; // Réduire de 10% pour éviter la saturation
     
     // Encodage µ-law standard ITU-T G.711
     const BIAS = 0x84;

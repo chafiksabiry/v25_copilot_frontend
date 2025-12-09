@@ -138,11 +138,23 @@ export class AudioStreamManager {
   }
 
   // Convertit Uint8Array PCMU -> Float32Array (valeurs dans [-1, 1])
+  // Avec filtre de débruitement pour réduire les artefacts
   private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
     const out = new Float32Array(pcmuData.length);
+    let prevSample = 0;
+    
     for (let i = 0; i < pcmuData.length; i++) {
       const s16 = this.decodeMuLawByte(pcmuData[i]);
-      out[i] = s16 / 32768; // normaliser
+      let normalized = s16 / 32768; // normaliser à [-1, 1]
+      
+      // Appliquer un filtre de débruitement simple (moyenne avec l'échantillon précédent)
+      // Cela réduit les artefacts de quantification PCMU
+      if (i > 0) {
+        normalized = normalized * 0.7 + prevSample * 0.3; // Mix 70% nouveau, 30% ancien
+      }
+      
+      out[i] = normalized;
+      prevSample = normalized;
     }
     return out;
   }
@@ -193,8 +205,8 @@ export class AudioStreamManager {
       });
       this.gainNode = this.audioContext.createGain();
       // Ajuster le gain pour équilibrer volume et feedback
-      // Gain à 60% pour un meilleur équilibre entre qualité et feedback
-      this.gainNode.gain.value = 0.6;
+      // Gain à 55% pour réduire la distorsion et le feedback
+      this.gainNode.gain.value = 0.55;
       this.gainNode.connect(this.audioContext.destination);
       this.playbackTime = this.audioContext.currentTime;
       console.log('🔊 AudioContext initialisé (sampleRate:', this.SAMPLE_RATE, ')');
