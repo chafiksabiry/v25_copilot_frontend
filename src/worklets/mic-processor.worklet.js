@@ -10,16 +10,45 @@ class MicProcessor extends AudioWorkletProcessor {
     this.sequenceNumber = 0;
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
+    
+    // Filtre anti-aliasing : buffer pour moyenne mobile
+    this.antiAliasBuffer = [];
+    this.antiAliasSize = Math.ceil(this.ratio); // Taille du filtre = ratio de downsampling
+  }
+
+  // Filtre passe-bas simple (moyenne mobile) pour réduire l'aliasing
+  applyAntiAliasFilter(samples) {
+    const filtered = [];
+    for (let i = 0; i < samples.length; i++) {
+      this.antiAliasBuffer.push(samples[i]);
+      
+      // Garder seulement les derniers N échantillons
+      if (this.antiAliasBuffer.length > this.antiAliasSize) {
+        this.antiAliasBuffer.shift();
+      }
+      
+      // Calculer la moyenne (filtre passe-bas)
+      let sum = 0;
+      for (let j = 0; j < this.antiAliasBuffer.length; j++) {
+        sum += this.antiAliasBuffer[j];
+      }
+      const average = sum / this.antiAliasBuffer.length;
+      filtered.push(average);
+    }
+    return filtered;
   }
 
   process(inputs) {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // Downsample from 48kHz -> 8kHz
-    for (let i = 0; i < input.length; i += this.ratio) {
+    // Appliquer le filtre anti-aliasing avant le downsampling
+    const filteredInput = this.applyAntiAliasFilter(input);
+
+    // Downsample from 48kHz -> 8kHz avec échantillonnage régulier
+    for (let i = 0; i < filteredInput.length; i += this.ratio) {
       const idx = Math.floor(i);
-      const sample = input[idx];
+      const sample = filteredInput[idx];
       const mu = this.encodeMuLaw(sample);
       this.buffer.push(mu);
     }
@@ -72,12 +101,19 @@ class MicProcessor extends AudioWorkletProcessor {
   }
 
   encodeMuLaw(sample) {
+    // Normaliser et limiter le signal pour éviter la distorsion
+    let s = Math.max(-1.0, Math.min(1.0, sample));
+    
+    // Appliquer une légère compression pour réduire les pics
+    const compressionRatio = 0.95; // Réduire légèrement les pics
+    s = Math.sign(s) * Math.pow(Math.abs(s), 1.0 / compressionRatio);
+    
+    // Encodage µ-law standard ITU-T G.711
     const BIAS = 0x84;
     const MAX = 32635;
-    const sign = sample < 0 ? 0x80 : 0;
-    let s = Math.abs(sample);
-    s = Math.min(s, 1.0);
-    let s16 = Math.floor(s * 32767);
+    const sign = s < 0 ? 0x80 : 0;
+    let absSample = Math.abs(s);
+    let s16 = Math.floor(absSample * 32767);
     if (s16 > MAX) s16 = MAX;
     s16 = s16 + BIAS;
     let exponent = 7;

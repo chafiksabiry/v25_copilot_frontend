@@ -179,9 +179,9 @@ export class AudioStreamManager {
         sampleRate: this.SAMPLE_RATE
       });
       this.gainNode = this.audioContext.createGain();
-      // Ajuster le gain si nécessaire (prévenir saturation)
-      // Réduire le gain pour éviter le feedback audio (50% au lieu de 95%)
-      this.gainNode.gain.value = 0.5;
+      // Ajuster le gain pour équilibrer volume et feedback
+      // Gain à 60% pour un meilleur équilibre entre qualité et feedback
+      this.gainNode.gain.value = 0.6;
       this.gainNode.connect(this.audioContext.destination);
       this.playbackTime = this.audioContext.currentTime;
       console.log('🔊 AudioContext initialisé (sampleRate:', this.SAMPLE_RATE, ')');
