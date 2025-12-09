@@ -12,7 +12,8 @@ export class AudioStreamManager {
   // Jitter buffer / queue (Float32Array chunks)
   private chunkQueue: Float32Array[] = [];
   private readonly START_THRESHOLD = 3; // combien de chunks accumuler avant de démarrer
-  private readonly MAX_QUEUE = 120; // maximum chunks à stocker (augmenté pour éviter les débordements)
+  private readonly MAX_QUEUE = 200; // maximum chunks à stocker (augmenté pour gérer les pics de trafic)
+  private readonly CHUNKS_PER_ITERATION = 5; // Traiter plusieurs chunks par itération pour être plus rapide
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
 
@@ -153,20 +154,32 @@ export class AudioStreamManager {
 
     this.chunkQueue.push(float32);
 
-    // Drop oldest if overflow
+    // Drop oldest if overflow (mais seulement si vraiment nécessaire)
     if (this.chunkQueue.length > this.MAX_QUEUE) {
-      this.chunkQueue.shift();
-      this.overflowLogCount++;
-      // Logger seulement tous les 10 overflows pour éviter le spam
-      if (this.overflowLogCount % 10 === 0) {
+      // Supprimer plusieurs chunks anciens pour faire de la place
+      const chunksToRemove = Math.min(10, this.chunkQueue.length - this.MAX_QUEUE + 20);
+      for (let i = 0; i < chunksToRemove; i++) {
+        this.chunkQueue.shift();
+      }
+      this.overflowLogCount += chunksToRemove;
+      // Logger seulement tous les 50 overflows pour éviter le spam
+      if (this.overflowLogCount % 50 === 0) {
         console.warn(`⚠️ chunkQueue overflow — dropped ${this.overflowLogCount} chunks (queue size: ${this.chunkQueue.length})`);
       }
     }
 
-    // If we have enough to start, start processing
+    // Si on a assez de chunks pour démarrer ET qu'on n'est pas déjà en train de jouer, démarrer
     if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
       this.ensureAudioContext();
       this.startProcessingQueue();
+    } else if (this.isPlaying && this.chunkQueue.length > this.MAX_QUEUE * 0.8) {
+      // Si la queue devient trop pleine même pendant la lecture, accélérer le traitement
+      // En forçant une nouvelle itération immédiate
+      requestAnimationFrame(() => {
+        if (this.chunkQueue.length > 0 && this.isPlaying) {
+          this.startProcessingQueue();
+        }
+      });
     }
   }
 
@@ -213,7 +226,7 @@ export class AudioStreamManager {
       this.playbackTime = this.audioContext.currentTime + 0.05; // 50ms headroom
     }
 
-    // Processer la queue en "batch" non-blocant : on schedule tant qu'il y a des chunks
+    // Processer la queue en "batch" non-blocant : traiter plusieurs chunks par itération
     const process = () => {
       if (!this.audioContext) return;
       if (this.chunkQueue.length === 0) {
@@ -222,13 +235,23 @@ export class AudioStreamManager {
         return;
       }
 
-      // prendre un chunk et le schedule immédiatement à playbackTime
-      const chunk = this.chunkQueue.shift()!;
-      this.scheduleChunk(chunk);
+      // Traiter plusieurs chunks par itération pour être plus rapide
+      const chunksToProcess = Math.min(this.CHUNKS_PER_ITERATION, this.chunkQueue.length);
+      for (let i = 0; i < chunksToProcess; i++) {
+        const chunk = this.chunkQueue.shift();
+        if (chunk) {
+          this.scheduleChunk(chunk);
+        }
+      }
 
-      // Boucle non bloquante : on utilise setTimeout pour relancer rapidement
-      // Le délai peut être très court car scheduling est asynchrone et non-blocking
-      setTimeout(process, 0);
+      // Utiliser requestAnimationFrame pour une meilleure performance que setTimeout
+      // Si la queue est encore pleine, continuer immédiatement
+      if (this.chunkQueue.length > 0) {
+        requestAnimationFrame(process);
+      } else {
+        // Si la queue est vide, utiliser setTimeout pour vérifier périodiquement
+        setTimeout(process, 1);
+      }
     };
 
     process();
