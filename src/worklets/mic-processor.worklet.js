@@ -13,6 +13,11 @@ class MicProcessor extends AudioWorkletProcessor {
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
     
+    // Filtre de réduction de bruit adaptatif : moyenne mobile pour estimer le niveau de bruit
+    this.noiseLevel = 0.005; // Estimation initiale du niveau de bruit (0.5%)
+    this.signalLevel = 0; // Niveau du signal actuel
+    this.alpha = 0.95; // Facteur de lissage pour l'estimation du bruit (95% ancien, 5% nouveau)
+    
     // Log pour debug
     if (this.ratio === 1) {
       console.log(`✅ Worklet: Pas de resampling nécessaire (AudioContext à ${sampleRate}Hz = codec 8kHz)`);
@@ -64,12 +69,32 @@ class MicProcessor extends AudioWorkletProcessor {
 
     const ratio = Math.floor(this.ratio); // Utiliser un ratio entier pour éviter les calculs flottants
     
+    // Filtre de réduction de bruit adaptatif amélioré
+    // Estimer le niveau de bruit en temps réel et supprimer les signaux en dessous
+    let maxAmplitude = 0;
+    for (let i = 0; i < input.length; i++) {
+      const abs = Math.abs(input[i]);
+      if (abs > maxAmplitude) maxAmplitude = abs;
+    }
+    
+    // Mettre à jour l'estimation du niveau de bruit (seulement si le signal est faible)
+    if (maxAmplitude < 0.1) {
+      // Si le signal est faible, c'est probablement du bruit
+      this.noiseLevel = this.noiseLevel * this.alpha + maxAmplitude * (1 - this.alpha);
+    }
+    
+    // Seuil de gate adaptatif : 3x le niveau de bruit estimé (pour être sûr de capturer la voix)
+    const adaptiveGateThreshold = Math.max(0.015, this.noiseLevel * 3); // Minimum 1.5% pour éviter de couper la voix
+    
     // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
     if (ratio === 1) {
       // Pas besoin de filtre anti-aliasing ni de downsampling
-      // Encoder directement en µ-law
+      // Encoder directement en µ-law avec gate adaptatif
       for (let i = 0; i < input.length; i++) {
-        const mu = this.encodeMuLaw(input[i]);
+        const absSample = Math.abs(input[i]);
+        // Gate adaptatif : supprimer les signaux en dessous du seuil
+        const gatedSample = absSample < adaptiveGateThreshold ? 0 : input[i];
+        const mu = this.encodeMuLaw(gatedSample);
         this.buffer.push(mu);
       }
     } else {
@@ -81,12 +106,16 @@ class MicProcessor extends AudioWorkletProcessor {
         // Appliquer le filtre passe-bas sur CHAQUE échantillon avant le downsampling
         const filteredSample = this.applyLowPassFilter(input[i]);
         
+        // Appliquer le gate adaptatif pour supprimer les bruits de fond
+        const absFiltered = Math.abs(filteredSample);
+        const gatedSample = absFiltered < adaptiveGateThreshold ? 0 : filteredSample;
+        
         // Downsampler : prendre seulement 1 échantillon sur 'ratio' APRÈS le filtrage
         sampleCounter++;
         if (sampleCounter >= ratio) {
           sampleCounter = 0;
           // Encoder en µ-law seulement les échantillons downsamplés
-          const mu = this.encodeMuLaw(filteredSample);
+          const mu = this.encodeMuLaw(gatedSample);
           this.buffer.push(mu);
         }
       }

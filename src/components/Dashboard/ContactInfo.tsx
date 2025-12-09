@@ -600,6 +600,17 @@ export function ContactInfo() {
           return;
         }
         
+        // IMPORTANT: Attendre 200ms avant de démarrer la capture micro
+        // Cela permet au flux inbound de se stabiliser et évite les bruits au démarrage
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Vérifier à nouveau que l'appel est toujours answered après le délai
+        if (telnyxCallStatus !== 'call.answered') {
+          console.log('⚠️ Call status changed during delay, skipping microphone capture');
+          outboundWs.close();
+          return;
+        }
+        
         // Créer le service micro avec le WebSocket outbound connecté
         const mic = new MicrophoneService(outboundWs);
         setMicrophoneService(mic);
@@ -614,7 +625,7 @@ export function ContactInfo() {
           }
           
           await mic.startCapture();
-          console.log('🎤 Capture micro démarrée automatiquement');
+          console.log('🎤 Capture micro démarrée automatiquement (après délai de stabilisation)');
         } catch (error) {
           console.error('❌ Erreur démarrage micro:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown microphone error';

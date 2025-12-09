@@ -212,35 +212,43 @@ export class AudioStreamManager {
   private applySmoothing(float32: Float32Array): void {
     if (float32.length < 3) return;
     
-    // Filtre de lissage amélioré : moyenne pondérée avec fenêtre glissante de 3 échantillons
+    // Filtre de réduction de bruit adaptatif : supprimer les petits pics isolés (probablement du bruit)
+    const denoised = new Float32Array(float32.length);
+    const noiseThreshold = 0.02; // Seuil pour détecter les pics de bruit (2%)
+    
+    // Premier passage : détecter et supprimer les pics isolés
+    for (let i = 1; i < float32.length - 1; i++) {
+      const current = Math.abs(float32[i]);
+      const prev = Math.abs(float32[i - 1]);
+      const next = Math.abs(float32[i + 1]);
+      
+      // Si le sample actuel est un pic isolé (beaucoup plus grand que ses voisins), c'est probablement du bruit
+      if (current > noiseThreshold && current > prev * 2 && current > next * 2) {
+        // Remplacer par la moyenne des voisins
+        denoised[i] = (float32[i - 1] + float32[i + 1]) / 2;
+      } else {
+        denoised[i] = float32[i];
+      }
+    }
+    denoised[0] = float32[0];
+    denoised[float32.length - 1] = float32[float32.length - 1];
+    
+    // Deuxième passage : lissage avec moyenne pondérée
     const smoothed = new Float32Array(float32.length);
     
     // Premier échantillon : moyenne avec le suivant
-    smoothed[0] = float32[0] * 0.6 + float32[1] * 0.4;
+    smoothed[0] = denoised[0] * 0.6 + denoised[1] * 0.4;
     
     // Échantillons du milieu : moyenne pondérée avec fenêtre de 3
-    for (let i = 1; i < float32.length - 1; i++) {
+    for (let i = 1; i < denoised.length - 1; i++) {
       // Pondération : 50% échantillon actuel, 30% précédent, 20% suivant
-      // Cela réduit les bruits de quantification tout en préservant la dynamique
-      smoothed[i] = float32[i] * 0.5 + float32[i - 1] * 0.3 + float32[i + 1] * 0.2;
+      smoothed[i] = denoised[i] * 0.5 + denoised[i - 1] * 0.3 + denoised[i + 1] * 0.2;
     }
     
     // Dernier échantillon : moyenne avec le précédent
-    smoothed[float32.length - 1] = float32[float32.length - 2] * 0.4 + float32[float32.length - 1] * 0.6;
+    smoothed[denoised.length - 1] = denoised[denoised.length - 2] * 0.4 + denoised[denoised.length - 1] * 0.6;
     
-    // Appliquer un deuxième passage pour un lissage plus doux (réduit les artefacts résiduels)
-    if (float32.length >= 5) {
-      const smoothed2 = new Float32Array(float32.length);
-      smoothed2[0] = smoothed[0];
-      for (let i = 1; i < smoothed.length - 1; i++) {
-        // Deuxième passage avec pondération légèrement différente
-        smoothed2[i] = smoothed[i] * 0.6 + smoothed[i - 1] * 0.2 + smoothed[i + 1] * 0.2;
-      }
-      smoothed2[smoothed.length - 1] = smoothed[smoothed.length - 1];
-      float32.set(smoothed2);
-    } else {
-      float32.set(smoothed);
-    }
+    float32.set(smoothed);
   }
 
   // --- Queue / Jitter buffer management avec backpressure ---
@@ -288,9 +296,15 @@ export class AudioStreamManager {
     }
 
     // Si on a assez de chunks pour démarrer ET qu'on n'est pas déjà en train de jouer, démarrer
+    // Ajouter un petit délai au démarrage pour éviter les bruits initiaux
     if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
       this.ensureAudioContext();
-      this.startProcessingQueue();
+      // Attendre 50ms avant de démarrer pour laisser le flux se stabiliser
+      setTimeout(() => {
+        if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
+          this.startProcessingQueue();
+        }
+      }, 50);
     }
   }
 
