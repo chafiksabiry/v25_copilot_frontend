@@ -2,6 +2,7 @@ export class AudioStreamManager {
   private ws: WebSocket | null = null;
   private audioContext: AudioContext | null = null;
   private gainNode: GainNode | null = null;
+  private currentCodec: string = 'PCMU'; // Codec détecté depuis le message start (PCMU ou PCMA)
 
   private isConnected: boolean = false;
   private onErrorCallback: ((error: Error) => void) | null = null;
@@ -88,21 +89,28 @@ export class AudioStreamManager {
         break;
       case 'start':
         console.log('▶️ Stream started:', message.stream_id);
-        // Détecter le codec depuis le message start
+        // Détecter le codec depuis le message start et le stocker
         const mediaFormat = message.start?.media_format;
         if (mediaFormat) {
           const codec = mediaFormat.encoding || 'PCMU';
           const sampleRate = mediaFormat.sample_rate || 8000;
           console.log(`🎵 Stream codec: ${codec}, sample rate: ${sampleRate}Hz`);
+          // Stocker le codec pour l'utiliser lors du décodage
+          this.currentCodec = codec;
         }
         break;
       case 'media':
         // message.media.payload est base64
         if (message.media && message.media.payload) {
+          // Détecter le codec depuis le message ou utiliser celui du start event
+          const codec = message.media.format || this.currentCodec || 'PCMU';
+          
           // Certains providers envoient `payload` base64; d'autres envoient hex/array — ici on gère base64
           const base64 = message.media.payload;
           const u8 = this.base64ToUint8Array(base64);
-          const float32 = this.convertFromPCMU(u8);
+          
+          // Utiliser la fonction de décodage qui supporte PCMU et PCMA
+          const float32 = this.convertFromG711(u8, codec);
           this.enqueueChunk(float32);
         }
         break;
@@ -145,15 +153,47 @@ export class AudioStreamManager {
     return sample < -32768 ? -32768 : sample > 32767 ? 32767 : sample;
   }
 
-  // Convertit Uint8Array PCMU -> Float32Array (valeurs dans [-1, 1])
-  // Version optimisée sans filtre supplémentaire pour meilleure performance
-  private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
-    const out = new Float32Array(pcmuData.length);
-    for (let i = 0; i < pcmuData.length; i++) {
-      const s16 = this.decodeMuLawByte(pcmuData[i]);
+  // --- A-law (G.711) décodage correct ---
+  // Retourne Int16 amplitude (-32768..32767)
+  // PCMA est utilisé en Europe, PCMU en Amérique du Nord
+  private decodeALawByte(aLawByte: number): number {
+    // Standard ITU-T G.711 A-law decoding
+    aLawByte ^= 0x55; // Inverser les bits pairs/impairs
+    const sign = (aLawByte & 0x80) ? -1 : 1;
+    const exponent = (aLawByte >> 4) & 0x07;
+    const mantissa = aLawByte & 0x0f;
+    
+    let sample: number;
+    if (exponent === 0) {
+      // Cas spécial pour exponent = 0
+      sample = (mantissa << 4) + 8;
+    } else {
+      sample = ((mantissa << 4) + 0x108) << (exponent - 1);
+    }
+    
+    sample = sign * (sample - 0x84);
+    // clamp to Int16
+    return sample < -32768 ? -32768 : sample > 32767 ? 32767 : sample;
+  }
+
+  // Convertit Uint8Array PCMU/PCMA -> Float32Array (valeurs dans [-1, 1])
+  // Détecte automatiquement le codec (PCMU = µ-law, PCMA = A-law)
+  private convertFromG711(audioData: Uint8Array, codec: string = 'PCMU'): Float32Array {
+    const out = new Float32Array(audioData.length);
+    const isPCMA = codec === 'PCMA' || codec === 'pcma';
+    
+    for (let i = 0; i < audioData.length; i++) {
+      const s16 = isPCMA 
+        ? this.decodeALawByte(audioData[i])
+        : this.decodeMuLawByte(audioData[i]);
       out[i] = s16 / 32768; // normaliser à [-1, 1]
     }
     return out;
+  }
+
+  // Alias pour compatibilité (ancien code)
+  private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
+    return this.convertFromG711(pcmuData, 'PCMU');
   }
 
   // --- Queue / Jitter buffer management avec backpressure ---
