@@ -10,6 +10,7 @@ export class MicrophoneService {
   private recorderWorkletNode: AudioWorkletNode | null = null; // Nouveau worklet pour enregistrement
   private recordingCounter: number = 0;
   private isRecording: boolean = false;
+  private hasStartedCapture: boolean = false; // Flag pour éviter la double capture
 
   constructor(outboundWs: WebSocket) {
     this.outboundWs = outboundWs;
@@ -75,7 +76,15 @@ export class MicrophoneService {
   }
 
   async startCapture() {
+    // Empêcher la double capture
+    if (this.hasStartedCapture) {
+      console.warn('⚠️ Capture déjà démarrée, ignoré');
+      return;
+    }
+    
     try {
+      this.hasStartedCapture = true;
+      
       // 1) Ensure outbound WebSocket provided and open
       if (!this.outboundWs) throw new Error('Outbound WebSocket instance not provided');
       if (this.outboundWs.readyState !== WebSocket.OPEN) {
@@ -332,7 +341,7 @@ export class MicrophoneService {
 
   async stopCapture() {
     console.log('⏹️ Stopping microphone stream');
-    
+    this.hasStartedCapture = false; // Réinitialiser le flag
     // Arrêter l'enregistrement d'abord pour éviter les callbacks après le cleanup
     this.isRecording = false;
     

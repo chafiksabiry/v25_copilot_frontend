@@ -507,8 +507,8 @@ export function ContactInfo() {
           setCallStatus('active');
           dispatch({ type: 'START_CALL', participants: [], contact: contact });
           
-          // Démarrer la capture micro quand l'appel est répondu
-          startMicrophoneCapture();
+          // La capture micro sera démarrée automatiquement dans l'effet outboundStreamUrl
+          // quand le WebSocket est connecté, pas besoin de l'appeler ici
           break;
         case 'call.hangup':
           console.log('📞 Call ended');
@@ -583,7 +583,8 @@ export function ContactInfo() {
 
   // Effect to handle outbound audio stream connection (outbound-audio)
   useEffect(() => {
-    if (outboundStreamUrl) {
+    // Ne démarrer que si l'appel est answered ET le WebSocket URL est défini
+    if (outboundStreamUrl && telnyxCallStatus === 'call.answered') {
       console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
       
       // Create WebSocket for microphone service (outbound audio)
@@ -591,6 +592,14 @@ export function ContactInfo() {
       
       outboundWs.onopen = async () => {
         console.log('🎤 Outbound WebSocket connected for microphone');
+        
+        // Vérifier que l'appel est toujours answered avant de démarrer
+        if (telnyxCallStatus !== 'call.answered') {
+          console.log('⚠️ Call status changed, skipping microphone capture');
+          outboundWs.close();
+          return;
+        }
+        
         // Créer le service micro avec le WebSocket outbound connecté
         const mic = new MicrophoneService(outboundWs);
         setMicrophoneService(mic);
@@ -628,12 +637,13 @@ export function ContactInfo() {
         if (microphoneService) {
           microphoneService.stopCapture();
         }
-        if (outboundWs.readyState === WebSocket.OPEN) {
+        if (outboundWs.readyState === WebSocket.OPEN || outboundWs.readyState === WebSocket.CONNECTING) {
           outboundWs.close();
         }
+        setMicrophoneService(null);
       };
     }
-  }, [outboundStreamUrl]);
+  }, [outboundStreamUrl, telnyxCallStatus]); // Ajouter telnyxCallStatus comme dépendance
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
     if (!isTelnyxConnected) {

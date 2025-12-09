@@ -37,20 +37,21 @@ class MicProcessor extends AudioWorkletProcessor {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // Appliquer le filtre passe-bas et downsampler en une seule passe
-    // pour optimiser les performances
+    // Optimisation : traiter seulement les échantillons nécessaires pour le downsampling
+    // au lieu de filtrer tous les échantillons
     let sampleCounter = 0; // Compteur pour le downsampling
-    for (let i = 0; i < input.length; i++) {
-      // Appliquer le filtre passe-bas sur chaque échantillon
-      const filteredSample = this.applyLowPassFilter(input[i]);
+    const ratio = Math.floor(this.ratio); // Utiliser un ratio entier pour éviter les calculs flottants
+    
+    for (let i = 0; i < input.length; i += ratio) {
+      // Prendre l'échantillon à l'index i (déjà downsamplé)
+      const sample = input[i];
       
-      // Downsampler : prendre seulement 1 échantillon sur 'ratio'
-      sampleCounter++;
-      if (sampleCounter >= this.ratio) {
-        sampleCounter = 0;
-        const mu = this.encodeMuLaw(filteredSample);
-        this.buffer.push(mu);
-      }
+      // Appliquer le filtre passe-bas seulement sur l'échantillon downsamplé
+      const filteredSample = this.applyLowPassFilter(sample);
+      
+      // Encoder en µ-law
+      const mu = this.encodeMuLaw(filteredSample);
+      this.buffer.push(mu);
     }
 
     // Send in RTP chunks (160 samples = 20 ms @ 8 kHz)
