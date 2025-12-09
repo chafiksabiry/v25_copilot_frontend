@@ -109,6 +109,8 @@ export class MicrophoneService {
       console.log('🎤 Requesting microphone access...');
       try {
         // Configuration optimale pour réduire les bruits automatiquement
+        // IMPORTANT: Essayer de forcer la capture à 8kHz pour correspondre au codec PCMA/PCMU
+        // Cela réduit les artefacts de resampling et les bruits
         this.stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
             // Traitement audio natif du navigateur (priorité haute)
@@ -117,7 +119,8 @@ export class MicrophoneService {
             autoGainControl: true,         // Contrôle automatique du gain (évite saturation)
             
             // Paramètres avancés pour meilleure qualité
-            sampleRate: 48000,            // Taux d'échantillonnage haute qualité
+            // Essayer 8kHz d'abord pour correspondre au codec PCMA/PCMU
+            sampleRate: 8000,             // Taux d'échantillonnage correspondant au codec (8kHz)
             channelCount: 1,              // Mono (suffisant pour la voix)
             latency: 0.01,                // Latence minimale (10ms)
             
@@ -139,13 +142,24 @@ export class MicrophoneService {
         const audioTracks = this.stream.getAudioTracks();
         if (audioTracks.length > 0) {
           const settings = audioTracks[0].getSettings();
+          const actualSampleRate = settings.sampleRate || 48000; // Fallback si non disponible
+          const requestedSampleRate = 8000;
+          
           console.log('🎤 Applied audio settings:', {
             echoCancellation: settings.echoCancellation,
             noiseSuppression: settings.noiseSuppression,
             autoGainControl: settings.autoGainControl,
-            sampleRate: settings.sampleRate,
+            sampleRate: actualSampleRate,
             channelCount: settings.channelCount
           });
+          
+          // Avertir si le sample rate réel ne correspond pas à la demande
+          if (actualSampleRate && Math.abs(actualSampleRate - requestedSampleRate) > 100) {
+            console.warn(`⚠️ Microphone sample rate is ${actualSampleRate}Hz instead of ${requestedSampleRate}Hz`);
+            console.warn('💡 Le navigateur a ignoré la contrainte sampleRate. Le resampling sera effectué dans le worklet.');
+          } else if (actualSampleRate) {
+            console.log(`✅ Microphone sample rate matches codec: ${actualSampleRate}Hz`);
+          }
         }
       } catch (mediaError: any) {
         console.error('❌ Microphone access error:', mediaError);

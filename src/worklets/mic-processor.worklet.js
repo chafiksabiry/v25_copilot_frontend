@@ -5,11 +5,20 @@ class MicProcessor extends AudioWorkletProcessor {
     this.buffer = [];
     // Calculate ratio based on the actual AudioContext sample rate
     // sampleRate is a global variable in AudioWorkletProcessor representing the context's sample rate
-    // For a typical 48kHz AudioContext: ratio = 48000 / 8000 = 6
+    // Target: 8kHz pour correspondre au codec PCMA/PCMU
+    // Si AudioContext est à 8kHz: ratio = 1 (pas de resampling)
+    // Si AudioContext est à 48kHz: ratio = 6 (resampling nécessaire)
     this.ratio = sampleRate / 8000;
     this.sequenceNumber = 0;
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
+    
+    // Log pour debug
+    if (this.ratio === 1) {
+      console.log(`✅ Worklet: Pas de resampling nécessaire (AudioContext à ${sampleRate}Hz = codec 8kHz)`);
+    } else {
+      console.log(`🔄 Worklet: Resampling de ${sampleRate}Hz vers 8kHz (ratio: ${this.ratio.toFixed(2)})`);
+    }
     
     // Filtre passe-bas amélioré pour anti-aliasing (réduit les artefacts de downsampling)
     // Utiliser un filtre à réponse impulsionnelle finie (FIR) pour une meilleure qualité
@@ -52,22 +61,33 @@ class MicProcessor extends AudioWorkletProcessor {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // IMPORTANT : Filtrer TOUS les échantillons avant le downsampling pour éviter l'aliasing
-    // Le filtre passe-bas doit être appliqué avant de prendre un échantillon sur 'ratio'
-    let sampleCounter = 0; // Compteur pour le downsampling
     const ratio = Math.floor(this.ratio); // Utiliser un ratio entier pour éviter les calculs flottants
     
-    for (let i = 0; i < input.length; i++) {
-      // Appliquer le filtre passe-bas sur CHAQUE échantillon avant le downsampling
-      const filteredSample = this.applyLowPassFilter(input[i]);
-      
-      // Downsampler : prendre seulement 1 échantillon sur 'ratio' APRÈS le filtrage
-      sampleCounter++;
-      if (sampleCounter >= ratio) {
-        sampleCounter = 0;
-        // Encoder en µ-law seulement les échantillons downsamplés
-        const mu = this.encodeMuLaw(filteredSample);
+    // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
+    if (ratio === 1) {
+      // Pas besoin de filtre anti-aliasing ni de downsampling
+      // Encoder directement en µ-law
+      for (let i = 0; i < input.length; i++) {
+        const mu = this.encodeMuLaw(input[i]);
         this.buffer.push(mu);
+      }
+    } else {
+      // Cas avec resampling : Filtrer TOUS les échantillons avant le downsampling pour éviter l'aliasing
+      // Le filtre passe-bas doit être appliqué avant de prendre un échantillon sur 'ratio'
+      let sampleCounter = 0; // Compteur pour le downsampling
+      
+      for (let i = 0; i < input.length; i++) {
+        // Appliquer le filtre passe-bas sur CHAQUE échantillon avant le downsampling
+        const filteredSample = this.applyLowPassFilter(input[i]);
+        
+        // Downsampler : prendre seulement 1 échantillon sur 'ratio' APRÈS le filtrage
+        sampleCounter++;
+        if (sampleCounter >= ratio) {
+          sampleCounter = 0;
+          // Encoder en µ-law seulement les échantillons downsamplés
+          const mu = this.encodeMuLaw(filteredSample);
+          this.buffer.push(mu);
+        }
       }
     }
 
