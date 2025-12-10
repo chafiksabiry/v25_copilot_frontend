@@ -40,15 +40,8 @@ class MicProcessor extends AudioWorkletProcessor {
     this.signalHistory = new Float32Array(10); // Historique des niveaux de signal
     this.historyIndex = 0;
     
-    // Filtre passe-haut pour éliminer les basses fréquences (< 100Hz) qui causent du bruit
-    // Utiliser un filtre passe-haut simple de premier ordre (filtre RC)
-    // Fréquence de coupure ~100Hz (au lieu de 80Hz) pour être moins agressif et préserver la voix
-    const cutoffFreq = 100; // Hz (augmenté de 80Hz à 100Hz pour moins d'artefacts)
-    const dt = 1.0 / sampleRate; // Période d'échantillonnage
-    const rc = 1.0 / (2.0 * Math.PI * cutoffFreq); // Constante de temps RC
-    this.highpassAlpha = rc / (rc + dt); // Coefficient du filtre passe-haut
-    this.highpassPrevInput = 0; // Échantillon d'entrée précédent
-    this.highpassPrevOutput = 0; // Échantillon de sortie précédent
+    // NOTE: Le filtre passe-haut est maintenant géré par le BiquadFilter dans MicrophoneService
+    // Cela évite les artefacts et simplifie le traitement dans le worklet
     
     // Log pour debug
     if (this.ratio === 1) {
@@ -84,15 +77,12 @@ class MicProcessor extends AudioWorkletProcessor {
 
   // Filtre passe-bas FIR amélioré pour réduire l'aliasing
   applyLowPassFilter(sample) {
-    // Appliquer d'abord le filtre passe-haut pour éliminer les basses fréquences (< 80Hz)
-    // Filtre passe-haut de premier ordre (filtre RC) : y[n] = alpha * (y[n-1] + x[n] - x[n-1])
-    const highpassOutput = this.highpassAlpha * (this.highpassPrevOutput + sample - this.highpassPrevInput);
-    this.highpassPrevInput = sample;
-    this.highpassPrevOutput = highpassOutput;
-    const filteredSample = sample - highpassOutput; // Sortie du passe-haut (élimine les basses fréquences)
+    // NOTE: Filtre passe-haut désactivé car il peut introduire des artefacts
+    // Le filtre Biquad dans MicrophoneService fait déjà le filtrage passe-haut
+    // On applique seulement le filtre FIR passe-bas pour l'anti-aliasing
     
-    // Ajouter l'échantillon filtré passe-haut au buffer circulaire
-    this.filterBuffer[this.filterIndex] = filteredSample;
+    // Ajouter l'échantillon au buffer circulaire
+    this.filterBuffer[this.filterIndex] = sample;
     this.filterIndex = (this.filterIndex + 1) % this.filterOrder;
     
     // Appliquer le filtre FIR passe-bas (convolution)
@@ -157,8 +147,8 @@ class MicProcessor extends AudioWorkletProcessor {
     }
     
     // Détecter la présence de voix (signal fort et variable)
-    // Critères ajustés pour mieux détecter la voix : RMS > 0.015, amplitude max > 0.03, variation > 0.008
-    const isVoiceLikely = rms > 0.015 && maxAmplitude > 0.03 && Math.abs(rms - medianLevel) > 0.008;
+    // Critères simplifiés pour mieux détecter la voix
+    const isVoiceLikely = rms > 0.012 && maxAmplitude > 0.025;
     
     if (isVoiceLikely) {
       this.voiceDetected = true;
@@ -175,23 +165,22 @@ class MicProcessor extends AudioWorkletProcessor {
     // Mettre à jour l'estimation du niveau de bruit (seulement si le signal est faible et stable)
     // Utiliser le niveau médian pour éviter les faux positifs dus aux pics de bruit
     // Ne pas mettre à jour si la voix est détectée pour éviter de confondre voix et bruit
-    if (!isVoiceLikely && rms < 0.08 && Math.abs(rms - medianLevel) < 0.02) {
+    if (!isVoiceLikely && rms < 0.06 && Math.abs(rms - medianLevel) < 0.015) {
       // Si le signal est faible et stable, c'est probablement du bruit
       const newNoiseLevel = this.noiseLevel * this.alpha + rms * (1 - this.alpha);
       // Limiter le niveau de bruit maximum pour éviter que le gate devienne trop permissif
       this.noiseLevel = Math.min(newNoiseLevel, this.maxNoiseLevel);
     }
     
-    // Seuil de gate adaptatif amélioré avec détection de voix
-    // Au début (pas de voix détectée) : seuil bas pour permettre la voix
-    // Après détection de voix : seuil adaptatif basé sur le bruit estimé
+    // Seuil de gate adaptatif simplifié et plus efficace
+    // Utiliser un seuil fixe bas au début, puis adaptatif après stabilisation
     let adaptiveGateThreshold;
-    if (!this.voiceDetected || this.samplesProcessed < 96000) {
-      // Phase initiale : seuil bas pour permettre la voix (0.5% à 0.8%)
-      adaptiveGateThreshold = Math.max(0.005, Math.max(this.noiseLevel * 3, 0.004));
+    if (this.samplesProcessed < 96000) {
+      // Phase initiale (2 premières secondes) : seuil fixe bas pour permettre la voix
+      adaptiveGateThreshold = 0.006; // 0.6% fixe
     } else {
-      // Phase normale : seuil adaptatif basé sur le bruit (4x le bruit, minimum 0.8%)
-      adaptiveGateThreshold = Math.max(0.008, Math.max(this.noiseLevel * 4, 0.006));
+      // Phase normale : seuil adaptatif basé sur le bruit (3.5x le bruit, minimum 0.7%)
+      adaptiveGateThreshold = Math.max(0.007, this.noiseLevel * 3.5);
     }
     
     // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
@@ -308,9 +297,9 @@ class MicProcessor extends AudioWorkletProcessor {
     
     // Filtre de réduction de bruit haute fréquence amélioré
     // Supprimer les composantes très faibles qui sont probablement du bruit
-    // Seuil réduit de 0.3% à 0.25% pour suppression plus agressive
-    if (Math.abs(s) < 0.0025) {
-      // Si le signal est très faible (< 0.25%), c'est probablement du bruit - le supprimer
+    // Seuil ajusté pour équilibrer suppression de bruit et préservation de la voix
+    if (Math.abs(s) < 0.002) {
+      // Si le signal est très faible (< 0.2%), c'est probablement du bruit - le supprimer
       s = 0;
     }
     

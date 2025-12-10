@@ -268,10 +268,16 @@ export class MicrophoneService {
       
       const source = this.audioContext.createMediaStreamSource(this.stream);
       
-      // Créer un filtre passe-bas supplémentaire pour réduire les bruits haute fréquence
-      // (le navigateur fait déjà du noise suppression, mais on peut améliorer)
-      // IMPORTANT: Ce filtre est complémentaire au filtre FIR dans le worklet
-      // Le filtre Biquad ici pré-filtre avant le worklet pour réduire la charge de traitement
+      // Créer des filtres pour améliorer la qualité audio
+      // IMPORTANT: Ces filtres pré-filtrent avant le worklet pour réduire la charge de traitement
+      
+      // Filtre passe-haut pour éliminer les basses fréquences (< 100Hz) qui causent du bruit
+      const highpassFilter = this.audioContext.createBiquadFilter();
+      highpassFilter.type = 'highpass';
+      highpassFilter.frequency.value = 100; // Coupure à 100Hz pour éliminer le bruit basse fréquence
+      highpassFilter.Q.value = 0.707; // Q optimal (Butterworth)
+      
+      // Filtre passe-bas pour réduire les bruits haute fréquence
       const lowpassFilter = this.audioContext.createBiquadFilter();
       lowpassFilter.type = 'lowpass';
       lowpassFilter.frequency.value = 3000; // Limite réduite à 3kHz (sous Nyquist 4kHz) pour suppression plus agressive
@@ -309,8 +315,9 @@ export class MicrophoneService {
       const analyser = this.audioContext.createAnalyser();
       analyser.fftSize = 2048;
       
-      // Chaîne principale avec filtre passe-bas pour réduire les bruits haute fréquence
-      source.connect(lowpassFilter);
+      // Chaîne principale avec filtres passe-haut et passe-bas pour améliorer la qualité
+      source.connect(highpassFilter);
+      highpassFilter.connect(lowpassFilter);
       lowpassFilter.connect(this.node);
       
       // Chaîne parallèle pour l'enregistrement (sans filtre pour garder la qualité originale)
