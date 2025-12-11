@@ -151,10 +151,10 @@ export class MicrophoneService {
       this.recorderScriptNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
       
       // Flag to track if we're recording
-      let isRecording = true;
+      this.isRecording = true;
       
       this.recorderScriptNode.onaudioprocess = (e) => {
-        if (!isRecording) return;
+        if (!this.isRecording || !this.audioContext) return;
         
         const inputData = e.inputBuffer.getChannelData(0);
         // Make a copy of the audio data
@@ -163,7 +163,7 @@ export class MicrophoneService {
         console.log(`🎙️ Recording chunk ${this.rawAudioBuffer.length}: ${inputData.length} samples`);
         
         // Check if we have 3 seconds of audio (assuming 48000 Hz sample rate)
-        const samplesFor3Seconds = this.audioContext!.sampleRate * 3;
+        const samplesFor3Seconds = this.audioContext.sampleRate * 3;
         const totalSamples = this.rawAudioBuffer.length * bufferSize;
         
         console.log(`📊 Buffer: ${totalSamples} / ${samplesFor3Seconds} samples`);
@@ -305,6 +305,9 @@ export class MicrophoneService {
 
   async stopCapture() {
     console.log('⏹️ Stopping microphone stream');
+    
+    // Stop recording first to prevent processing after cleanup
+    this.isRecording = false;
     
     // Save any remaining audio buffer before stopping
     if (this.rawAudioBuffer.length > 0) {

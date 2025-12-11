@@ -10,6 +10,15 @@ class MicProcessor extends AudioWorkletProcessor {
     this.sequenceNumber = 0;
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
+    
+    // High-pass filter state for noise reduction (removes low-frequency noise)
+    // Simple first-order high-pass filter to remove frequencies below ~80Hz (background hum, etc.)
+    this.highPassPrevInput = 0;
+    this.highPassPrevOutput = 0;
+    const cutoffFreq = 80; // Hz
+    const rc = 1.0 / (2.0 * Math.PI * cutoffFreq);
+    const dt = 1.0 / sampleRate;
+    this.highPassAlpha = rc / (rc + dt);
   }
 
   process(inputs) {
@@ -37,10 +46,23 @@ class MicProcessor extends AudioWorkletProcessor {
         this.buffer.push(0xFF); // mu-law encoded zero (silence)
       }
     } else {
-      // Downsample from 48kHz -> 8kHz
+      // Apply high-pass filter to remove low-frequency noise, then downsample
       for (let i = 0; i < input.length; i += this.ratio) {
         const idx = Math.floor(i);
-        const sample = input[idx];
+        let sample = input[idx];
+        
+        // High-pass filter: removes low-frequency noise (background hum, ventilation, etc.)
+        // Simple first-order high-pass filter
+        const filtered = this.highPassAlpha * (this.highPassPrevOutput + sample - this.highPassPrevInput);
+        this.highPassPrevInput = sample;
+        this.highPassPrevOutput = filtered;
+        sample = filtered;
+        
+        // Additional noise gate: if sample is very small after filtering, treat as silence
+        if (Math.abs(sample) < 0.005) {
+          sample = 0;
+        }
+        
         const mu = this.encodeMuLaw(sample);
         this.buffer.push(mu);
       }
