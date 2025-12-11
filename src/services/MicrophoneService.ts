@@ -98,12 +98,14 @@ export class MicrophoneService {
       console.log('🎤 Requesting microphone access...');
       try {
         // Try with enhanced constraints first (Chrome/Edge specific)
+        // Demander 8kHz DIRECTEMENT au navigateur pour éviter le resampling artisanal
+        // Cela élimine complètement l'aliasing et les artefacts de decimation
         let audioConstraints: MediaTrackConstraints = {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 48000,
-          channelCount: 1
+          sampleRate: 8000, // 8kHz directement = pas de resampling = pas de bruit
+          channelCount: 1   // Mono pour Telnyx
         };
         
         // Add Chrome-specific constraints if available (may not be supported in all browsers)

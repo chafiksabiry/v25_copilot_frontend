@@ -1,24 +1,32 @@
 // mic-processor.worklet.js
+// Optimisé pour Telnyx : 8kHz natif, pas de resampling artisanal = zéro aliasing
 class MicProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.buffer = [];
-    // Calculate ratio based on the actual AudioContext sample rate
-    // sampleRate is a global variable in AudioWorkletProcessor representing the context's sample rate
-    // For a typical 48kHz AudioContext: ratio = 48000 / 8000 = 6
-    this.ratio = sampleRate / 8000;
     this.sequenceNumber = 0;
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
     
-    // High-pass filter state for noise reduction (removes low-frequency noise)
-    // Simple first-order high-pass filter to remove frequencies below ~80Hz (background hum, etc.)
+    // On attend du 8kHz natif du navigateur, donc ratio = 1
+    // Si le navigateur donne du 48kHz malgré la demande, on adapte
+    this.ratio = Math.max(1, Math.round(sampleRate / 8000));
+    
+    console.log(`🎤 MicProcessor: sampleRate=${sampleRate}Hz, ratio=${this.ratio}`);
+    
+    // High-pass filter state for noise reduction (removes low-frequency noise < 200Hz)
     this.highPassPrevInput = 0;
     this.highPassPrevOutput = 0;
-    const cutoffFreq = 80; // Hz
+    const cutoffFreq = 200; // Hz - élimine grondements, ventilation
     const rc = 1.0 / (2.0 * Math.PI * cutoffFreq);
     const dt = 1.0 / sampleRate;
     this.highPassAlpha = rc / (rc + dt);
+    
+    // Low-pass filter to remove high-frequency noise (> 3400Hz for telephony bandwidth)
+    this.lowPassPrevOutput = 0;
+    const lowCutoffFreq = 3400; // Hz - standard téléphonie
+    const lowRc = 1.0 / (2.0 * Math.PI * lowCutoffFreq);
+    this.lowPassAlpha = dt / (lowRc + dt);
   }
 
   process(inputs) {
@@ -37,7 +45,7 @@ class MicProcessor extends AudioWorkletProcessor {
     // Lower values = less aggressive (more noise passes through)
     // Based on Telnyx docs: https://developers.telnyx.com/docs/voice/programmable-voice/noise-suppression
     // Telnyx noise suppression works best for AI speech recognition, not all noise types
-    const NOISE_GATE_THRESHOLD = 0.02; // Increased for more aggressive noise reduction
+    const NOISE_GATE_THRESHOLD = 0.04; // Augmenté à 0.04 pour filtrage très agressif du bruit de fond
     
     // Only process audio if it's above the noise gate threshold
     if (rms < NOISE_GATE_THRESHOLD) {
@@ -46,20 +54,31 @@ class MicProcessor extends AudioWorkletProcessor {
         this.buffer.push(0xFF); // mu-law encoded zero (silence)
       }
     } else {
-      // Apply high-pass filter to remove low-frequency noise, then downsample
+      // Apply band-pass filter (200Hz - 3400Hz) pour garder uniquement les fréquences de la voix
+      // Pas de resampling artisanal = pas d'aliasing = pas de bruit
       for (let i = 0; i < input.length; i += this.ratio) {
         const idx = Math.floor(i);
         let sample = input[idx];
         
-        // High-pass filter: removes low-frequency noise (background hum, ventilation, etc.)
-        // Simple first-order high-pass filter
-        const filtered = this.highPassAlpha * (this.highPassPrevOutput + sample - this.highPassPrevInput);
-        this.highPassPrevInput = sample;
-        this.highPassPrevOutput = filtered;
-        sample = filtered;
+        // Clamp input pour éviter les valeurs aberrantes
+        sample = Math.max(-1, Math.min(1, sample));
         
-        // Additional noise gate: if sample is very small after filtering, treat as silence
-        if (Math.abs(sample) < 0.005) {
+        // High-pass filter: élimine bruits < 200Hz (grondements, ventilation)
+        const highFiltered = this.highPassAlpha * (this.highPassPrevOutput + sample - this.highPassPrevInput);
+        this.highPassPrevInput = sample;
+        this.highPassPrevOutput = highFiltered;
+        sample = highFiltered;
+        
+        // Low-pass filter: élimine bruits > 3400Hz (sifflements électriques)
+        const lowFiltered = this.lowPassAlpha * sample + (1 - this.lowPassAlpha) * this.lowPassPrevOutput;
+        this.lowPassPrevOutput = lowFiltered;
+        sample = lowFiltered;
+        
+        // Clamp après filtrage pour garantir [-1, 1] pour mu-law
+        sample = Math.max(-1, Math.min(1, sample));
+        
+        // Noise gate post-filtrage : élimine résidus très faibles
+        if (Math.abs(sample) < 0.01) {
           sample = 0;
         }
         
@@ -116,19 +135,37 @@ class MicProcessor extends AudioWorkletProcessor {
   }
 
   encodeMuLaw(sample) {
+    // Encodage µ-law (G.711) optimisé
+    // Sample doit être dans [-1, 1], déjà clamped avant l'appel
     const BIAS = 0x84;
     const MAX = 32635;
+    
     const sign = sample < 0 ? 0x80 : 0;
     let s = Math.abs(sample);
+    
+    // Clamp final par sécurité
     s = Math.min(s, 1.0);
+    
+    // Conversion en 16-bit PCM
     let s16 = Math.floor(s * 32767);
     if (s16 > MAX) s16 = MAX;
+    
+    // Ajout du bias
     s16 = s16 + BIAS;
+    
+    // Calcul de l'exposant (logarithmique)
     let exponent = 7;
-    for (let expMask = 0x4000; (s16 & expMask) === 0 && exponent > 0; expMask >>= 1) exponent--;
+    for (let expMask = 0x4000; (s16 & expMask) === 0 && exponent > 0; expMask >>= 1) {
+      exponent--;
+    }
+    
+    // Calcul de la mantisse
     const mantissa = (s16 >> (exponent + 3)) & 0x0F;
+    
+    // Encodage final µ-law (inversé)
     const muLaw = ~(sign | (exponent << 4) | mantissa);
-    return muLaw & 0xff;
+    
+    return muLaw & 0xFF;
   }
 }
 
