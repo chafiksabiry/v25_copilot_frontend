@@ -28,7 +28,7 @@ export class TelnyxCallService {
       this.ws.close();
     }
 
-    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/ws/call-events`;
+    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/call-events`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onmessage = (event) => {
