@@ -594,9 +594,11 @@ const fallbackContact = {
   }, [outboundStreamUrl]);
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
+    // Avertir si le WebSocket n'est pas connecté, mais permettre quand même l'appel
+    // Le WebSocket peut se reconnecter pendant l'appel, et les événements sont aussi reçus via webhooks
     if (!isTelnyxConnected) {
-      setPhoneNumberError('WebSocket connection not ready');
-      return;
+      console.warn('⚠️ WebSocket not connected, but proceeding with call initiation');
+      console.warn('   The WebSocket may reconnect during the call, and events are also received via webhooks');
     }
 
     try {
@@ -604,7 +606,8 @@ const fallbackContact = {
       console.log('📞 Initiating Telnyx call:', {
         to: contact.phone,
         from: phoneNumber,
-        agentId: getAgentIdFromStorage()
+        agentId: getAgentIdFromStorage(),
+        websocketConnected: isTelnyxConnected
       });
       
       await initiateTelnyxCallRaw(
