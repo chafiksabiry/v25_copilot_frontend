@@ -22,53 +22,96 @@ export class AudioStreamManager {
   }
 
   // --- Connexion WebSocket ---
-  async connect(streamUrl: string) {
-    try {
-      console.log('🎤 Connecting to audio stream:', streamUrl);
-      // create ws
-      this.ws = new WebSocket(streamUrl);
-      this.ws.binaryType = 'arraybuffer'; // on s'attend à des ArrayBuffers si envoyés bruts
-
-      this.ws.onopen = () => {
-        console.log('🎤 WebSocket connected for audio streaming');
-        this.isConnected = true;
-      };
-
-      this.ws.onmessage = async (event) => {
-        try {
-          // Telnyx envoie généralement du JSON contenant base64 payload
-          // mais parfois on peut recevoir directement ArrayBuffer. Gérer les deux cas.
-          if (typeof event.data === 'string') {
-            const message = JSON.parse(event.data);
-            this.handleMessage(message);
-          } else {
-            // si c'est déjà un buffer binaire (rare), on le joue directement en supposant PCMU bytes
-            const ab = event.data as ArrayBuffer;
-            const u8 = new Uint8Array(ab);
-            const float32 = this.convertFromPCMU(u8);
-            this.enqueueChunk(float32);
-          }
-        } catch (err) {
-          console.error('❌ Error processing ws message:', err);
-          this.onErrorCallback?.(err as Error);
+  async connect(streamUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        console.log('🎤 Connecting to audio stream:', streamUrl);
+        
+        // Close existing connection if any
+        if (this.ws) {
+          try {
+            this.ws.close();
+          } catch (_) {}
+          this.ws = null;
         }
-      };
 
-      this.ws.onclose = () => {
-        console.log('🎤 Audio WebSocket closed');
-        this.isConnected = false;
-      };
+        // create ws
+        this.ws = new WebSocket(streamUrl);
+        this.ws.binaryType = 'arraybuffer'; // on s'attend à des ArrayBuffers si envoyés bruts
 
-      this.ws.onerror = (err) => {
-        console.error('🎤 Audio WebSocket error', err);
-        this.isConnected = false;
-        this.onErrorCallback?.(new Error('Audio WebSocket error'));
-      };
-    } catch (error) {
-      console.error('❌ Error setting up audio stream:', error);
-      this.onErrorCallback?.(error as Error);
-      throw error;
-    }
+        // Set up timeout for connection (10 seconds)
+        const connectionTimeout = setTimeout(() => {
+          if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+            console.error('❌ WebSocket connection timeout');
+            this.ws.close();
+            const error = new Error('WebSocket connection timeout');
+            this.onErrorCallback?.(error);
+            reject(error);
+          }
+        }, 10000);
+
+        this.ws.onopen = () => {
+          clearTimeout(connectionTimeout);
+          console.log('🎤 WebSocket connected for audio streaming');
+          this.isConnected = true;
+          resolve();
+        };
+
+        this.ws.onmessage = async (event) => {
+          try {
+            // Telnyx envoie généralement du JSON contenant base64 payload
+            // mais parfois on peut recevoir directement ArrayBuffer. Gérer les deux cas.
+            if (typeof event.data === 'string') {
+              const message = JSON.parse(event.data);
+              this.handleMessage(message);
+            } else {
+              // si c'est déjà un buffer binaire (rare), on le joue directement en supposant PCMU bytes
+              const ab = event.data as ArrayBuffer;
+              const u8 = new Uint8Array(ab);
+              const float32 = this.convertFromPCMU(u8);
+              this.enqueueChunk(float32);
+            }
+          } catch (err) {
+            console.error('❌ Error processing ws message:', err);
+            this.onErrorCallback?.(err as Error);
+          }
+        };
+
+        this.ws.onclose = (event) => {
+          clearTimeout(connectionTimeout);
+          console.log('🎤 Audio WebSocket closed', {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean
+          });
+          this.isConnected = false;
+          
+          // If connection was closed before opening, reject the promise
+          if (!event.wasClean && event.code !== 1000) {
+            const error = new Error(`WebSocket closed unexpectedly: code ${event.code}`);
+            this.onErrorCallback?.(error);
+            // Only reject if promise is still pending (connection never opened)
+            if (this.ws?.readyState === WebSocket.CLOSED) {
+              reject(error);
+            }
+          }
+        };
+
+        this.ws.onerror = (err) => {
+          clearTimeout(connectionTimeout);
+          console.error('🎤 Audio WebSocket error', err);
+          this.isConnected = false;
+          const error = new Error('Audio WebSocket error');
+          this.onErrorCallback?.(error);
+          reject(error);
+        };
+      } catch (error) {
+        console.error('❌ Error setting up audio stream:', error);
+        const err = error as Error;
+        this.onErrorCallback?.(err);
+        reject(err);
+      }
+    });
   }
 
   // --- Gérer messages JSON typiques de Telnyx ---

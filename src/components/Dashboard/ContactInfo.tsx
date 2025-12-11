@@ -539,7 +539,7 @@ const fallbackContact = {
     let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let isCleaningUp = false;
 
-    // Create new AudioStreamManager if not exists
+    // Create new AudioStreamManager if not exists or if previous one failed
     if (!audioManagerRef.current) {
       audioManagerRef.current = new AudioStreamManager((error) => {
         console.error('❌ Inbound audio stream error:', error);
@@ -547,6 +547,13 @@ const fallbackContact = {
           setPhoneNumberError(error.message || 'Inbound audio stream error');
         }
       });
+    } else {
+      // Disconnect existing connection before retrying
+      try {
+        audioManagerRef.current.disconnect();
+      } catch (e) {
+        console.warn('⚠️ Error disconnecting existing audio manager:', e);
+      }
     }
 
     const connectAudioStream = async () => {
@@ -561,7 +568,15 @@ const fallbackContact = {
       } catch (error: any) {
         console.error('❌ Failed to connect to inbound audio stream:', error);
         
-        const errorMessage = error.message || 'Failed to connect to inbound audio stream. Check nginx configuration and backend status.';
+        // Provide more specific error messages
+        let errorMessage = 'Failed to connect to inbound audio stream. ';
+        if (error.message?.includes('timeout')) {
+          errorMessage += 'Connection timeout - check nginx WebSocket configuration.';
+        } else if (error.message?.includes('closed')) {
+          errorMessage += 'Connection closed unexpectedly - verify backend is running and nginx is configured for WebSocket upgrades.';
+        } else {
+          errorMessage += 'Check nginx configuration and backend status.';
+        }
         setPhoneNumberError(errorMessage);
 
         // Retry logic
@@ -570,8 +585,10 @@ const fallbackContact = {
           console.log(`🔄 Retrying inbound audio stream connection in ${delay}ms...`);
           
           retryTimeoutId = setTimeout(() => {
-            retryCount++;
-            connectAudioStream();
+            if (!isCleaningUp) {
+              retryCount++;
+              connectAudioStream();
+            }
           }, delay);
         } else if (retryCount >= maxRetries) {
           console.error('❌ Max retries reached for inbound audio stream');
@@ -617,11 +634,41 @@ const fallbackContact = {
     const connectWebSocket = () => {
       if (isCleaningUp) return;
 
+      // Close existing WebSocket if any
+      if (outboundWs) {
+        try {
+          if (outboundWs.readyState === WebSocket.OPEN || outboundWs.readyState === WebSocket.CONNECTING) {
+            outboundWs.close();
+          }
+        } catch (e) {
+          console.warn('⚠️ Error closing existing outbound WebSocket:', e);
+        }
+        outboundWs = null;
+      }
+
       try {
         console.log(`🎤 Attempting to connect to outbound audio stream (attempt ${retryCount + 1}/${maxRetries + 1})...`);
         outboundWs = new WebSocket(outboundStreamUrl!);
         
+        // Set connection timeout (10 seconds)
+        const connectionTimeout = setTimeout(() => {
+          if (outboundWs && outboundWs.readyState !== WebSocket.OPEN) {
+            console.error('❌ Outbound WebSocket connection timeout');
+            outboundWs.close();
+            if (!isCleaningUp && retryCount < maxRetries) {
+              const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+              retryTimeoutId = setTimeout(() => {
+                if (!isCleaningUp) {
+                  retryCount++;
+                  connectWebSocket();
+                }
+              }, delay);
+            }
+          }
+        }, 10000);
+        
         outboundWs.onopen = () => {
+          clearTimeout(connectionTimeout);
           console.log('✅ Outbound WebSocket connected for microphone');
           retryCount = 0; // Reset retry count on success
           setPhoneNumberError(null); // Clear any previous errors
@@ -637,14 +684,19 @@ const fallbackContact = {
         };
 
         outboundWs.onerror = (error) => {
+          clearTimeout(connectionTimeout);
           console.error('❌ Outbound WebSocket error:', error);
-          const errorMessage = outboundWs?.readyState === WebSocket.CONNECTING 
-            ? 'Failed to connect to outbound audio stream. Check nginx configuration and backend status.'
-            : 'Outbound audio stream connection error';
+          let errorMessage = 'Failed to connect to outbound audio stream. ';
+          if (outboundWs?.readyState === WebSocket.CONNECTING) {
+            errorMessage += 'Connection failed - verify nginx WebSocket configuration and backend status.';
+          } else {
+            errorMessage += 'Connection error occurred.';
+          }
           setPhoneNumberError(errorMessage);
         };
 
         outboundWs.onclose = (event) => {
+          clearTimeout(connectionTimeout);
           console.log('🎤 Outbound WebSocket closed', {
             code: event.code,
             reason: event.reason,
@@ -658,8 +710,10 @@ const fallbackContact = {
               console.log(`🔄 Retrying outbound WebSocket connection in ${delay}ms...`);
               
               retryTimeoutId = setTimeout(() => {
-                retryCount++;
-                connectWebSocket();
+                if (!isCleaningUp) {
+                  retryCount++;
+                  connectWebSocket();
+                }
               }, delay);
             } else {
               console.error('❌ Max retries reached for outbound audio stream');
@@ -679,8 +733,10 @@ const fallbackContact = {
         if (retryCount < maxRetries && !isCleaningUp) {
           const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
           retryTimeoutId = setTimeout(() => {
-            retryCount++;
-            connectWebSocket();
+            if (!isCleaningUp) {
+              retryCount++;
+              connectWebSocket();
+            }
           }, delay);
         }
       }
