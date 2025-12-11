@@ -24,12 +24,18 @@ export class TelnyxCallService {
   private static currentCallId: string | null = null;
 
   static async initializeWebSocket() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      // Already connected, don't reconnect
+      console.log('✅ WebSocket already connected');
+      return;
+    }
+    
     if (this.ws) {
       this.ws.close();
     }
 
-    // Use /api/call-events since nginx routes /api/ to the backend
-    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/api/call-events`;
+    // Use /call-events directly (same as audio-stream, backend handles both /call-events and /api/call-events)
+    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/call-events`;
     console.log('🔌 Connecting to call-events WebSocket:', wsUrl);
     this.ws = new WebSocket(wsUrl);
 
@@ -41,17 +47,25 @@ export class TelnyxCallService {
     this.ws.onclose = (event) => {
       console.log('🔄 WebSocket connection closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
       
-      // Ne pas reconnecter si c'est une fermeture intentionnelle (code 1000)
-      if (event.code === 1000) {
+      // Ne pas reconnecter si c'est une fermeture intentionnelle (code 1000 ou 1005)
+      if (event.code === 1000 || event.code === 1005) {
         console.log('✅ WebSocket closed normally');
+        this.ws = null;
         return;
       }
       
-      // Tentative de reconnexion seulement pour les erreurs
-      setTimeout(() => {
-        console.log('🔄 Attempting to reconnect...');
-        this.initializeWebSocket();
-      }, 3000);
+      // Tentative de reconnexion seulement pour les erreurs (code 1006 = abnormal closure)
+      // Mais seulement si on n'est pas en train de fermer intentionnellement
+      if (event.code === 1006) {
+        console.log('⚠️ WebSocket closed abnormally (code 1006), will attempt to reconnect...');
+        setTimeout(() => {
+          // Vérifier qu'on n'est pas en train de fermer intentionnellement
+          if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+            console.log('🔄 Attempting to reconnect...');
+            this.initializeWebSocket();
+          }
+        }, 3000);
+      }
     };
 
     this.ws.onerror = (error) => {
