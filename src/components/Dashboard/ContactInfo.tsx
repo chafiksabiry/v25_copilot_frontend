@@ -65,12 +65,26 @@ export function ContactInfo() {
     phoneNumberData
   } = useGigPhoneNumber();
 
+  // Liste des numéros disponibles pour les tests
+  const availablePhoneNumbers = [
+    '+33623984708',
+    '+33143204189',
+    '+33142333820',
+    '+33143549420',
+    '+33155872140',
+    '+33145746892',
+    '+33188480991'
+  ];
+
+  // État pour le numéro sélectionné
+  const [selectedPhoneNumber, setSelectedPhoneNumber] = useState(availablePhoneNumbers[1]); // +33143204189 par défaut
+
   // Fallback contact data when no lead is provided or while loading
 const fallbackContact = {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+33143204189', // Default French number
+    phone: selectedPhoneNumber, // Utilise le numéro sélectionné
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -1047,9 +1061,29 @@ location audio-stream {
         </div>
       )}
       
+      {/* Sélecteur de numéro de téléphone */}
+      {!leadLoading && (
+        <div className="bg-[#1b253a] rounded-xl shadow-sm px-6 py-4 mt-4 mb-2">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            📞 Choisir le numéro à appeler :
+          </label>
+          <select
+            value={selectedPhoneNumber}
+            onChange={(e) => setSelectedPhoneNumber(e.target.value)}
+            className="w-full px-4 py-2 bg-[#0f1729] border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {availablePhoneNumbers.map((number) => (
+              <option key={number} value={number}>
+                {number}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Main content - only show when not loading */}
       {!leadLoading && (
-        <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
+        <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-2 mb-4">
         {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
           <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
