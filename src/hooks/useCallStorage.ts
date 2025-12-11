@@ -5,15 +5,33 @@ import { useUrlParam } from './useUrlParams';
 // Fonction pour récupérer le gigId depuis les cookies
 const getGigIdFromCookie = (): string | null => {
   const runMode = import.meta.env.VITE_RUN_MODE;
+  const defaultGigId = '68b5b12701557c476f728ea4'; // GigId par défaut
   
   if (runMode === 'sandbox') {
-    return '686e8ddcf74ddc5ba5d4b493'; // GigId fixe pour sandbox
+    return defaultGigId; // GigId par défaut pour sandbox
   } else if (runMode === 'in-app') {
     const cookies = document.cookie.split(';');
-    const gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
-    return gigIdCookie ? gigIdCookie.split('=')[1] : null;
+    
+    // Chercher d'abord currentGigId, puis gigId comme fallback
+    let gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
+    if (!gigIdCookie) {
+      gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('gigId='));
+    }
+    
+    if (gigIdCookie) {
+      const gigId = gigIdCookie.split('=')[1]?.trim();
+      if (gigId) {
+        return gigId;
+      }
+    }
+    
+    // Si aucun cookie trouvé, utiliser le gigId par défaut
+    console.warn('⚠️ No gigId found in cookies. Using default gigId:', defaultGigId);
+    console.warn('   Available cookies:', document.cookie);
+    return defaultGigId;
   }
-  return null;
+  // Fallback: retourner le gigId par défaut si le mode n'est pas défini
+  return defaultGigId;
 };
 
 // Fonction pour récupérer l'ID de l'agent depuis localStorage

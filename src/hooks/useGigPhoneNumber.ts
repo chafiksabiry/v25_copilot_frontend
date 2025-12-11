@@ -25,8 +25,14 @@ export const useGigPhoneNumber = () => {
       console.log('🔍 Checking gig phone number with gigId:', gigId);
       
       if (!gigId) {
-        console.error('❌ No gig ID found in cookies');
-        throw new Error('No gig ID found');
+        const runMode = import.meta.env.VITE_RUN_MODE;
+        const errorMessage = runMode === 'in-app' 
+          ? 'No gig ID found in cookies. Please ensure you are logged in and have selected a gig.'
+          : 'No gig ID found. Please check your configuration.';
+        console.error('❌', errorMessage);
+        console.error('   Run mode:', runMode);
+        console.error('   Available cookies:', document.cookie);
+        throw new Error(errorMessage);
       }
 
       const response = await PhoneNumberService.checkGigPhoneNumber(gigId);

@@ -66,11 +66,11 @@ export function ContactInfo() {
   } = useGigPhoneNumber();
 
   // Fallback contact data when no lead is provided or while loading
-  const fallbackContact = {
+const fallbackContact = {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+212693223005', // Default Moroccan number per memory
+    phone: '+33623984708', // Default French number
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
