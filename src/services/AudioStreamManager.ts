@@ -82,8 +82,35 @@ export class AudioStreamManager {
           console.log('🎤 Audio WebSocket closed', {
             code: event.code,
             reason: event.reason,
-            wasClean: event.wasClean
+            wasClean: event.wasClean,
+            url: streamUrl
           });
+          
+          // Log specific error codes for debugging
+          if (event.code === 1006) {
+            console.error('❌ WebSocket closed with code 1006 (abnormal closure)');
+            console.error('This usually means the connection was closed before it could be established.');
+            console.error('URL:', streamUrl);
+            console.error('Most likely cause: nginx is not configured to proxy WebSocket connections to /frontend-audio');
+            console.error('');
+            console.error('Required nginx configuration:');
+            console.error('location /frontend-audio {');
+            console.error('    proxy_pass http://localhost:5006;');
+            console.error('    proxy_http_version 1.1;');
+            console.error('    proxy_set_header Upgrade $http_upgrade;');
+            console.error('    proxy_set_header Connection "upgrade";');
+            console.error('    proxy_set_header Host $host;');
+            console.error('    proxy_read_timeout 86400;');
+            console.error('    proxy_send_timeout 86400;');
+            console.error('    proxy_buffering off;');
+            console.error('}');
+            console.error('');
+            console.error('Other possible causes:');
+            console.error('  2. Backend not running or not accessible');
+            console.error('  3. Firewall blocking the connection');
+            console.error('  4. SSL/TLS handshake failure');
+          }
+          
           this.isConnected = false;
           
           // If connection was closed before opening, reject the promise
@@ -100,6 +127,11 @@ export class AudioStreamManager {
         this.ws.onerror = (err) => {
           clearTimeout(connectionTimeout);
           console.error('🎤 Audio WebSocket error', err);
+          console.error('WebSocket error details:', {
+            readyState: this.ws?.readyState,
+            url: streamUrl,
+            error: err
+          });
           this.isConnected = false;
           const error = new Error('Audio WebSocket error');
           this.onErrorCallback?.(error);

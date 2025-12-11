@@ -28,7 +28,9 @@ export class TelnyxCallService {
       this.ws.close();
     }
 
-    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/call-events`;
+    // Use /api/call-events since nginx routes /api/ to the backend
+    const wsUrl = `${this.baseUrl.replace('http', 'ws')}/api/call-events`;
+    console.log('🔌 Connecting to call-events WebSocket:', wsUrl);
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onmessage = (event) => {
