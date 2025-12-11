@@ -100,11 +100,19 @@ export const useCallManager = () => {
         body: JSON.stringify({ to, from, agentId })
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to initiate call');
+        const errorMessage = data.error || data.message || 'Failed to initiate call';
+        console.error('❌ API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          data: data
+        });
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
       console.log('✅ Call initiated:', data);
       
       // Le callId sera reçu via WebSocket dans l'événement call.initiated
