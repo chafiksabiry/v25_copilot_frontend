@@ -469,18 +469,18 @@ const fallbackContact = {
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
           // Option 1: Use direct WebSocket URL if configured (bypasses nginx)
-          // Option 2: Try /frontend-audio directly (like /call-events works)
-          // Option 3: Use /api/frontend-audio as fallback
+          // Option 2: Try audio-stream directly (like /call-events works)
+          // Option 3: Use /apiaudio-stream as fallback
           const directWsUrl = import.meta.env.VITE_WS_AUDIO_URL;
           const baseWsUrl = directWsUrl 
             ? directWsUrl 
             : import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
           
-          // Try /frontend-audio directly first (like /call-events), then /api/frontend-audio as fallback
-          // Since /call-events works without /api/, maybe /frontend-audio does too
+          // Try audio-stream directly first (like /call-events), then /apiaudio-stream as fallback
+          // Since /call-events works without /api/, maybe audio-stream does too
           const wsPath = directWsUrl 
-            ? '/frontend-audio' 
-            : '/frontend-audio'; // Try direct path first, same as /call-events
+            ? '/audio-stream' 
+            : '/audio-stream'; // Try direct path first, same as /call-events
           
           const inboundWsUrl = `${baseWsUrl}${wsPath}`;
           const outboundWsUrl = `${baseWsUrl}${wsPath}`;
@@ -590,11 +590,11 @@ const fallbackContact = {
         // Provide more specific error messages
         let errorMessage = 'Failed to connect to inbound audio stream. ';
         if (error.message?.includes('timeout')) {
-          errorMessage += 'Connection timeout - check nginx WebSocket configuration for /frontend-audio.';
+          errorMessage += 'Connection timeout - check nginx WebSocket configuration for audio-stream.';
         } else if (error.message?.includes('closed') || error.message?.includes('1006')) {
-          errorMessage += 'WebSocket closed (code 1006) - nginx is likely blocking /frontend-audio. Add nginx location block for WebSocket proxy.';
+          errorMessage += 'WebSocket closed (code 1006) - nginx is likely blocking audio-stream. Add nginx location block for WebSocket proxy.';
         } else {
-          errorMessage += 'Check nginx configuration for /frontend-audio WebSocket endpoint.';
+          errorMessage += 'Check nginx configuration for audio-stream WebSocket endpoint.';
         }
         setPhoneNumberError(errorMessage);
 
@@ -611,12 +611,12 @@ const fallbackContact = {
           }, delay);
         } else if (retryCount >= maxRetries) {
           console.error('❌ Max retries reached for inbound audio stream');
-          const detailedError = `Failed to connect to audio stream (wss://api-calls.harx.ai/frontend-audio). 
+          const detailedError = `Failed to connect to audio stream (wss://api-calls.harx.ai/audio-stream). 
           
-This usually means nginx is not configured to proxy WebSocket connections to /frontend-audio.
+This usually means nginx is not configured to proxy WebSocket connections to audio-stream.
 
 Please add this nginx configuration:
-location /frontend-audio {
+location audio-stream {
     proxy_pass http://localhost:5006;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -627,7 +627,7 @@ location /frontend-audio {
     proxy_buffering off;
 }`;
           console.error(detailedError);
-          setPhoneNumberError('Failed to connect to audio stream. Nginx configuration required for /frontend-audio WebSocket endpoint.');
+          setPhoneNumberError('Failed to connect to audio stream. Nginx configuration required for audio-stream WebSocket endpoint.');
         }
       }
     };
@@ -722,12 +722,12 @@ location /frontend-audio {
           clearTimeout(connectionTimeout);
           console.error('❌ Outbound WebSocket error:', error);
           console.error('WebSocket URL:', outboundStreamUrl);
-          console.error('Error code 1006 typically means nginx is not configured to proxy WebSocket to /frontend-audio');
+          console.error('Error code 1006 typically means nginx is not configured to proxy WebSocket to audio-stream');
           let errorMessage = 'Failed to connect to outbound audio stream. ';
           if (outboundWs?.readyState === WebSocket.CONNECTING) {
-            errorMessage += 'Connection failed - nginx missing /frontend-audio WebSocket configuration.';
+            errorMessage += 'Connection failed - nginx missing audio-stream WebSocket configuration.';
           } else {
-            errorMessage += 'WebSocket error - check nginx configuration for /frontend-audio endpoint.';
+            errorMessage += 'WebSocket error - check nginx configuration for audio-stream endpoint.';
           }
           setPhoneNumberError(errorMessage);
         };
@@ -745,8 +745,8 @@ location /frontend-audio {
           if (event.code === 1006) {
             console.error('❌ WebSocket closed with code 1006 (abnormal closure)');
             console.error('This means the connection was closed before it could be established.');
-            console.error('Most likely cause: nginx is not configured to proxy WebSocket connections to /frontend-audio');
-            console.error('Solution: Add nginx location block for /frontend-audio with WebSocket proxy settings');
+            console.error('Most likely cause: nginx is not configured to proxy WebSocket connections to audio-stream');
+            console.error('Solution: Add nginx location block for audio-stream with WebSocket proxy settings');
           }
 
           // Only retry if it wasn't a clean close and we're not cleaning up
@@ -763,13 +763,13 @@ location /frontend-audio {
               }, delay);
             } else {
               console.error('❌ Max retries reached for outbound audio stream');
-              const detailedError = `Failed to connect to outbound audio stream (wss://api-calls.harx.ai/frontend-audio).
+              const detailedError = `Failed to connect to outbound audio stream (wss://api-calls.harx.ai/audio-stream).
               
 WebSocket code 1006 indicates the connection was closed before establishment.
 This typically means nginx is blocking or not routing WebSocket connections.
 
 Required nginx configuration:
-location /frontend-audio {
+location audio-stream {
     proxy_pass http://localhost:5006;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -780,7 +780,7 @@ location /frontend-audio {
     proxy_buffering off;
 }`;
               console.error(detailedError);
-              setPhoneNumberError('Failed to connect to outbound audio stream. Nginx WebSocket configuration required for /frontend-audio.');
+              setPhoneNumberError('Failed to connect to outbound audio stream. Nginx WebSocket configuration required for audio-stream.');
             }
           } else if (event.wasClean) {
             // Clean close - clear error

@@ -122,7 +122,7 @@ export class AudioStreamManager {
               console.error('Most likely cause: nginx is not configured to proxy WebSocket connections');
               console.error('');
               console.error('Required nginx configuration:');
-              console.error('location /frontend-audio {');
+              console.error('location audio-stream {');
               console.error('    proxy_pass http://localhost:5006;');
               console.error('    proxy_http_version 1.1;');
               console.error('    proxy_set_header Upgrade $http_upgrade;');
