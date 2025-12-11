@@ -16,12 +16,34 @@ class MicProcessor extends AudioWorkletProcessor {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // Downsample from 48kHz -> 8kHz
-    for (let i = 0; i < input.length; i += this.ratio) {
-      const idx = Math.floor(i);
-      const sample = input[idx];
-      const mu = this.encodeMuLaw(sample);
-      this.buffer.push(mu);
+    // Calculate RMS (Root Mean Square) to detect audio level
+    let sumSquares = 0;
+    for (let i = 0; i < input.length; i++) {
+      sumSquares += input[i] * input[i];
+    }
+    const rms = Math.sqrt(sumSquares / input.length);
+    
+    // Noise gate threshold: ignore audio below this level (reduces background noise)
+    // Higher values = more aggressive noise reduction (but may cut quiet speech)
+    // Lower values = less aggressive (more noise passes through)
+    // Based on Telnyx docs: https://developers.telnyx.com/docs/voice/programmable-voice/noise-suppression
+    // Telnyx noise suppression works best for AI speech recognition, not all noise types
+    const NOISE_GATE_THRESHOLD = 0.02; // Increased for more aggressive noise reduction
+    
+    // Only process audio if it's above the noise gate threshold
+    if (rms < NOISE_GATE_THRESHOLD) {
+      // Send silence (mu-law encoded zero) instead of noise
+      for (let i = 0; i < input.length; i += this.ratio) {
+        this.buffer.push(0xFF); // mu-law encoded zero (silence)
+      }
+    } else {
+      // Downsample from 48kHz -> 8kHz
+      for (let i = 0; i < input.length; i += this.ratio) {
+        const idx = Math.floor(i);
+        const sample = input[idx];
+        const mu = this.encodeMuLaw(sample);
+        this.buffer.push(mu);
+      }
     }
 
     // Send in RTP chunks (160 samples = 20 ms @ 8 kHz)

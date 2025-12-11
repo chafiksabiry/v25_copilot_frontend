@@ -97,13 +97,36 @@ export class MicrophoneService {
       // 3) Capture microphone with better error handling
       console.log('🎤 Requesting microphone access...');
       try {
+        // Try with enhanced constraints first (Chrome/Edge specific)
+        let audioConstraints: MediaTrackConstraints = {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        };
+        
+        // Add Chrome-specific constraints if available (may not be supported in all browsers)
+        try {
+          audioConstraints = {
+            ...audioConstraints,
+            // @ts-ignore - Chrome-specific constraints
+            googEchoCancellation: true,
+            // @ts-ignore
+            googNoiseSuppression: true,
+            // @ts-ignore
+            googAutoGainControl: true,
+            // @ts-ignore
+            googHighpassFilter: true,
+            // @ts-ignore
+            googTypingNoiseDetection: true
+          };
+        } catch (e) {
+          // Ignore if Chrome-specific constraints fail
+        }
+        
         this.stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 48000 // Explicit sample rate
-          } 
+          audio: audioConstraints
         });
         console.log('✅ Microphone access granted');
       } catch (mediaError: any) {
