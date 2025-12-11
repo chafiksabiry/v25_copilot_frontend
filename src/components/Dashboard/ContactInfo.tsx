@@ -469,14 +469,19 @@ const fallbackContact = {
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
           // Option 1: Use direct WebSocket URL if configured (bypasses nginx)
-          // Option 2: Use API URL converted to WebSocket with /api prefix (goes through nginx /api route)
+          // Option 2: Try /frontend-audio directly (like /call-events works)
+          // Option 3: Use /api/frontend-audio as fallback
           const directWsUrl = import.meta.env.VITE_WS_AUDIO_URL;
           const baseWsUrl = directWsUrl 
             ? directWsUrl 
             : import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
           
-          // Use /api/frontend-audio since nginx routes /api/ to the backend
-          const wsPath = directWsUrl ? '/frontend-audio' : '/api/frontend-audio';
+          // Try /frontend-audio directly first (like /call-events), then /api/frontend-audio as fallback
+          // Since /call-events works without /api/, maybe /frontend-audio does too
+          const wsPath = directWsUrl 
+            ? '/frontend-audio' 
+            : '/frontend-audio'; // Try direct path first, same as /call-events
+          
           const inboundWsUrl = `${baseWsUrl}${wsPath}`;
           const outboundWsUrl = `${baseWsUrl}${wsPath}`;
           
@@ -485,7 +490,7 @@ const fallbackContact = {
             outboundWsUrl,
             usingDirectConnection: !!directWsUrl,
             wsPath,
-            source: directWsUrl ? 'VITE_WS_AUDIO_URL (direct)' : 'VITE_API_URL_CALL via /api route'
+            source: directWsUrl ? 'VITE_WS_AUDIO_URL (direct)' : 'VITE_API_URL_CALL (direct path, like /call-events)'
           });
           console.log('🎧 Setting stream URLs for audio streaming');
           setStreamUrl(inboundWsUrl);
