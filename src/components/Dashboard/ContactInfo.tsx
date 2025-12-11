@@ -469,8 +469,8 @@ const fallbackContact = {
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
           const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
-          const inboundWsUrl = `${baseWsUrl}/audio-stream`;
-          const outboundWsUrl = `${baseWsUrl}/audio-stream`;
+          const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
+          const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
           
           console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
           console.log('🎧 Setting stream URLs for audio streaming');
@@ -527,7 +527,7 @@ const fallbackContact = {
     }
   }, [telnyxCallError]);
 
-  // Effect to handle inbound audio stream connection (audio-stream)
+  // Effect to handle inbound audio stream connection (frontend-audio)
   useEffect(() => {
     if (streamUrl) {
       console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
