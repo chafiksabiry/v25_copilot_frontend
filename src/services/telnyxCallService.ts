@@ -36,13 +36,30 @@ export class TelnyxCallService {
       this.handleWebSocketMessage(callEvent);
     };
 
-    this.ws.onclose = () => {
-      console.log('🔄 WebSocket connection closed. Attempting to reconnect...');
-      setTimeout(() => this.initializeWebSocket(), 3000);
+    this.ws.onclose = (event) => {
+      console.log('🔄 WebSocket connection closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
+      
+      // Ne pas reconnecter si c'est une fermeture intentionnelle (code 1000)
+      if (event.code === 1000) {
+        console.log('✅ WebSocket closed normally');
+        return;
+      }
+      
+      // Tentative de reconnexion seulement pour les erreurs
+      setTimeout(() => {
+        console.log('🔄 Attempting to reconnect...');
+        this.initializeWebSocket();
+      }, 3000);
     };
 
     this.ws.onerror = (error) => {
       console.error('❌ WebSocket error:', error);
+      console.error('   WebSocket URL:', wsUrl);
+      console.error('   ReadyState:', this.ws?.readyState);
+    };
+    
+    this.ws.onopen = () => {
+      console.log('✅ WebSocket connected successfully');
     };
   }
 

@@ -63,9 +63,16 @@ export const useCallManager = () => {
       setError('WebSocket connection error');
     };
 
-    websocket.onclose = () => {
-      console.log('🔌 WebSocket connection closed');
-      // Tentative de reconnexion
+    websocket.onclose = (event) => {
+      console.log('🔌 WebSocket connection closed', { code: event.code, reason: event.reason, wasClean: event.wasClean });
+      
+      // Ne pas reconnecter si c'est une fermeture intentionnelle (code 1000)
+      if (event.code === 1000) {
+        console.log('✅ WebSocket closed normally');
+        return;
+      }
+      
+      // Tentative de reconnexion seulement pour les erreurs
       setTimeout(() => {
         console.log('🔄 Attempting to reconnect...');
         setWs(new WebSocket(WS_URL));
