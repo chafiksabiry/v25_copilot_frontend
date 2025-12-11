@@ -31,7 +31,7 @@ VITE_SPEECH_API_URL=your_speech_api_url
 VITE_SPEECH_API_KEY=your_speech_api_key
 
 # API Configuration
-VITE_API_URL_CALL=https://api-dash-calls.harx.ai
+VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
 
 # Environment
 NODE_ENV=production

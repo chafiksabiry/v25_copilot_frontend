@@ -19,31 +19,6 @@ interface TokenResponse {
   token: string;
 }
 
-// Helper function to get backend URL (consistent with useCallManager and phoneNumberService)
-const getBackendUrl = (): string => {
-  const runMode = import.meta.env.VITE_RUN_MODE;
-  const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
-  const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
-  
-  // Si VITE_API_URL_CALL est défini explicitement, l'utiliser
-  if (import.meta.env.VITE_API_URL_CALL) {
-    return import.meta.env.VITE_API_URL_CALL;
-  }
-  
-  // En mode standalone ou développement, utiliser localhost
-  if ((runMode === 'standalone' || isStandalone) && isDev) {
-    return 'http://localhost:5006';
-  }
-  
-  // En mode standalone production, utiliser api-dash-calls.harx.ai
-  if (runMode === 'standalone' || isStandalone) {
-    return 'https://api-dash-calls.harx.ai';
-  }
-  
-  // En mode in-app, utiliser localhost par défaut
-  return 'http://localhost:5006';
-};
-
 // Mock AIAssistantAPI - replace with actual implementation
 const AIAssistantAPI: AIAssistantAPI = {
   setCallDetails: (callSid: string, agentId: string) => {
@@ -84,7 +59,7 @@ export const CallControls: React.FC<CallControlsProps> = ({
     setError('');
 
     try {
-      const apiUrl = getBackendUrl();
+      const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
       const tokenUrl = `${apiUrl}/api/calls/token`;
       console.log("Fetching token from:", tokenUrl);
       

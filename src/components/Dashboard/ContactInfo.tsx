@@ -25,31 +25,6 @@ interface TokenResponse {
   token: string;
 }
 
-// Helper function to get backend URL (consistent with useCallManager and phoneNumberService)
-const getBackendUrl = (): string => {
-  const runMode = import.meta.env.VITE_RUN_MODE;
-  const isStandalone = typeof window !== 'undefined' && !(window as any).__POWERED_BY_QIANKUN__;
-  const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
-  
-  // Si VITE_API_URL_CALL est défini explicitement, l'utiliser
-  if (import.meta.env.VITE_API_URL_CALL) {
-    return import.meta.env.VITE_API_URL_CALL;
-  }
-  
-  // En mode standalone ou développement, utiliser localhost
-  if ((runMode === 'standalone' || isStandalone) && isDev) {
-    return 'http://localhost:5006';
-  }
-  
-  // En mode standalone production, utiliser api-dash-calls.harx.ai
-  if (runMode === 'standalone' || isStandalone) {
-    return 'https://api-dash-calls.harx.ai';
-  }
-  
-  // En mode in-app, utiliser localhost par défaut
-  return 'http://localhost:5006';
-};
-
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
   const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
@@ -95,7 +70,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+33623984708', // Default French number (different from Telnyx number)
+    phone: '+212693223005', // Default Moroccan number per memory
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -175,7 +150,7 @@ export function ContactInfo() {
 
     try {
       // Get Twilio token
-      const apiUrl = getBackendUrl();
+      const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
       const tokenUrl = `${apiUrl}/api/calls/token`;
       console.log("Fetching token from:", tokenUrl);
       
@@ -493,9 +468,9 @@ export function ContactInfo() {
           console.log('📞 Call initiated');
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
-          const baseWsUrl = getBackendUrl().replace(/^https?:\/\//, (match) => match === 'https://' ? 'wss://' : 'ws://');
-          const inboundWsUrl = `${baseWsUrl}/audio-stream`;
-          const outboundWsUrl = `${baseWsUrl}/audio-stream`;
+          const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
+          const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
+          const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
           
           console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
           console.log('🎧 Setting stream URLs for audio streaming');
@@ -507,8 +482,8 @@ export function ContactInfo() {
           setCallStatus('active');
           dispatch({ type: 'START_CALL', participants: [], contact: contact });
           
-          // La capture micro sera démarrée automatiquement dans l'effet outboundStreamUrl
-          // quand le WebSocket est connecté, pas besoin de l'appeler ici
+          // Démarrer la capture micro quand l'appel est répondu
+          startMicrophoneCapture();
           break;
         case 'call.hangup':
           console.log('📞 Call ended');
@@ -552,7 +527,7 @@ export function ContactInfo() {
     }
   }, [telnyxCallError]);
 
-  // Effect to handle inbound audio stream connection (audio-stream)
+  // Effect to handle inbound audio stream connection (frontend-audio)
   useEffect(() => {
     if (streamUrl) {
       console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
@@ -583,54 +558,17 @@ export function ContactInfo() {
 
   // Effect to handle outbound audio stream connection (outbound-audio)
   useEffect(() => {
-    // Ne démarrer que si l'appel est answered ET le WebSocket URL est défini
-    if (outboundStreamUrl && telnyxCallStatus === 'call.answered') {
+    if (outboundStreamUrl) {
       console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
       
       // Create WebSocket for microphone service (outbound audio)
       const outboundWs = new WebSocket(outboundStreamUrl);
       
-      outboundWs.onopen = async () => {
+      outboundWs.onopen = () => {
         console.log('🎤 Outbound WebSocket connected for microphone');
-        
-        // Vérifier que l'appel est toujours answered avant de démarrer
-        if (telnyxCallStatus !== 'call.answered') {
-          console.log('⚠️ Call status changed, skipping microphone capture');
-          outboundWs.close();
-          return;
-        }
-        
-        // IMPORTANT: Attendre 200ms avant de démarrer la capture micro
-        // Cela permet au flux inbound de se stabiliser et évite les bruits au démarrage
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Vérifier à nouveau que l'appel est toujours answered après le délai
-        if (telnyxCallStatus !== 'call.answered') {
-          console.log('⚠️ Call status changed during delay, skipping microphone capture');
-          outboundWs.close();
-          return;
-        }
-        
         // Créer le service micro avec le WebSocket outbound connecté
         const mic = new MicrophoneService(outboundWs);
         setMicrophoneService(mic);
-        
-        // Démarrer la capture micro maintenant qu'il est créé et le WebSocket est connecté
-        try {
-          const permissionTest = await MicrophoneService.testMicrophonePermissions();
-          if (!permissionTest.success) {
-            console.error('❌ Microphone permission test failed:', permissionTest.error);
-            setPhoneNumberError(`Microphone error: ${permissionTest.error}`);
-            return;
-          }
-          
-          await mic.startCapture();
-          console.log('🎤 Capture micro démarrée automatiquement (après délai de stabilisation)');
-        } catch (error) {
-          console.error('❌ Erreur démarrage micro:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Unknown microphone error';
-          setPhoneNumberError(`Microphone error: ${errorMessage}`);
-        }
       };
 
       outboundWs.onerror = (error) => {
@@ -648,13 +586,12 @@ export function ContactInfo() {
         if (microphoneService) {
           microphoneService.stopCapture();
         }
-        if (outboundWs.readyState === WebSocket.OPEN || outboundWs.readyState === WebSocket.CONNECTING) {
+        if (outboundWs.readyState === WebSocket.OPEN) {
           outboundWs.close();
         }
-        setMicrophoneService(null);
       };
     }
-  }, [outboundStreamUrl, telnyxCallStatus]); // Ajouter telnyxCallStatus comme dépendance
+  }, [outboundStreamUrl]);
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
     if (!isTelnyxConnected) {
@@ -664,31 +601,16 @@ export function ContactInfo() {
 
     try {
       setIsCallLoading(true);
-      
-      const toNumber = contact.phone;
-      const fromNumber = phoneNumber;
-      const agentId = getAgentIdFromStorage();
-      
-      // Validation: vérifier que from et to sont différents
-      if (toNumber === fromNumber) {
-        throw new Error('From and To numbers cannot be the same. Please check your Telnyx phone number configuration.');
-      }
-      
-      // Validation: vérifier que l'agentId est valide
-      if (!agentId || agentId === 'unknown-agent') {
-        throw new Error('Invalid agent ID. Please ensure you are logged in or in a valid session.');
-      }
-      
       console.log('📞 Initiating Telnyx call:', {
-        to: toNumber,
-        from: fromNumber,
-        agentId: agentId
+        to: contact.phone,
+        from: phoneNumber,
+        agentId: getAgentIdFromStorage()
       });
       
       await initiateTelnyxCallRaw(
-        toNumber,    // To number (contact's number)
-        fromNumber,  // From number (our Telnyx number)
-        agentId      // Agent ID
+        contact.phone,           // To number (contact's number)
+        phoneNumber,             // From number (our Telnyx number)
+        getAgentIdFromStorage()  // Agent ID
       );
 
     } catch (error) {
@@ -702,17 +624,6 @@ export function ContactInfo() {
   };
 
   const initiateCall = async () => {
-    // Protection contre les appels multiples simultanés
-    if (isCallLoading) {
-      console.log('⏳ Call already in progress, ignoring duplicate call request');
-      return;
-    }
-    
-    if (callStatus !== 'idle' && callStatus !== 'error') {
-      console.log('⏳ Call already active, ignoring duplicate call request');
-      return;
-    }
-    
     setPhoneNumberError(null);
     setIsCallLoading(true);
     

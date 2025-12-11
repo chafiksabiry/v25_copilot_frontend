@@ -5,239 +5,23 @@ class MicProcessor extends AudioWorkletProcessor {
     this.buffer = [];
     // Calculate ratio based on the actual AudioContext sample rate
     // sampleRate is a global variable in AudioWorkletProcessor representing the context's sample rate
-    // Target: 8kHz pour correspondre au codec PCMA/PCMU
-    // Si AudioContext est à 8kHz: ratio = 1 (pas de resampling)
-    // Si AudioContext est à 48kHz: ratio = 6 (resampling nécessaire)
+    // For a typical 48kHz AudioContext: ratio = 48000 / 8000 = 6
     this.ratio = sampleRate / 8000;
     this.sequenceNumber = 0;
     this.timestamp = 0;
     this.ssrc = Math.floor(Math.random() * 0xFFFFFFFF); // Random SSRC
-    
-    // Gestion du resampling fractionnaire pour éviter la dérive d'horloge RTP
-    // Si le ratio n'est pas entier (ex: 44100/8000 = 5.5125), utiliser un accumulateur fractionnaire
-    this.isIntegerRatio = Math.abs(this.ratio - Math.round(this.ratio)) < 0.001;
-    this.ratioInteger = Math.floor(this.ratio);
-    this.ratioFractional = this.ratio - this.ratioInteger;
-    this.fractionalAccumulator = 0; // Accumulateur pour gérer la partie fractionnaire
-    
-    // Avertir si le ratio n'est pas entier (peut causer une dérive d'horloge)
-    if (!this.isIntegerRatio) {
-      console.warn(`⚠️ Worklet: Ratio non entier détecté (${this.ratio.toFixed(4)}). Utilisation du resampling fractionnaire pour éviter la dérive d'horloge RTP.`);
-      console.warn(`💡 Recommandation: Forcer AudioContext à 8000Hz ou 48000Hz pour un ratio entier.`);
-    }
-    
-    // Filtre de réduction de bruit adaptatif amélioré : estimation plus précise du bruit
-    this.noiseLevel = 0.003; // Estimation initiale modérée (0.3%) pour permettre la voix au début
-    this.maxNoiseLevel = 0.008; // Niveau de bruit maximum autorisé (0.8%) pour éviter que le gate devienne trop permissif
-    this.signalLevel = 0; // Niveau du signal actuel
-    this.alpha = 0.98; // Facteur de lissage par défaut (98% ancien, 2% nouveau) pour stabilité
-    this.alphaFast = 0.90; // Alpha rapide pour adaptation initiale (90% ancien, 10% nouveau)
-    this.alphaSlow = 0.98; // Alpha lent pour stabilité (98% ancien, 2% nouveau)
-    this.samplesProcessed = 0; // Compteur d'échantillons traités (pour adaptation initiale)
-    this.silenceDuration = 0; // Durée du silence détecté (en nombre de buffers)
-    this.voiceDetected = false; // Flag pour détecter la présence de voix
-    this.voiceLevel = 0; // Niveau estimé de la voix
-    this.signalHistory = new Float32Array(10); // Historique des niveaux de signal
-    this.historyIndex = 0;
-    
-    // NOTE: Le filtre passe-haut est maintenant géré par le BiquadFilter dans MicrophoneService
-    // Cela évite les artefacts et simplifie le traitement dans le worklet
-    
-    // Log pour debug
-    if (this.ratio === 1) {
-      console.log(`✅ Worklet: Pas de resampling nécessaire (AudioContext à ${sampleRate}Hz = codec 8kHz)`);
-    } else if (this.isIntegerRatio) {
-      console.log(`🔄 Worklet: Resampling de ${sampleRate}Hz vers 8kHz (ratio entier: ${this.ratioInteger})`);
-    } else {
-      console.log(`🔄 Worklet: Resampling fractionnaire de ${sampleRate}Hz vers 8kHz (ratio: ${this.ratio.toFixed(4)})`);
-    }
-    
-    // Filtre passe-bas amélioré pour anti-aliasing (réduit les artefacts de downsampling)
-    // Utiliser un filtre à réponse impulsionnelle finie (FIR) pour une meilleure qualité
-    // Ordre augmenté pour meilleure atténuation des fréquences > 4kHz (Nyquist à 4kHz pour 8kHz)
-    // Coefficients du filtre FIR passe-bas optimisé (cutoff ~3.0kHz pour 48kHz input, downsampling à 8kHz)
-    // Fréquence de coupure réduite à 3.0kHz (sous Nyquist 4kHz) pour éliminer plus agressivement l'aliasing
-    // Coefficients générés avec fenêtre de Kaiser pour meilleure atténuation stopband
-    // Ordre 29 pour transition plus raide et meilleure suppression des bruits haute fréquence
-    // Coefficients ajustés pour une atténuation plus forte des fréquences > 3kHz
-    this.filterCoefficients = new Float32Array([
-      -0.002, -0.003, 0.002, 0.006, 0.010, 0.008, -0.003, -0.025, -0.042, -0.038,
-      0.002, 0.068, 0.145, 0.215, 0.255, 0.215, 0.145, 0.068, 0.002, -0.038,
-      -0.042, -0.025, -0.003, 0.008, 0.010, 0.006, 0.002, -0.003, -0.002
-    ]);
-    this.filterOrder = this.filterCoefficients.length; // Ordre = nombre de coefficients
-    this.filterBuffer = new Float32Array(this.filterOrder);
-    this.filterIndex = 0;
-    // Normaliser les coefficients pour que leur somme = 1 (gain unitaire)
-    const sum = this.filterCoefficients.reduce((a, b) => a + b, 0);
-    for (let i = 0; i < this.filterCoefficients.length; i++) {
-      this.filterCoefficients[i] /= sum;
-    }
-  }
-
-  // Filtre passe-bas FIR amélioré pour réduire l'aliasing
-  applyLowPassFilter(sample) {
-    // NOTE: Filtre passe-haut désactivé car il peut introduire des artefacts
-    // Le filtre Biquad dans MicrophoneService fait déjà le filtrage passe-haut
-    // On applique seulement le filtre FIR passe-bas pour l'anti-aliasing
-    
-    // Ajouter l'échantillon au buffer circulaire
-    this.filterBuffer[this.filterIndex] = sample;
-    this.filterIndex = (this.filterIndex + 1) % this.filterOrder;
-    
-    // Appliquer le filtre FIR passe-bas (convolution)
-    // Le filtre est appliqué de manière causale (utilise seulement les échantillons passés)
-    let output = 0;
-    for (let i = 0; i < this.filterCoefficients.length; i++) {
-      // Calculer l'index dans le buffer circulaire (échantillons passés)
-      const bufferIndex = (this.filterIndex - 1 - i + this.filterOrder) % this.filterOrder;
-      output += this.filterBuffer[bufferIndex] * this.filterCoefficients[i];
-    }
-    
-    return output;
   }
 
   process(inputs) {
     const input = inputs[0][0];
     if (!input) return true;
 
-    // Incrémenter le compteur d'échantillons traités
-    this.samplesProcessed += input.length;
-    
-    // Filtre de réduction de bruit adaptatif amélioré
-    // Estimer le niveau de bruit en temps réel avec analyse RMS (Root Mean Square)
-    let sumSquares = 0;
-    let maxAmplitude = 0;
-    for (let i = 0; i < input.length; i++) {
-      const abs = Math.abs(input[i]);
-      sumSquares += input[i] * input[i];
-      if (abs > maxAmplitude) maxAmplitude = abs;
-    }
-    
-    // Calculer RMS (Root Mean Square) pour meilleure estimation du niveau
-    const rms = Math.sqrt(sumSquares / input.length);
-    
-    // Mettre à jour l'historique des niveaux de signal
-    this.signalHistory[this.historyIndex] = rms;
-    this.historyIndex = (this.historyIndex + 1) % this.signalHistory.length;
-    
-    // Calculer le niveau médian pour détecter les pics de bruit
-    const sortedHistory = Array.from(this.signalHistory).sort((a, b) => a - b);
-    const medianLevel = sortedHistory[Math.floor(sortedHistory.length / 2)];
-    
-    // Alpha dynamique : adaptation rapide au début ou lors de changements d'environnement
-    // - Adaptation rapide pendant les 2 premières secondes (environ 96000 échantillons à 48kHz)
-    // - Adaptation rapide lors de silence prolongé (changement d'environnement probable)
-    const isInitialPhase = this.samplesProcessed < 96000; // ~2 secondes à 48kHz
-    const isSilenceDetected = rms < 0.05 && Math.abs(rms - medianLevel) < 0.015;
-    
-    if (isSilenceDetected) {
-      this.silenceDuration++;
-    } else {
-      this.silenceDuration = 0;
-    }
-    
-    const isLongSilence = this.silenceDuration > 10; // ~10 buffers de silence (~200ms)
-    
-    // Choisir alpha selon le contexte
-    if (isInitialPhase || isLongSilence) {
-      this.alpha = this.alphaFast; // Adaptation rapide
-    } else {
-      this.alpha = this.alphaSlow; // Stabilité
-    }
-    
-    // Détecter la présence de voix (signal fort et variable)
-    // Critères simplifiés pour mieux détecter la voix
-    const isVoiceLikely = rms > 0.012 && maxAmplitude > 0.025;
-    
-    if (isVoiceLikely) {
-      this.voiceDetected = true;
-      // Estimer le niveau de voix (moyenne mobile)
-      this.voiceLevel = this.voiceLevel * 0.95 + rms * 0.05;
-    } else {
-      // Si pas de voix détectée depuis longtemps, réinitialiser
-      if (this.silenceDuration > 50) { // ~1 seconde de silence
-        this.voiceDetected = false;
-        this.voiceLevel = 0;
-      }
-    }
-    
-    // Mettre à jour l'estimation du niveau de bruit (seulement si le signal est faible et stable)
-    // Utiliser le niveau médian pour éviter les faux positifs dus aux pics de bruit
-    // Ne pas mettre à jour si la voix est détectée pour éviter de confondre voix et bruit
-    if (!isVoiceLikely && rms < 0.06 && Math.abs(rms - medianLevel) < 0.015) {
-      // Si le signal est faible et stable, c'est probablement du bruit
-      const newNoiseLevel = this.noiseLevel * this.alpha + rms * (1 - this.alpha);
-      // Limiter le niveau de bruit maximum pour éviter que le gate devienne trop permissif
-      this.noiseLevel = Math.min(newNoiseLevel, this.maxNoiseLevel);
-    }
-    
-    // Seuil de gate adaptatif simplifié et plus efficace
-    // Utiliser un seuil fixe bas au début, puis adaptatif après stabilisation
-    let adaptiveGateThreshold;
-    if (this.samplesProcessed < 96000) {
-      // Phase initiale (2 premières secondes) : seuil fixe bas pour permettre la voix
-      adaptiveGateThreshold = 0.006; // 0.6% fixe
-    } else {
-      // Phase normale : seuil adaptatif basé sur le bruit (3.5x le bruit, minimum 0.7%)
-      adaptiveGateThreshold = Math.max(0.007, this.noiseLevel * 3.5);
-    }
-    
-    // Cas optimisé : pas de resampling nécessaire (AudioContext déjà à 8kHz)
-    if (this.ratio === 1) {
-      // Pas besoin de filtre anti-aliasing ni de downsampling
-      // Encoder directement en µ-law avec gate adaptatif
-      for (let i = 0; i < input.length; i++) {
-        const absSample = Math.abs(input[i]);
-        // Gate adaptatif : supprimer les signaux en dessous du seuil
-        const gatedSample = absSample < adaptiveGateThreshold ? 0 : input[i];
-        const mu = this.encodeMuLaw(gatedSample);
-        this.buffer.push(mu);
-      }
-    } else if (this.isIntegerRatio) {
-      // Cas avec resampling entier : Filtrer TOUS les échantillons avant le downsampling pour éviter l'aliasing
-      // Le filtre passe-bas doit être appliqué avant de prendre un échantillon sur 'ratio'
-      let sampleCounter = 0; // Compteur pour le downsampling
-      
-      for (let i = 0; i < input.length; i++) {
-        // Appliquer le filtre passe-bas sur CHAQUE échantillon avant le downsampling
-        const filteredSample = this.applyLowPassFilter(input[i]);
-        
-        // Appliquer le gate adaptatif pour supprimer les bruits de fond
-        const absFiltered = Math.abs(filteredSample);
-        const gatedSample = absFiltered < adaptiveGateThreshold ? 0 : filteredSample;
-        
-        // Downsampler : prendre seulement 1 échantillon sur 'ratioInteger' APRÈS le filtrage
-        sampleCounter++;
-        if (sampleCounter >= this.ratioInteger) {
-          sampleCounter = 0;
-          // Encoder en µ-law seulement les échantillons downsamplés
-          const mu = this.encodeMuLaw(gatedSample);
-          this.buffer.push(mu);
-        }
-      }
-    } else {
-      // Cas avec resampling fractionnaire : Utiliser un accumulateur pour gérer la partie fractionnaire
-      // Cela évite la dérive d'horloge RTP en préservant le taux d'échantillonnage exact
-      for (let i = 0; i < input.length; i++) {
-        // Appliquer le filtre passe-bas sur CHAQUE échantillon avant le downsampling
-        const filteredSample = this.applyLowPassFilter(input[i]);
-        
-        // Appliquer le gate adaptatif pour supprimer les bruits de fond
-        const absFiltered = Math.abs(filteredSample);
-        const gatedSample = absFiltered < adaptiveGateThreshold ? 0 : filteredSample;
-        
-        // Resampling fractionnaire : accumuler la partie fractionnaire
-        this.fractionalAccumulator += 1.0;
-        
-        // Prendre un échantillon quand l'accumulateur dépasse le ratio
-        if (this.fractionalAccumulator >= this.ratio) {
-          this.fractionalAccumulator -= this.ratio;
-          // Encoder en µ-law seulement les échantillons downsamplés
-          const mu = this.encodeMuLaw(gatedSample);
-          this.buffer.push(mu);
-        }
-      }
+    // Downsample from 48kHz -> 8kHz
+    for (let i = 0; i < input.length; i += this.ratio) {
+      const idx = Math.floor(i);
+      const sample = input[idx];
+      const mu = this.encodeMuLaw(sample);
+      this.buffer.push(mu);
     }
 
     // Send in RTP chunks (160 samples = 20 ms @ 8 kHz)
@@ -258,9 +42,8 @@ class MicProcessor extends AudioWorkletProcessor {
     // Version (2 bits) + Padding (1 bit) + Extension (1 bit) + CSRC Count (4 bits)
     header[0] = 0x80; // Version 2, no padding, no extension, no CSRC
     
-    // Marker (1 bit) + Payload Type (7 bits) - PCMU = 0 (G.711 µ-law)
-    // Payload Type 0 = PCMU (G.711 µ-law), Payload Type 8 = PCMA (G.711 A-law)
-    header[1] = 0x00; // No marker (bit 7 = 0), PCMU payload type = 0 (bits 0-6)
+    // Marker (1 bit) + Payload Type (7 bits) - PCMU = 0
+    header[1] = 0x00; // No marker, PCMU payload type
     
     // Sequence Number (16 bits)
     header[2] = (this.sequenceNumber >> 8) & 0xFF;
@@ -289,37 +72,12 @@ class MicProcessor extends AudioWorkletProcessor {
   }
 
   encodeMuLaw(sample) {
-    // Normaliser et limiter le signal pour éviter la distorsion
-    let s = Math.max(-1.0, Math.min(1.0, sample));
-    
-    // Réduction globale optimisée pour éviter la saturation tout en préservant la dynamique
-    s = s * 0.90; // Réduction modérée (10%) pour préserver la qualité vocale
-    
-    // Filtre de réduction de bruit haute fréquence amélioré
-    // Supprimer les composantes très faibles qui sont probablement du bruit
-    // Seuil ajusté pour équilibrer suppression de bruit et préservation de la voix
-    if (Math.abs(s) < 0.002) {
-      // Si le signal est très faible (< 0.2%), c'est probablement du bruit - le supprimer
-      s = 0;
-    }
-    
-    // Appliquer un soft limiter amélioré avec compression douce
-    // Cela réduit les bruits de clipping tout en préservant la dynamique vocale
-    const threshold = 0.88; // Seuil de compression douce optimisé
-    if (Math.abs(s) > threshold) {
-      const sign = s < 0 ? -1 : 1;
-      const excess = Math.abs(s) - threshold;
-      // Compression douce avec ratio progressif pour éviter les artefacts
-      const compressionRatio = 0.25; // Compression modérée pour préserver la qualité
-      s = sign * (threshold + excess * compressionRatio);
-    }
-    
-    // Encodage µ-law standard ITU-T G.711
     const BIAS = 0x84;
     const MAX = 32635;
-    const sign = s < 0 ? 0x80 : 0;
-    let absSample = Math.abs(s);
-    let s16 = Math.floor(absSample * 32767);
+    const sign = sample < 0 ? 0x80 : 0;
+    let s = Math.abs(sample);
+    s = Math.min(s, 1.0);
+    let s16 = Math.floor(s * 32767);
     if (s16 > MAX) s16 = MAX;
     s16 = s16 + BIAS;
     let exponent = 7;

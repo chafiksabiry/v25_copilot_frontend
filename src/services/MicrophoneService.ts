@@ -7,10 +7,7 @@ export class MicrophoneService {
   private recordingStartTime: number = 0;
   private recordingInterval: number | null = null;
   private recorderScriptNode: ScriptProcessorNode | null = null;
-  private recorderWorkletNode: AudioWorkletNode | null = null; // Nouveau worklet pour enregistrement
   private recordingCounter: number = 0;
-  private isRecording: boolean = false;
-  private hasStartedCapture: boolean = false; // Flag pour éviter la double capture
 
   constructor(outboundWs: WebSocket) {
     this.outboundWs = outboundWs;
@@ -76,15 +73,7 @@ export class MicrophoneService {
   }
 
   async startCapture() {
-    // Empêcher la double capture
-    if (this.hasStartedCapture) {
-      console.warn('⚠️ Capture déjà démarrée, ignoré');
-      return;
-    }
-    
     try {
-      this.hasStartedCapture = true;
-      
       // 1) Ensure outbound WebSocket provided and open
       if (!this.outboundWs) throw new Error('Outbound WebSocket instance not provided');
       if (this.outboundWs.readyState !== WebSocket.OPEN) {
@@ -105,62 +94,18 @@ export class MicrophoneService {
         throw new Error('Microphone permission denied. Please allow microphone access in your browser settings.');
       }
 
-      // 3) Capture microphone with optimized audio constraints for call quality
+      // 3) Capture microphone with better error handling
       console.log('🎤 Requesting microphone access...');
       try {
-        // Configuration optimale pour réduire les bruits automatiquement
-        // IMPORTANT: Essayer de forcer la capture à 8kHz pour correspondre au codec PCMA/PCMU
-        // Cela réduit les artefacts de resampling et les bruits
         this.stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            // Traitement audio natif du navigateur (priorité haute)
-            echoCancellation: true,        // Annulation d'écho pour éviter le feedback
-            noiseSuppression: true,        // Suppression de bruit de fond
-            autoGainControl: true,         // Contrôle automatique du gain (évite saturation)
-            
-            // Paramètres avancés pour meilleure qualité
-            // Essayer 8kHz d'abord pour correspondre au codec PCMA/PCMU
-            sampleRate: 8000,             // Taux d'échantillonnage correspondant au codec (8kHz)
-            channelCount: 1,              // Mono (suffisant pour la voix)
-            latency: 0.01,                // Latence minimale (10ms)
-            
-            // Contraintes pour forcer l'activation des fonctionnalités
-            googEchoCancellation: true,   // Google-specific (Chrome)
-            googNoiseSuppression: true,   // Google-specific (Chrome)
-            googAutoGainControl: true,    // Google-specific (Chrome)
-            googHighpassFilter: true,     // Filtre passe-haut pour réduire basses fréquences
-            googTypingNoiseDetection: true, // Détection bruit de frappe clavier
-            
-            // Paramètres de qualité
-            volume: 1.0,                  // Volume maximum (le navigateur ajustera automatiquement)
-            suppressLocalAudioPlayback: false // Permettre la lecture locale si nécessaire
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000 // Explicit sample rate
           } 
         });
-        console.log('✅ Microphone access granted with optimized audio settings');
-        
-        // Vérifier les contraintes appliquées (pour debug)
-        const audioTracks = this.stream.getAudioTracks();
-        if (audioTracks.length > 0) {
-          const settings = audioTracks[0].getSettings();
-          const actualSampleRate = settings.sampleRate || 48000; // Fallback si non disponible
-          const requestedSampleRate = 8000;
-          
-          console.log('🎤 Applied audio settings:', {
-            echoCancellation: settings.echoCancellation,
-            noiseSuppression: settings.noiseSuppression,
-            autoGainControl: settings.autoGainControl,
-            sampleRate: actualSampleRate,
-            channelCount: settings.channelCount
-          });
-          
-          // Avertir si le sample rate réel ne correspond pas à la demande
-          if (actualSampleRate && Math.abs(actualSampleRate - requestedSampleRate) > 100) {
-            console.warn(`⚠️ Microphone sample rate is ${actualSampleRate}Hz instead of ${requestedSampleRate}Hz`);
-            console.warn('💡 Le navigateur a ignoré la contrainte sampleRate. Le resampling sera effectué dans le worklet.');
-          } else if (actualSampleRate) {
-            console.log(`✅ Microphone sample rate matches codec: ${actualSampleRate}Hz`);
-          }
-        }
+        console.log('✅ Microphone access granted');
       } catch (mediaError: any) {
         console.error('❌ Microphone access error:', mediaError);
         if (mediaError.name === 'NotAllowedError') {
@@ -174,131 +119,36 @@ export class MicrophoneService {
         }
       }
 
-      // 4) Create AudioContext with optimized settings for call quality
-      // IMPORTANT: Forcer le sampleRate à 8000Hz ou 48000Hz pour éviter les ratios non entiers
-      // qui causent une dérive d'horloge RTP. Le worklet fera le resampling optimisé avec un filtre FIR anti-aliasing.
-      const audioTracks = this.stream.getAudioTracks();
-      const microphoneSampleRate = audioTracks[0]?.getSettings()?.sampleRate || 48000;
-      
-      // Ordre de priorité pour le sampleRate :
-      // 1. 8000Hz (idéal, pas de resampling nécessaire)
-      // 2. 48000Hz (ratio entier 6:1, resampling optimal)
-      // 3. SampleRate du micro (si 8kHz ou 48kHz ne sont pas supportés)
-      const preferredRates = [8000, 48000];
-      let selectedRate: number | null = null;
-      
-      // Vérifier si le micro est déjà à 8kHz ou 48kHz
-      if (Math.abs(microphoneSampleRate - 8000) < 100) {
-        selectedRate = 8000;
-      } else if (Math.abs(microphoneSampleRate - 48000) < 100) {
-        selectedRate = 48000;
-      } else {
-        // Essayer les taux préférés dans l'ordre
-        for (const rate of preferredRates) {
-          try {
-            const testContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-              sampleRate: rate,
-              latencyHint: 'interactive'
-            });
-            const actualRate = testContext.sampleRate;
-            testContext.close();
-            
-            if (Math.abs(actualRate - rate) < 100) {
-              selectedRate = rate;
-              break;
-            }
-          } catch (e) {
-            // Continuer avec le taux suivant
-            continue;
-          }
-        }
-      }
-      
-      try {
-        // Créer l'AudioContext avec le taux sélectionné ou le taux du micro
-        const targetRate = selectedRate || microphoneSampleRate;
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: targetRate,
-          latencyHint: 'interactive' // Latence minimale pour appels en temps réel
-        });
-        
-        const actualSampleRate = this.audioContext.sampleRate;
-        const ratio = actualSampleRate / 8000;
-        const isIntegerRatio = Math.abs(ratio - Math.round(ratio)) < 0.001;
-        
-        console.log(`🔊 AudioContext créé à ${actualSampleRate}Hz (micro: ${microphoneSampleRate}Hz)`);
-        
-        if (actualSampleRate === 8000) {
-          console.log(`✅ AudioContext à 8kHz - Pas de resampling nécessaire (ratio: 1)`);
-        } else if (isIntegerRatio) {
-          console.log(`✅ AudioContext à ${actualSampleRate}Hz - Ratio entier (${ratio.toFixed(0)}:1) pour resampling optimal`);
-        } else {
-          console.warn(`⚠️ AudioContext à ${actualSampleRate}Hz - Ratio non entier (${ratio.toFixed(4)}:1)`);
-          console.warn(`💡 Le worklet utilisera le resampling fractionnaire pour éviter la dérive d'horloge RTP`);
-          console.warn(`💡 Recommandation: Le navigateur devrait supporter 8kHz ou 48kHz pour un ratio entier`);
-        }
-        
-        if (Math.abs(actualSampleRate - microphoneSampleRate) > 100) {
-          console.log(`💡 Le navigateur fera un resampling automatique du micro (${microphoneSampleRate}Hz → ${actualSampleRate}Hz)`);
-          console.log(`💡 Le worklet effectuera ensuite le resampling optimisé vers 8kHz avec filtre FIR anti-aliasing`);
-        }
-      } catch (error) {
-        // Fallback : créer avec le sample rate par défaut du navigateur
-        console.warn('⚠️ Impossible de créer AudioContext avec taux préféré, utilisation du sample rate par défaut:', error);
-        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-          latencyHint: 'interactive'
-        });
-        const actualRate = this.audioContext.sampleRate;
-        const ratio = actualRate / 8000;
-        const isIntegerRatio = Math.abs(ratio - Math.round(ratio)) < 0.001;
-        
-        console.log(`🔊 AudioContext créé à ${actualRate}Hz (sample rate par défaut)`);
-        if (isIntegerRatio) {
-          console.log(`✅ Ratio entier (${ratio.toFixed(0)}:1) pour resampling optimal`);
-        } else {
-          console.warn(`⚠️ Ratio non entier (${ratio.toFixed(4)}:1) - Le worklet utilisera le resampling fractionnaire`);
-        }
-      }
-      
-      // S'assurer que l'AudioContext est actif
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-        console.log('🔊 AudioContext resumed');
-      }
-      
+      // 4) Create AudioContext
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const source = this.audioContext.createMediaStreamSource(this.stream);
-      
-      // Créer des filtres pour améliorer la qualité audio
-      // IMPORTANT: Ces filtres pré-filtrent avant le worklet pour réduire la charge de traitement
-      
-      // Filtre passe-haut pour éliminer les basses fréquences (< 100Hz) qui causent du bruit
-      const highpassFilter = this.audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
-      highpassFilter.frequency.value = 100; // Coupure à 100Hz pour éliminer le bruit basse fréquence
-      highpassFilter.Q.value = 0.707; // Q optimal (Butterworth)
-      
-      // Filtre passe-bas pour réduire les bruits haute fréquence
-      const lowpassFilter = this.audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3000; // Limite réduite à 3kHz (sous Nyquist 4kHz) pour suppression plus agressive
-      lowpassFilter.Q.value = 0.707; // Q optimal (Butterworth) pour transition douce sans résonance
 
       // 5) Create script processor for raw audio recording (before worklet)
       const bufferSize = 4096;
       this.recorderScriptNode = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
       
-      // Flag to track if we're recording (utiliser une référence partagée)
-      this.isRecording = true;
+      // Flag to track if we're recording
+      let isRecording = true;
       
       this.recorderScriptNode.onaudioprocess = (e) => {
-        if (!this.isRecording || !this.audioContext) return; // Vérifier que audioContext existe et qu'on enregistre encore
+        if (!isRecording) return;
         
-        // NOTE: La sauvegarde automatique des fichiers audio a été désactivée
-        // pour éviter les interruptions et bruits dans le flux audio en temps réel.
-        // Le ScriptProcessorNode reste actif uniquement pour maintenir le flux audio.
+        const inputData = e.inputBuffer.getChannelData(0);
+        // Make a copy of the audio data
+        this.rawAudioBuffer.push(new Float32Array(inputData));
         
-        // Ne plus accumuler les données dans rawAudioBuffer pour économiser la mémoire
-        // et éviter les interruptions de traitement
+        console.log(`🎙️ Recording chunk ${this.rawAudioBuffer.length}: ${inputData.length} samples`);
+        
+        // Check if we have 3 seconds of audio (assuming 48000 Hz sample rate)
+        const samplesFor3Seconds = this.audioContext!.sampleRate * 3;
+        const totalSamples = this.rawAudioBuffer.length * bufferSize;
+        
+        console.log(`📊 Buffer: ${totalSamples} / ${samplesFor3Seconds} samples`);
+        
+        if (totalSamples >= samplesFor3Seconds) {
+          console.log(`✨ Triggering 3-second save with ${this.rawAudioBuffer.length} chunks`);
+          this.saveAudioAsMP3();
+        }
       };
       
       // 6) Load and create worklet for RTP encoding FIRST (before connecting)
@@ -306,93 +156,41 @@ export class MicrophoneService {
       await this.audioContext.audioWorklet.addModule(workletUrl);
       this.node = new AudioWorkletNode(this.audioContext, 'mic-processor', { numberOfInputs: 1, numberOfOutputs: 0 });
       
-      // 7) Connect audio chain with noise reduction filter:
-      //    OPTIMIZED: source → lowpassFilter → worklet (encodes RTP with noise reduction)
-      //    PARALLEL: source → recorder → analyser (records audio without feedback)
-      
-      // Créer un AnalyserNode qui ne produit pas de sortie audio mais maintient le ScriptProcessorNode actif
-      // L'AnalyserNode permet au ScriptProcessorNode de fonctionner sans créer de feedback
-      const analyser = this.audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      
-      // Chaîne principale avec filtres passe-haut et passe-bas pour améliorer la qualité
-      source.connect(highpassFilter);
-      highpassFilter.connect(lowpassFilter);
-      lowpassFilter.connect(this.node);
-      
-      // Chaîne parallèle pour l'enregistrement (sans filtre pour garder la qualité originale)
+      // 7) Connect audio chain in parallel:
+      //    CRITICAL: Both nodes must be connected to receive audio
+      //    - Worklet: source → worklet (encodes RTP)
+      //    - Recorder: source → recorder → destination (records audio)
+      source.connect(this.node);
       source.connect(this.recorderScriptNode);
-      // Connecter à un AnalyserNode au lieu de la destination pour éviter le feedback
-      this.recorderScriptNode.connect(analyser);
-      // L'AnalyserNode n'a pas besoin d'être connecté à la destination
+      this.recorderScriptNode.connect(this.audioContext.destination);
       
       // Store recording start time
       this.recordingStartTime = Date.now();
-      
-      // Nettoyer le buffer audio pour éviter les données résiduelles
-      // (la sauvegarde automatique est désactivée)
-      this.rawAudioBuffer = [];
-      this.recordingCounter = 0;
 
       // 4) Receive RTP packets from worklet and send over WS (RTP PCMU with headers)
-      // SYSTÈME DE BACKPRESSURE : Limiter le nombre de paquets en attente
       let chunkCount = 0;
-      let pendingPackets = 0; // Compteur de paquets en attente d'envoi
-      const MAX_PENDING_PACKETS = 10; // Maximum de paquets en attente
-      
       this.node.port.onmessage = (ev: MessageEvent) => {
-        // Arrêter si on n'enregistre plus
-        if (!this.isRecording) return;
-        
         const rtpPacket: Uint8Array = ev.data;
         if (!rtpPacket || !(rtpPacket instanceof Uint8Array)) return;
         
         chunkCount++;
-        
-        // BACKPRESSURE : Si trop de paquets en attente, drop ce paquet
-        if (pendingPackets >= MAX_PENDING_PACKETS) {
-          if (chunkCount % 100 === 0) {
-            console.warn(`⚠️ Backpressure: dropping RTP packet #${chunkCount} (${pendingPackets} packets pending)`);
-          }
-          return; // Drop ce paquet pour éviter la saturation
+        // Log premier chunk et ensuite tous les 50 chunks
+        if (chunkCount === 1 || chunkCount % 50 === 0) {
+          console.log(`📦 RTP packet #${chunkCount}: ${rtpPacket.length} bytes (12 header + ${rtpPacket.length - 12} payload)`);
         }
         
-        // Log moins fréquemment pour réduire le bruit
-        if (chunkCount === 1 || chunkCount % 100 === 0) {
-          console.log(`📦 RTP packet #${chunkCount}: ${rtpPacket.length} bytes`);
-        }
-        
-        // Vérifier que le WebSocket est ouvert avant d'envoyer
-        if (!this.outboundWs || this.outboundWs.readyState !== WebSocket.OPEN) {
-          if (chunkCount === 1) {
-            console.warn(`⚠️ Outbound WebSocket not ready, stopping RTP packet sending. State: ${this.outboundWs?.readyState}`);
-          }
-          return;
-        }
-        
-        // Encode RTP packet to base64
+        // Encode RTP packet to base64 (includes RTP header + PCMU payload)
         const base64 = this.uint8ToBase64(rtpPacket);
         
-        try {
-          // Incrémenter le compteur de paquets en attente
-          pendingPackets++;
-          
+        if (this.outboundWs && this.outboundWs.readyState === WebSocket.OPEN) {
           this.outboundWs.send(JSON.stringify({ event: 'media', media: { payload: base64 } }));
           
-          // Décrémenter après l'envoi (simuler l'acknowledgment)
-          // En réalité, on ne peut pas savoir quand le paquet est vraiment envoyé,
-          // donc on décrémente après un court délai
-          setTimeout(() => {
-            pendingPackets = Math.max(0, pendingPackets - 1);
-          }, 20); // 20ms = temps approximatif d'envoi d'un paquet
-          
-          // Log moins fréquemment
-          if (chunkCount === 1 || chunkCount % 100 === 0) {
-            console.log(`✅ Sent RTP packet #${chunkCount} via outbound WebSocket`);
+          // Log premier envoi et ensuite tous les 50 envois
+          if (chunkCount === 1 || chunkCount % 50 === 0) {
+            console.log(`✅ Sent RTP packet #${chunkCount} via outbound WebSocket (RTP: ${rtpPacket.length} bytes, base64: ${base64.length} chars)`);
           }
-        } catch (error) {
-          pendingPackets = Math.max(0, pendingPackets - 1);
-          console.error(`❌ Error sending RTP packet #${chunkCount}:`, error);
+        } else {
+          console.error(`❌ Outbound WebSocket not ready for RTP packet #${chunkCount}, state: ${this.outboundWs?.readyState}`);
         }
       };
 
@@ -484,12 +282,12 @@ export class MicrophoneService {
 
   async stopCapture() {
     console.log('⏹️ Stopping microphone stream');
-    this.hasStartedCapture = false; // Réinitialiser le flag
-    // Arrêter l'enregistrement d'abord pour éviter les callbacks après le cleanup
-    this.isRecording = false;
     
-    // NOTE: La sauvegarde automatique des fichiers audio a été désactivée
-    // pour éviter les interruptions et bruits dans le flux audio en temps réel.
+    // Save any remaining audio buffer before stopping
+    if (this.rawAudioBuffer.length > 0) {
+      console.log('💾 Saving final audio buffer...');
+      this.saveAudioAsMP3();
+    }
     
     // Clear interval if set
     if (this.recordingInterval) {
@@ -497,26 +295,9 @@ export class MicrophoneService {
       this.recordingInterval = null;
     }
     
-    // Arrêter le worklet d'abord pour éviter l'envoi de paquets après la fermeture
-    if (this.node) {
-      try {
-        this.node.port.onmessage = null; // Arrêter les callbacks
-        this.node.disconnect();
-      } catch (_) {}
-    }
-    
-    // Arrêter le recorderScriptNode
-    if (this.recorderScriptNode) {
-      try {
-        this.recorderScriptNode.onaudioprocess = null; // Arrêter les callbacks
-        this.recorderScriptNode.disconnect();
-      } catch (_) {}
-    }
-    
-    // Arrêter le stream
+    try { this.recorderScriptNode?.disconnect(); } catch (_) {}
+    try { this.node?.disconnect(); } catch (_) {}
     try { this.stream?.getTracks().forEach(t => t.stop()); } catch (_) {}
-    
-    // Fermer l'audioContext en dernier
     try { await this.audioContext?.close(); } catch (_) {}
     // We do NOT close the outbound WebSocket here; it's managed by the caller
 

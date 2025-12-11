@@ -2,28 +2,20 @@ export class AudioStreamManager {
   private ws: WebSocket | null = null;
   private audioContext: AudioContext | null = null;
   private gainNode: GainNode | null = null;
-  private currentCodec: string = 'PCMU'; // Codec détecté depuis le message start (PCMU ou PCMA)
 
   private isConnected: boolean = false;
   private onErrorCallback: ((error: Error) => void) | null = null;
-  
-  // Audio quality settings
-  private readonly GAIN_VALUE = 0.55; // Gain optimisé pour éviter le feedback et la distorsion (55%)
 
   // Jitter buffer / queue (Float32Array chunks)
   private chunkQueue: Float32Array[] = [];
-  private readonly START_THRESHOLD = 2; // Réduit pour démarrer plus vite (2 chunks = 40ms de buffer)
-  private readonly MAX_QUEUE = 400; // Augmenté pour gérer les pics de trafic et éviter le backpressure
-  private readonly CHUNKS_PER_ITERATION = 8; // Augmenté pour traiter plus vite et éviter les débordements
+  private readonly START_THRESHOLD = 3; // combien de chunks accumuler avant de démarrer
+  private readonly MAX_QUEUE = 60; // maximum chunks à stocker (drop oldest si >)
   private readonly SAMPLE_RATE = 8000; // Telnyx envoie en 8kHz
   private playbackTime = 0; // temps (AudioContext.currentTime) planifié pour le prochain chunk
-  private animationFrameId: number | null = null; // Pour setTimeout (au lieu de requestAnimationFrame pour éviter les violations)
-  private lastChunkEndSample: number | undefined = undefined; // Pour crossfade entre chunks
 
   // sécurité
   private isPlaying = false;
   private isStopping = false;
-  private overflowLogCount = 0; // Compteur pour limiter les logs d'overflow
 
   constructor(onError?: (error: Error) => void) {
     this.onErrorCallback = onError || null;
@@ -86,42 +78,18 @@ export class AudioStreamManager {
     const ev = message.event;
     switch (ev) {
       case 'connected':
-        // Le message connected peut contenir des infos de configuration
-        if (message.config) {
-          console.log('🎧 Connected to audio stream with config:', message.config);
-        } else {
-          console.log('🎧 Connected to audio stream');
-        }
+        console.log('🎧 Connected to audio stream with config:', message.config);
         break;
       case 'start':
         console.log('▶️ Stream started:', message.stream_id);
-        // Détecter le codec depuis le message start et le stocker
-        const mediaFormat = message.start?.media_format;
-        if (mediaFormat) {
-          const codec = mediaFormat.encoding || 'PCMU';
-          const sampleRate = mediaFormat.sample_rate || 8000;
-          console.log(`🎵 Stream codec: ${codec}, sample rate: ${sampleRate}Hz`);
-          // Stocker le codec pour l'utiliser lors du décodage
-          this.currentCodec = codec;
-        }
         break;
       case 'media':
         // message.media.payload est base64
         if (message.media && message.media.payload) {
-          // Détecter le codec depuis le message ou utiliser celui du start event
-          const codec = message.media.format || this.currentCodec || 'PCMU';
-          
           // Certains providers envoient `payload` base64; d'autres envoient hex/array — ici on gère base64
           const base64 = message.media.payload;
           const u8 = this.base64ToUint8Array(base64);
-          
-          // Utiliser la fonction de décodage qui supporte PCMU et PCMA
-          const float32 = this.convertFromG711(u8, codec);
-          
-          // Appliquer un léger smoothing pour réduire les bruits de quantification
-          // (surtout important pour PCMA/PCMU qui sont des codecs à faible résolution)
-          this.applySmoothing(float32);
-          
+          const float32 = this.convertFromPCMU(u8);
           this.enqueueChunk(float32);
         }
         break;
@@ -164,191 +132,50 @@ export class AudioStreamManager {
     return sample < -32768 ? -32768 : sample > 32767 ? 32767 : sample;
   }
 
-  // --- A-law (G.711) décodage correct ---
-  // Retourne Int16 amplitude (-32768..32767)
-  // PCMA est utilisé en Europe, PCMU en Amérique du Nord
-  private decodeALawByte(aLawByte: number): number {
-    // Standard ITU-T G.711 A-law decoding
-    aLawByte ^= 0x55; // Inverser les bits pairs/impairs
-    const sign = (aLawByte & 0x80) ? -1 : 1;
-    const exponent = (aLawByte >> 4) & 0x07;
-    const mantissa = aLawByte & 0x0f;
-    
-    let sample: number;
-    if (exponent === 0) {
-      // Cas spécial pour exponent = 0
-      sample = (mantissa << 4) + 8;
-    } else {
-      sample = ((mantissa << 4) + 0x108) << (exponent - 1);
-    }
-    
-    sample = sign * (sample - 0x84);
-    // clamp to Int16
-    return sample < -32768 ? -32768 : sample > 32767 ? 32767 : sample;
-  }
-
-  // Convertit Uint8Array PCMU/PCMA -> Float32Array (valeurs dans [-1, 1])
-  // Détecte automatiquement le codec (PCMU = µ-law, PCMA = A-law)
-  private convertFromG711(audioData: Uint8Array, codec: string = 'PCMU'): Float32Array {
-    const out = new Float32Array(audioData.length);
-    const isPCMA = codec === 'PCMA' || codec === 'pcma';
-    
-    for (let i = 0; i < audioData.length; i++) {
-      const s16 = isPCMA 
-        ? this.decodeALawByte(audioData[i])
-        : this.decodeMuLawByte(audioData[i]);
-      out[i] = s16 / 32768; // normaliser à [-1, 1]
+  // Convertit Uint8Array PCMU -> Float32Array (valeurs dans [-1, 1])
+  private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
+    const out = new Float32Array(pcmuData.length);
+    for (let i = 0; i < pcmuData.length; i++) {
+      const s16 = this.decodeMuLawByte(pcmuData[i]);
+      out[i] = s16 / 32768; // normaliser
     }
     return out;
   }
 
-  // Alias pour compatibilité (ancien code)
-  private convertFromPCMU(pcmuData: Uint8Array): Float32Array {
-    return this.convertFromG711(pcmuData, 'PCMU');
-  }
-
-  // Appliquer un smoothing amélioré pour réduire les bruits de quantification
-  // Utilise un filtre médian et une moyenne pondérée pour réduire les artefacts
-  private applySmoothing(float32: Float32Array): void {
-    if (float32.length < 3) return;
-    
-    // Filtre de réduction de bruit adaptatif : supprimer les petits pics isolés (probablement du bruit)
-    const denoised = new Float32Array(float32.length);
-    const noiseThreshold = 0.02; // Seuil pour détecter les pics de bruit (2%)
-    
-    // Premier passage : détecter et supprimer les pics isolés
-    for (let i = 1; i < float32.length - 1; i++) {
-      const current = Math.abs(float32[i]);
-      const prev = Math.abs(float32[i - 1]);
-      const next = Math.abs(float32[i + 1]);
-      
-      // Si le sample actuel est un pic isolé (beaucoup plus grand que ses voisins), c'est probablement du bruit
-      if (current > noiseThreshold && current > prev * 2 && current > next * 2) {
-        // Remplacer par la moyenne des voisins
-        denoised[i] = (float32[i - 1] + float32[i + 1]) / 2;
-      } else {
-        denoised[i] = float32[i];
-      }
-    }
-    denoised[0] = float32[0];
-    denoised[float32.length - 1] = float32[float32.length - 1];
-    
-    // Deuxième passage : lissage avec moyenne pondérée
-    const smoothed = new Float32Array(float32.length);
-    
-    // Premier échantillon : moyenne avec le suivant
-    smoothed[0] = denoised[0] * 0.6 + denoised[1] * 0.4;
-    
-    // Échantillons du milieu : moyenne pondérée avec fenêtre de 3
-    for (let i = 1; i < denoised.length - 1; i++) {
-      // Pondération : 50% échantillon actuel, 30% précédent, 20% suivant
-      smoothed[i] = denoised[i] * 0.5 + denoised[i - 1] * 0.3 + denoised[i + 1] * 0.2;
-    }
-    
-    // Dernier échantillon : moyenne avec le précédent
-    smoothed[denoised.length - 1] = denoised[denoised.length - 2] * 0.4 + denoised[denoised.length - 1] * 0.6;
-    
-    float32.set(smoothed);
-  }
-
-  // --- Queue / Jitter buffer management avec backpressure ---
+  // --- Queue / Jitter buffer management ---
   private enqueueChunk(float32: Float32Array) {
     // Safety: drop if stopping
     if (this.isStopping) return;
 
-    // SYSTÈME DE BACKPRESSURE : Si la queue est presque pleine, forcer le traitement immédiat
-    // Cela évite les overflows et force le traitement à accélérer
-    if (this.chunkQueue.length >= this.MAX_QUEUE * 0.8) {
-      // Queue à 80% : forcer le traitement immédiat même si déjà en cours
-      if (!this.isPlaying) {
-        // Le traitement n'est pas démarré, démarrer immédiatement
-        this.ensureAudioContext();
-        this.startProcessingQueue();
-      }
-      // Si déjà en cours, continuer à ajouter mais le traitement va accélérer
-    }
-    
-    // Si la queue est vraiment pleine (95%), commencer à dropper les chunks les plus anciens
-    if (this.chunkQueue.length >= this.MAX_QUEUE * 0.95) {
-      // Drop les chunks les plus anciens pour faire de la place
-      const chunksToRemove = Math.min(10, Math.floor(this.chunkQueue.length * 0.1));
-      for (let i = 0; i < chunksToRemove; i++) {
-        this.chunkQueue.shift();
-      }
-      this.overflowLogCount += chunksToRemove;
-      if (this.overflowLogCount % 100 === 0) {
-        console.warn(`⚠️ Backpressure: dropped ${this.overflowLogCount} old chunks (queue at ${this.chunkQueue.length}/${this.MAX_QUEUE})`);
-      }
-    }
-
     this.chunkQueue.push(float32);
 
-    // Drop oldest if overflow (seulement en dernier recours)
+    // Drop oldest if overflow
     if (this.chunkQueue.length > this.MAX_QUEUE) {
-      const chunksToRemove = Math.min(20, this.chunkQueue.length - this.MAX_QUEUE + 10);
-      for (let i = 0; i < chunksToRemove; i++) {
-        this.chunkQueue.shift();
-      }
-      this.overflowLogCount += chunksToRemove;
-      if (this.overflowLogCount % 50 === 0) {
-        console.warn(`⚠️ chunkQueue overflow — dropped ${this.overflowLogCount} chunks (queue size: ${this.chunkQueue.length})`);
-      }
+      this.chunkQueue.shift();
+      console.warn('⚠️ chunkQueue overflow — dropping oldest chunk');
     }
 
-    // Si on a assez de chunks pour démarrer ET qu'on n'est pas déjà en train de jouer, démarrer
-    // Ajouter un petit délai au démarrage pour éviter les bruits initiaux
+    // If we have enough to start, start processing
     if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
       this.ensureAudioContext();
-      // Attendre 50ms avant de démarrer pour laisser le flux se stabiliser
-      setTimeout(() => {
-        if (!this.isPlaying && this.chunkQueue.length >= this.START_THRESHOLD) {
-          this.startProcessingQueue();
-        }
-      }, 50);
+      this.startProcessingQueue();
     }
   }
 
   // --- Assurer creation et état AudioContext et nodes ---
   private ensureAudioContext() {
     if (!this.audioContext || this.audioContext.state === 'closed') {
-      // Créer AudioContext avec latence minimale pour appels en temps réel
+      // Si le navigateur exige une interaction utilisateur pour démarrer audio,
+      // l'appelant devra appeler resumeAudio() après un click.
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: this.SAMPLE_RATE,
-        latencyHint: 'interactive' // Latence minimale pour appels
+        sampleRate: this.SAMPLE_RATE
       });
-      
-      // Créer un filtre passe-bas pour réduire les bruits haute fréquence lors de la lecture
-      const lowpassFilter = this.audioContext.createBiquadFilter();
-      lowpassFilter.type = 'lowpass';
-      lowpassFilter.frequency.value = 3000; // Limite haute réduite à 3kHz pour mieux éliminer les bruits haute fréquence
-      lowpassFilter.Q.value = 0.7; // Q réduit pour un filtre plus doux (moins de résonance)
-      
-      // Ajouter un filtre passe-haut pour supprimer les bruits basse fréquence (< 80Hz)
-      const highpassFilter = this.audioContext.createBiquadFilter();
-      highpassFilter.type = 'highpass';
-      highpassFilter.frequency.value = 80; // Supprimer les bruits très basse fréquence (rumeurs, vibrations)
-      highpassFilter.Q.value = 0.7;
-      
       this.gainNode = this.audioContext.createGain();
-      // Ajuster le gain pour équilibrer volume et feedback
-      // Gain à 55% pour réduire la distorsion et le feedback
-      this.gainNode.gain.value = this.GAIN_VALUE;
-      
-      // Chaîne audio optimisée : gain → filtre passe-haut → filtre passe-bas → destination
-      // Le filtre passe-haut supprime les bruits basse fréquence, le filtre passe-bas supprime les bruits haute fréquence
-      this.gainNode.connect(highpassFilter);
-      highpassFilter.connect(lowpassFilter);
-      lowpassFilter.connect(this.audioContext.destination);
-      
+      // Ajuster le gain si nécessaire (prévenir saturation)
+      this.gainNode.gain.value = 0.95;
+      this.gainNode.connect(this.audioContext.destination);
       this.playbackTime = this.audioContext.currentTime;
-      console.log('🔊 AudioContext initialisé avec filtre passe-bas (sampleRate:', this.SAMPLE_RATE, ')');
-      
-      // S'assurer que l'AudioContext est actif
-      if (this.audioContext.state === 'suspended') {
-        this.audioContext.resume().then(() => {
-          console.log('🔊 AudioContext resumed');
-        });
-      }
+      console.log('🔊 AudioContext initialisé (sampleRate:', this.SAMPLE_RATE, ')');
     }
   }
 
@@ -377,85 +204,29 @@ export class AudioStreamManager {
       this.playbackTime = this.audioContext.currentTime + 0.05; // 50ms headroom
     }
 
-    // Processer la queue en "batch" non-blocant : traiter plusieurs chunks par itération
+    // Processer la queue en "batch" non-blocant : on schedule tant qu'il y a des chunks
     const process = () => {
-      if (!this.audioContext || this.isStopping) {
-        this.isPlaying = false;
-        this.animationFrameId = null;
-        return;
-      }
-      
+      if (!this.audioContext) return;
       if (this.chunkQueue.length === 0) {
         // pas de données -> on arrête la boucle de scheduling ; on remet isPlaying à false
         this.isPlaying = false;
-        this.animationFrameId = null;
         return;
       }
 
-      // Traiter plusieurs chunks par itération pour être plus rapide
-      // Optimiser pour éviter les violations de performance (< 16ms par frame)
-      let processedCount = 0;
-      const startTime = performance.now(); // Mesurer le temps de traitement
-      const queueLength = this.chunkQueue.length;
-      
-      // Si la queue est presque pleine, traiter plus de chunks par itération
-      // Mais limiter pour éviter les violations de performance
-      const chunksToProcess = queueLength > this.MAX_QUEUE * 0.7 
-        ? this.CHUNKS_PER_ITERATION * 2  // Traiter 2x plus si la queue est pleine
-        : this.CHUNKS_PER_ITERATION;
-      
-      // Limite de temps stricte : ne pas dépasser 8ms pour éviter les violations
-      const MAX_PROCESSING_TIME = 8; // ms
-      
-      while (this.chunkQueue.length > 0 && processedCount < chunksToProcess) {
-        // Vérifier le temps avant chaque chunk pour éviter les violations
-        if (performance.now() - startTime > MAX_PROCESSING_TIME) {
-          break;
-        }
-        
-        const chunk = this.chunkQueue.shift();
-        if (chunk) {
-          this.scheduleChunk(chunk);
-          processedCount++;
-        }
-      }
+      // prendre un chunk et le schedule immédiatement à playbackTime
+      const chunk = this.chunkQueue.shift()!;
+      this.scheduleChunk(chunk);
 
-      // Utiliser setTimeout au lieu de requestAnimationFrame pour éviter les violations
-      // requestAnimationFrame doit se terminer en < 16ms, mais notre traitement peut prendre plus
-      // setTimeout(0) permet de traiter sans violer les contraintes de performance
-      if (this.chunkQueue.length > 0) {
-        // Utiliser setTimeout pour éviter les violations de requestAnimationFrame
-        // Si la queue est presque pleine, traiter immédiatement (setTimeout 0)
-        // Sinon, utiliser un petit délai pour laisser le navigateur respirer
-        const delay = this.chunkQueue.length > this.MAX_QUEUE * 0.7 ? 0 : 1;
-        this.animationFrameId = setTimeout(process, delay) as any;
-      } else {
-        this.isPlaying = false;
-        this.animationFrameId = null;
-      }
+      // Boucle non bloquante : on utilise setTimeout pour relancer rapidement
+      // Le délai peut être très court car scheduling est asynchrone et non-blocking
+      setTimeout(process, 0);
     };
 
-    // Utiliser setTimeout au lieu de requestAnimationFrame pour éviter les violations de performance
-    this.animationFrameId = setTimeout(process, 0) as any;
+    process();
   }
 
   private scheduleChunk(float32: Float32Array) {
     if (!this.audioContext || !this.gainNode) return;
-
-    // Appliquer un crossfade amélioré pour éviter les clics entre chunks
-    // Augmenter la longueur du crossfade pour réduire les bruits de transition
-    const fadeLength = Math.min(20, Math.floor(float32.length * 0.15)); // 15% du chunk ou 20 samples max (augmenté)
-    if (fadeLength > 0 && this.lastChunkEndSample !== undefined) {
-      // Crossfade avec courbe de fade améliorée (courbe exponentielle pour transition plus douce)
-      for (let i = 0; i < fadeLength; i++) {
-        // Utiliser une courbe exponentielle pour un fade plus doux
-        const linearRatio = i / fadeLength;
-        const fadeRatio = linearRatio * linearRatio; // Courbe quadratique pour transition plus douce
-        float32[i] = float32[i] * fadeRatio + this.lastChunkEndSample * (1 - fadeRatio);
-      }
-    }
-    // Stocker le dernier échantillon pour le crossfade suivant
-    this.lastChunkEndSample = float32[float32.length - 1];
 
     // Créer un AudioBuffer avec la longueur exacte
     const buffer = this.audioContext.createBuffer(1, float32.length, this.SAMPLE_RATE);
@@ -463,7 +234,6 @@ export class AudioStreamManager {
 
     const src = this.audioContext.createBufferSource();
     src.buffer = buffer;
-    // Connecter directement au gainNode (qui est déjà connecté au filtre passe-bas)
     src.connect(this.gainNode);
 
     // Assurer playbackTime minimal devant currentTime pour éviter start in past
@@ -497,18 +267,10 @@ export class AudioStreamManager {
   // --- Stop & clear (appelé à la fin ou sur stop event) ---
   private stopAndClear() {
     this.isStopping = true;
-    
-    // Annuler setTimeout si actif
-    if (this.animationFrameId !== null) {
-      clearTimeout(this.animationFrameId);
-      this.animationFrameId = null;
-    }
-    
     // vider queue
     this.chunkQueue = [];
     this.isPlaying = false;
     this.playbackTime = 0;
-    this.lastChunkEndSample = undefined; // Réinitialiser le crossfade
 
     // close audioContext but keep reference nullified after close
     if (this.audioContext && this.audioContext.state !== 'closed') {

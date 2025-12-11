@@ -86,7 +86,7 @@ Le processus de stockage suit ces étapes :
 
 ### Variables d'environnement requises
 ```env
-VITE_API_URL_CALL=https://api-dash-calls.harx.ai
+VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
 ```
 
 ### Données stockées
