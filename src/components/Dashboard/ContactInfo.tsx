@@ -529,68 +529,187 @@ const fallbackContact = {
 
   // Effect to handle inbound audio stream connection (frontend-audio)
   useEffect(() => {
-    if (streamUrl) {
-      console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
-      
-      // Create new AudioStreamManager if not exists
-      if (!audioManagerRef.current) {
-        audioManagerRef.current = new AudioStreamManager((error) => {
-          console.error('Inbound audio stream error:', error);
-          setPhoneNumberError(error.message);
-        });
-      }
+    if (!streamUrl) return;
 
-      // Connect to the inbound WebSocket
-      audioManagerRef.current.connect(streamUrl).catch(error => {
-        console.error('Failed to connect to inbound audio stream:', error);
-        setPhoneNumberError('Failed to connect to inbound audio stream');
-      });
+    console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
+    
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelays = [1000, 2000, 5000]; // Exponential backoff in ms
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isCleaningUp = false;
 
-      // Cleanup function
-      return () => {
-        console.log('🎧 Cleaning up inbound audio stream manager');
-        if (audioManagerRef.current) {
-          audioManagerRef.current.disconnect();
+    // Create new AudioStreamManager if not exists
+    if (!audioManagerRef.current) {
+      audioManagerRef.current = new AudioStreamManager((error) => {
+        console.error('❌ Inbound audio stream error:', error);
+        if (!isCleaningUp) {
+          setPhoneNumberError(error.message || 'Inbound audio stream error');
         }
-      };
+      });
     }
+
+    const connectAudioStream = async () => {
+      if (isCleaningUp) return;
+
+      try {
+        console.log(`🎧 Attempting to connect to inbound audio stream (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+        await audioManagerRef.current!.connect(streamUrl);
+        console.log('✅ Inbound audio stream connected');
+        retryCount = 0; // Reset retry count on success
+        setPhoneNumberError(null); // Clear any previous errors
+      } catch (error: any) {
+        console.error('❌ Failed to connect to inbound audio stream:', error);
+        
+        const errorMessage = error.message || 'Failed to connect to inbound audio stream. Check nginx configuration and backend status.';
+        setPhoneNumberError(errorMessage);
+
+        // Retry logic
+        if (retryCount < maxRetries && !isCleaningUp) {
+          const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+          console.log(`🔄 Retrying inbound audio stream connection in ${delay}ms...`);
+          
+          retryTimeoutId = setTimeout(() => {
+            retryCount++;
+            connectAudioStream();
+          }, delay);
+        } else if (retryCount >= maxRetries) {
+          console.error('❌ Max retries reached for inbound audio stream');
+          setPhoneNumberError('Failed to connect to inbound audio stream after multiple attempts. Please check your network connection and server configuration.');
+        }
+      }
+    };
+
+    // Start initial connection
+    connectAudioStream();
+
+    // Cleanup function
+    return () => {
+      console.log('🎧 Cleaning up inbound audio stream manager');
+      isCleaningUp = true;
+      
+      // Clear any pending retries
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
+      
+      // Disconnect audio manager
+      if (audioManagerRef.current) {
+        audioManagerRef.current.disconnect();
+      }
+    };
   }, [streamUrl]);
 
   // Effect to handle outbound audio stream connection (outbound-audio)
   useEffect(() => {
-    if (outboundStreamUrl) {
-      console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
-      
-      // Create WebSocket for microphone service (outbound audio)
-      const outboundWs = new WebSocket(outboundStreamUrl);
-      
-      outboundWs.onopen = () => {
-        console.log('🎤 Outbound WebSocket connected for microphone');
-        // Créer le service micro avec le WebSocket outbound connecté
-        const mic = new MicrophoneService(outboundWs);
-        setMicrophoneService(mic);
-      };
+    if (!outboundStreamUrl) return;
 
-      outboundWs.onerror = (error) => {
-        console.error('❌ Erreur outbound WebSocket micro:', error);
-        setPhoneNumberError('Failed to connect to outbound audio stream');
-      };
+    console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
+    
+    let outboundWs: WebSocket | null = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+    const retryDelays = [1000, 2000, 5000]; // Exponential backoff in ms
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isCleaningUp = false;
 
-      outboundWs.onclose = () => {
-        console.log('🎤 Outbound WebSocket closed');
-      };
+    const connectWebSocket = () => {
+      if (isCleaningUp) return;
 
-      // Cleanup function
-      return () => {
-        console.log('🎤 Cleaning up outbound audio stream');
-        if (microphoneService) {
-          microphoneService.stopCapture();
+      try {
+        console.log(`🎤 Attempting to connect to outbound audio stream (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+        outboundWs = new WebSocket(outboundStreamUrl!);
+        
+        outboundWs.onopen = () => {
+          console.log('✅ Outbound WebSocket connected for microphone');
+          retryCount = 0; // Reset retry count on success
+          setPhoneNumberError(null); // Clear any previous errors
+          
+          // Créer le service micro avec le WebSocket outbound connecté
+          try {
+            const mic = new MicrophoneService(outboundWs!);
+            setMicrophoneService(mic);
+          } catch (error) {
+            console.error('❌ Error creating microphone service:', error);
+            setPhoneNumberError('Failed to initialize microphone service');
+          }
+        };
+
+        outboundWs.onerror = (error) => {
+          console.error('❌ Outbound WebSocket error:', error);
+          const errorMessage = outboundWs?.readyState === WebSocket.CONNECTING 
+            ? 'Failed to connect to outbound audio stream. Check nginx configuration and backend status.'
+            : 'Outbound audio stream connection error';
+          setPhoneNumberError(errorMessage);
+        };
+
+        outboundWs.onclose = (event) => {
+          console.log('🎤 Outbound WebSocket closed', {
+            code: event.code,
+            reason: event.reason,
+            wasClean: event.wasClean
+          });
+
+          // Only retry if it wasn't a clean close and we're not cleaning up
+          if (!isCleaningUp && !event.wasClean && event.code !== 1000) {
+            if (retryCount < maxRetries) {
+              const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+              console.log(`🔄 Retrying outbound WebSocket connection in ${delay}ms...`);
+              
+              retryTimeoutId = setTimeout(() => {
+                retryCount++;
+                connectWebSocket();
+              }, delay);
+            } else {
+              console.error('❌ Max retries reached for outbound audio stream');
+              setPhoneNumberError('Failed to connect to outbound audio stream after multiple attempts. Please check your network connection and server configuration.');
+            }
+          } else if (event.wasClean) {
+            // Clean close - clear error
+            setPhoneNumberError(null);
+          }
+        };
+
+      } catch (error) {
+        console.error('❌ Error creating outbound WebSocket:', error);
+        setPhoneNumberError('Failed to create outbound audio stream connection');
+        
+        // Retry on creation error too
+        if (retryCount < maxRetries && !isCleaningUp) {
+          const delay = retryDelays[retryCount] || retryDelays[retryDelays.length - 1];
+          retryTimeoutId = setTimeout(() => {
+            retryCount++;
+            connectWebSocket();
+          }, delay);
         }
-        if (outboundWs.readyState === WebSocket.OPEN) {
-          outboundWs.close();
-        }
-      };
-    }
+      }
+    };
+
+    // Start initial connection
+    connectWebSocket();
+
+    // Cleanup function
+    return () => {
+      console.log('🎤 Cleaning up outbound audio stream');
+      isCleaningUp = true;
+      
+      // Clear any pending retries
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
+      
+      // Stop microphone service
+      if (microphoneService) {
+        microphoneService.stopCapture();
+      }
+      
+      // Close WebSocket if still open
+      if (outboundWs && outboundWs.readyState === WebSocket.OPEN) {
+        outboundWs.close(1000, 'Component unmounting');
+      }
+    };
   }, [outboundStreamUrl]);
 
   const initiateTelnyxCall = async (phoneNumber: string) => {
