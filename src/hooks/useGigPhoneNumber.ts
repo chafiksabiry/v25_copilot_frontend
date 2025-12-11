@@ -37,30 +37,46 @@ export const useGigPhoneNumber = () => {
     setError(null);
 
     try {
+      const runMode = import.meta.env.VITE_RUN_MODE;
       const gigId = getGigIdFromCookie();
-      console.log('🔍 Checking gig phone number with gigId:', gigId);
+      const hasCookies = document.cookie.length > 0;
       
-      if (!gigId) {
-        console.warn('⚠️ No gigId found, using default phone number configuration');
+      console.log('🔍 Checking gig phone number:', {
+        gigId,
+        runMode,
+        hasCookies,
+        cookies: document.cookie || '(empty)'
+      });
+      
+      // En mode standalone ou si aucun cookie n'est disponible, utiliser directement les valeurs par défaut
+      if (runMode === 'standalone' || (!hasCookies && runMode !== 'in-app')) {
+        console.log('✅ Using default phone number configuration (standalone mode or no cookies)');
         setPhoneNumberData(DEFAULT_PHONE_NUMBER_DATA);
         return DEFAULT_PHONE_NUMBER_DATA;
       }
 
-      try {
-        const response = await PhoneNumberService.checkGigPhoneNumber(gigId);
-        console.log('✅ Phone number check response:', response);
-        
-        setPhoneNumberData(response);
-        return response;
-      } catch (apiError) {
-        console.warn('⚠️ API call failed, using default phone number configuration:', apiError);
-        // Si l'API échoue, utiliser les valeurs par défaut
-        setPhoneNumberData(DEFAULT_PHONE_NUMBER_DATA);
-        return DEFAULT_PHONE_NUMBER_DATA;
+      // Essayer d'appeler l'API seulement si on a un gigId valide et qu'on est en mode in-app
+      if (gigId && runMode === 'in-app') {
+        try {
+          const response = await PhoneNumberService.checkGigPhoneNumber(gigId);
+          console.log('✅ Phone number check response from API:', response);
+          
+          // Si l'API retourne un numéro valide, l'utiliser
+          if (response.hasNumber && response.number) {
+            setPhoneNumberData(response);
+            return response;
+          }
+        } catch (apiError) {
+          console.warn('⚠️ API call failed, using default phone number configuration:', apiError);
+        }
       }
+
+      // Fallback: utiliser les valeurs par défaut
+      console.log('✅ Using default phone number configuration');
+      setPhoneNumberData(DEFAULT_PHONE_NUMBER_DATA);
+      return DEFAULT_PHONE_NUMBER_DATA;
     } catch (error) {
       console.warn('⚠️ Error checking phone number, using default configuration:', error);
-      // En cas d'erreur, utiliser les valeurs par défaut
       setPhoneNumberData(DEFAULT_PHONE_NUMBER_DATA);
       return DEFAULT_PHONE_NUMBER_DATA;
     } finally {

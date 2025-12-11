@@ -3,34 +3,45 @@ import { TwilioCallService } from '../services/twilioCallService';
 import { useUrlParam } from './useUrlParams';
 
 // Fonction pour récupérer le gigId depuis les cookies
-const getGigIdFromCookie = (): string | null => {
+const getGigIdFromCookie = (): string => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   const defaultGigId = '68b5b12701557c476f728ea4'; // GigId par défaut
   
-  if (runMode === 'sandbox') {
-    return defaultGigId; // GigId par défaut pour sandbox
-  } else if (runMode === 'in-app') {
+  // En mode standalone ou sandbox, utiliser directement le gigId par défaut
+  if (runMode === 'sandbox' || runMode === 'standalone') {
+    console.log('✅ Using default gigId for', runMode, 'mode:', defaultGigId);
+    return defaultGigId;
+  }
+  
+  // En mode in-app, essayer de récupérer depuis les cookies
+  if (runMode === 'in-app') {
     const cookies = document.cookie.split(';');
+    const hasCookies = document.cookie.length > 0;
     
-    // Chercher d'abord currentGigId, puis gigId comme fallback
-    let gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
-    if (!gigIdCookie) {
-      gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('gigId='));
-    }
-    
-    if (gigIdCookie) {
-      const gigId = gigIdCookie.split('=')[1]?.trim();
-      if (gigId) {
-        return gigId;
+    if (hasCookies) {
+      // Chercher d'abord currentGigId, puis gigId comme fallback
+      let gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('currentGigId='));
+      if (!gigIdCookie) {
+        gigIdCookie = cookies.find(cookie => cookie.trim().startsWith('gigId='));
+      }
+      
+      if (gigIdCookie) {
+        const gigId = gigIdCookie.split('=')[1]?.trim();
+        if (gigId) {
+          console.log('✅ Found gigId in cookies:', gigId);
+          return gigId;
+        }
       }
     }
     
     // Si aucun cookie trouvé, utiliser le gigId par défaut
-    console.warn('⚠️ No gigId found in cookies. Using default gigId:', defaultGigId);
-    console.warn('   Available cookies:', document.cookie);
+    console.log('⚠️ No gigId found in cookies. Using default gigId:', defaultGigId);
+    console.log('   Cookies available:', hasCookies ? 'Yes' : 'No');
     return defaultGigId;
   }
+  
   // Fallback: retourner le gigId par défaut si le mode n'est pas défini
+  console.log('✅ Using default gigId (fallback):', defaultGigId);
   return defaultGigId;
 };
 
