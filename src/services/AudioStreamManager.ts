@@ -91,19 +91,48 @@ export class AudioStreamManager {
             console.error('❌ WebSocket closed with code 1006 (abnormal closure)');
             console.error('This usually means the connection was closed before it could be established.');
             console.error('URL:', streamUrl);
-            console.error('Most likely cause: nginx is not configured to proxy WebSocket connections to /frontend-audio');
-            console.error('');
-            console.error('Required nginx configuration:');
-            console.error('location /frontend-audio {');
-            console.error('    proxy_pass http://localhost:5006;');
-            console.error('    proxy_http_version 1.1;');
-            console.error('    proxy_set_header Upgrade $http_upgrade;');
-            console.error('    proxy_set_header Connection "upgrade";');
-            console.error('    proxy_set_header Host $host;');
-            console.error('    proxy_read_timeout 86400;');
-            console.error('    proxy_send_timeout 86400;');
-            console.error('    proxy_buffering off;');
-            console.error('}');
+            
+            // Check if using /api/ prefix
+            const isApiPath = streamUrl.includes('/api/');
+            
+            if (isApiPath) {
+              console.error('Most likely cause: nginx is routing /api/ but not forwarding WebSocket headers');
+              console.error('');
+              console.error('Required nginx configuration for /api/ route:');
+              console.error('location /api/ {');
+              console.error('    proxy_pass http://localhost:5006;  # or your backend container');
+              console.error('    proxy_http_version 1.1;');
+              console.error('    proxy_set_header Upgrade $http_upgrade;  # CRITICAL for WebSocket');
+              console.error('    proxy_set_header Connection $connection_upgrade;  # CRITICAL for WebSocket');
+              console.error('    proxy_set_header Host $host;');
+              console.error('    proxy_set_header X-Real-IP $remote_addr;');
+              console.error('    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;');
+              console.error('    proxy_set_header X-Forwarded-Proto $scheme;');
+              console.error('    proxy_read_timeout 86400;');
+              console.error('    proxy_send_timeout 86400;');
+              console.error('    proxy_buffering off;  # CRITICAL for WebSocket');
+              console.error('}');
+              console.error('');
+              console.error('Also add this map at the top of your nginx config (in http block):');
+              console.error('map $http_upgrade $connection_upgrade {');
+              console.error('    default upgrade;');
+              console.error('    \'\' close;');
+              console.error('}');
+            } else {
+              console.error('Most likely cause: nginx is not configured to proxy WebSocket connections');
+              console.error('');
+              console.error('Required nginx configuration:');
+              console.error('location /frontend-audio {');
+              console.error('    proxy_pass http://localhost:5006;');
+              console.error('    proxy_http_version 1.1;');
+              console.error('    proxy_set_header Upgrade $http_upgrade;');
+              console.error('    proxy_set_header Connection "upgrade";');
+              console.error('    proxy_set_header Host $host;');
+              console.error('    proxy_read_timeout 86400;');
+              console.error('    proxy_send_timeout 86400;');
+              console.error('    proxy_buffering off;');
+              console.error('}');
+            }
             console.error('');
             console.error('Other possible causes:');
             console.error('  2. Backend not running or not accessible');
