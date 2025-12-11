@@ -506,6 +506,12 @@ const fallbackContact = {
           break;
         case 'call.hangup':
           console.log('📞 Call ended');
+          // Arrêter la capture micro quand l'appel se termine
+          if (microphoneService) {
+            console.log('🎤 Arrêt de la capture micro (call.hangup)');
+            microphoneService.stopCapture();
+            setMicrophoneService(null);
+          }
           setCallStatus('idle');
           setStreamUrl(null); // Clear inbound stream URL when call ends
           setOutboundStreamUrl(null); // Clear outbound stream URL when call ends
