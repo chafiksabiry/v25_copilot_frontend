@@ -33,6 +33,7 @@ function App() {
   const audioContextRef = useRef(null);
   const audioStreamRef = useRef(null);
   const audioProcessorRef = useRef(null);
+  const currentCallIdRef = useRef(null); // Pour accès immédiat dans les callbacks
 
   // Charger les numéros et initialiser WebSocket au démarrage
   useEffect(() => {
@@ -109,6 +110,9 @@ function App() {
       socket.on('call-initiated', (data) => {
         console.log('✅ Appel initié:', data);
         setCurrentCall(data);
+        // Mettre à jour la ref immédiatement pour l'audio
+        currentCallIdRef.current = data.callControlId;
+        console.log(`🔗 CallControlId stocké: ${data.callControlId}`);
         setCallState('calling');
         showMessage('Appel en cours...', 'info');
       });
@@ -139,6 +143,7 @@ function App() {
         console.error('❌ Erreur appel:', data);
         console.error('Details erreur:', JSON.stringify(data, null, 2));
         showMessage(data.error || 'Erreur lors de l\'appel', 'error');
+        currentCallIdRef.current = null;
         setCallState('idle');
         setLoading(false);
       });
@@ -198,6 +203,7 @@ function App() {
     }
     
     setTimeout(() => {
+      currentCallIdRef.current = null;
       setCallState('idle');
       setCurrentCall(null);
       setIsMuted(false);
@@ -266,17 +272,25 @@ function App() {
         console.log('🎤 Microphone capturé');
         
         // Créer le processeur audio pour envoyer votre voix
+        let sentCount = 0;
         audioProcessorRef.current = createAudioProcessor(
           audioContextRef.current,
           stream,
           (audioData) => {
-            // Envoyer l'audio au serveur via Socket.IO TOUJOURS (pas seulement quand active)
-            if (socketRef.current && currentCall) {
+            // Envoyer l'audio au serveur via Socket.IO
+            // Utiliser currentCallIdRef qui est mis à jour immédiatement
+            if (socketRef.current && currentCallIdRef.current) {
               socketRef.current.emit('audio-data', {
-                callControlId: currentCall.callControlId,
+                callControlId: currentCallIdRef.current,
                 audioChunk: audioData,
                 timestamp: Date.now()
               });
+              
+              // Log tous les 50 packets
+              if (sentCount % 50 === 0) {
+                console.log(`📤 Audio envoyé au backend (#${sentCount})`);
+              }
+              sentCount++;
             }
           }
         );
@@ -298,6 +312,7 @@ function App() {
     } catch (error) {
       console.error('❌ Erreur lors de l\'appel:', error);
       showMessage(error.message || 'Erreur lors de l\'appel', 'error');
+      currentCallIdRef.current = null;
       setCallState('idle');
       setCurrentCall(null);
     } finally {
