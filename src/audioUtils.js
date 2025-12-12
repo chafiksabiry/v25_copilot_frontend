@@ -229,7 +229,7 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
     
     // Log tous les 50 chunks (environ toutes les 2 secondes)
     if (chunkCount % 50 === 0) {
-      console.log(`🎙️ Audio capturé: ${pcmaData.length} bytes, base64: ${base64Audio.length} chars`);
+      console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars`);
     }
     chunkCount++;
     
