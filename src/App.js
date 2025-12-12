@@ -126,9 +126,13 @@ function App() {
       // Événement : Audio reçu
       socket.on('audio-received', (data) => {
         console.log('🎵 Audio reçu:', data.audioChunk ? data.audioChunk.length : 0, 'bytes');
-        if (audioContextRef.current && !isMuted) {
-          // Décoder et jouer l'audio
-          playAudioChunk(audioContextRef.current, data.audioChunk);
+        if (audioContextRef.current && data.audioChunk) {
+          try {
+            // Décoder et jouer l'audio (toujours, même si micro muté)
+            playAudioChunk(audioContextRef.current, data.audioChunk);
+          } catch (error) {
+            console.error('❌ Erreur lecture audio:', error);
+          }
         }
       });
 
