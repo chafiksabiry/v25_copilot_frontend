@@ -1,7 +1,7 @@
-# Use Node.js LTS version with Alpine for smaller image size
-FROM node:20-alpine
+# Frontend Dockerfile - Telnyx Call Manager
+# Étape 1: Build
+FROM node:20-alpine AS builder
 
-# Définir le répertoire de travail
 WORKDIR /app
 
 # Copier les fichiers de dépendances
@@ -13,43 +13,30 @@ RUN npm ci
 # Copier le code source
 COPY . .
 
-# Supabase Configuration
-ENV VITE_SUPABASE_URL=your_supabase_project_url
-ENV VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Variables d'environnement de build (à définir lors du build)
+ENV REACT_APP_API_URL=https://api-calls.harx.ai
 
-# OpenAI Configuration (for AI features)
-ENV VITE_OPENAI_API_KEY=your_openai_api_key
-
-# WebRTC Configuration (for real-time calling)
-ENV VITE_WEBRTC_STUN_SERVER=stun:stun.l.google.com:19302
-
-# External Integrations
-ENV VITE_CRM_API_URL=your_crm_api_url
-ENV VITE_CRM_API_KEY=your_crm_api_key
-
-# Speech-to-Text Service
-ENV VITE_SPEECH_API_URL=your_speech_api_url
-ENV VITE_SPEECH_API_KEY=your_speech_api_key
-
-ENV VITE_API_URL_CALL=https://api-calls.harx.ai
-ENV VITE_WS_URL=wss://api-calls.harx.ai/speech-to-text
-ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
-ENV VITE_COMP_ORCH_API=https://api-comp-orchestrator.harx.ai/api
-ENV NODE_ENV=development
-ENV VITE_RUN_MODE=standalone
-ENV VITE_ENVIRONMENT=sandbox
-ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
-ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
-ENV VITE_PROD_FRONT_URL=https://copilot.harx.ai/
-ENV VITE_DASH_COMPANY_API_URL=https://api-dashboard.harx.ai/api
 # Construire l'application
 RUN npm run build
+
+# Étape 2: Production
+FROM node:20-alpine
+
+WORKDIR /app
 
 # Installer serve pour servir l'application
 RUN npm install -g serve
 
-# Exposer le port 5186
+# Copier les fichiers buildés depuis l'étape précédente
+COPY --from=builder /app/build ./build
+
+# Exposer le port
 EXPOSE 5186
 
-# Démarrage avec serve
-CMD ["serve", "-s", "dist", "-l", "5186"]
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Démarrer l'application avec serve
+CMD ["serve", "-s", "build", "-l", "5186"]
+
