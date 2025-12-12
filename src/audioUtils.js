@@ -4,40 +4,53 @@ const SAMPLE_RATE = 8000; // Hz
 const CHUNK_SIZE = 256; // samples (doit être une puissance de 2)
 
 // Table de conversion pour µ-law encoding
-const MULAW_BIAS = 0x84;
-const MULAW_MAX = 0x1FFF;
+// Table de conversion pour A-law encoding
+const ALAW_MAX = 0xFFF;
+const ALAW_BIAS = 0x84;
 
-// Encoder PCM 16-bit en µ-law (PCMU)
-function encodePCMUlaw(sample) {
-  // Normaliser le sample
+// Encoder PCM 16-bit en A-law (PCMA)
+function encodeALaw(sample) {
+  let mask;
   let sign = (sample >> 8) & 0x80;
-  if (sign != 0) sample = -sample;
-  if (sample > MULAW_MAX) sample = MULAW_MAX;
   
-  sample = sample + MULAW_BIAS;
+  if (sign !== 0) sample = -sample;
+  if (sample > ALAW_MAX) sample = ALAW_MAX;
+  
+  if (sample >= 256) {
+    mask = 0xD5;
+  } else {
+    mask = 0x55;
+  }
+  
   let exponent = 7;
+  for (let expMask = 0x4000; (sample & expMask) === 0 && exponent > 0; exponent--, expMask >>= 1);
   
-  for (let expMask = 0x4000; (sample & expMask) == 0 && exponent > 0; exponent--, expMask >>= 1);
+  let mantissa = (sample >> ((exponent === 0) ? 4 : (exponent + 3))) & 0x0F;
+  let alaw = (sign | (exponent << 4) | mantissa) ^ mask;
   
-  let mantissa = (sample >> (exponent + 3)) & 0x0F;
-  let mulaw = ~(sign | (exponent << 4) | mantissa);
-  
-  return mulaw & 0xFF;
+  return alaw & 0xFF; // Non-inversé à la fin contrairement à u-law
 }
 
-// Décoder µ-law (PCMU) en PCM 16-bit
-function decodePCMUlaw(mulaw) {
-  mulaw = ~mulaw;
-  let sign = mulaw & 0x80;
-  let exponent = (mulaw >> 4) & 0x07;
-  let mantissa = mulaw & 0x0F;
-  let sample = ((mantissa << 3) + MULAW_BIAS) << exponent;
+// Décoder A-law (PCMA) en PCM 16-bit
+function decodeALaw(alaw) {
+  alaw ^= 0x55;
   
-  return sign != 0 ? -sample : sample;
+  let sign = alaw & 0x80;
+  let exponent = (alaw >> 4) & 0x07;
+  let mantissa = alaw & 0x0F;
+  
+  let sample;
+  if (exponent === 0) {
+    sample = (mantissa << 4) + 8;
+  } else {
+    sample = ((mantissa << 4) + 0x108) << (exponent - 1);
+  }
+  
+  return sign !== 0 ? -sample : sample;
 }
 
-// Encoder un buffer PCM Float32 en PCMU
-export function encodePCMUBuffer(float32Array) {
+// Encoder un buffer PCM Float32 en PCMA
+export function encodePCMABuffer(float32Array) {
   const pcm16 = new Int16Array(float32Array.length);
   
   // Convertir Float32 [-1, 1] en Int16 [-32768, 32767]
@@ -46,22 +59,22 @@ export function encodePCMUBuffer(float32Array) {
     pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
   }
   
-  // Encoder en µ-law
-  const pcmu = new Uint8Array(pcm16.length);
+  // Encoder en A-law
+  const pcma = new Uint8Array(pcm16.length);
   for (let i = 0; i < pcm16.length; i++) {
-    pcmu[i] = encodePCMUlaw(pcm16[i]);
+    pcma[i] = encodeALaw(pcm16[i]);
   }
   
-  return pcmu;
+  return pcma;
 }
 
-// Décoder un buffer PCMU en PCM Float32
-export function decodePCMUBuffer(pcmuArray) {
-  const pcm16 = new Int16Array(pcmuArray.length);
+// Décoder un buffer PCMA en PCM Float32
+export function decodePCMABuffer(pcmaArray) {
+  const pcm16 = new Int16Array(pcmaArray.length);
   
-  // Décoder µ-law en PCM16
-  for (let i = 0; i < pcmuArray.length; i++) {
-    pcm16[i] = decodePCMUlaw(pcmuArray[i]);
+  // Décoder A-law en PCM16
+  for (let i = 0; i < pcmaArray.length; i++) {
+    pcm16[i] = decodeALaw(pcmaArray[i]);
   }
   
   // Convertir Int16 en Float32 [-1, 1]
@@ -111,15 +124,15 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
   processor.onaudioprocess = (e) => {
     const inputData = e.inputBuffer.getChannelData(0);
     
-    // Encoder en PCMU
-    const pcmuData = encodePCMUBuffer(inputData);
+    // Encoder en PCMA
+    const pcmaData = encodePCMABuffer(inputData);
     
     // Convertir en base64 pour transmission
-    const base64Audio = btoa(String.fromCharCode.apply(null, pcmuData));
+    const base64Audio = btoa(String.fromCharCode.apply(null, pcmaData));
     
     // Log tous les 50 chunks (environ toutes les 2 secondes)
     if (chunkCount % 50 === 0) {
-      console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars`);
+      console.log(`🎙️ Audio capturé: ${pcmaData.length} bytes, base64: ${base64Audio.length} chars`);
     }
     chunkCount++;
     
@@ -140,14 +153,14 @@ export function playAudioChunk(audioContext, base64Audio) {
   try {
     // Décoder base64
     const binaryString = atob(base64Audio);
-    const pcmuArray = new Uint8Array(binaryString.length);
+    const pcmaArray = new Uint8Array(binaryString.length);
     
     for (let i = 0; i < binaryString.length; i++) {
-      pcmuArray[i] = binaryString.charCodeAt(i);
+      pcmaArray[i] = binaryString.charCodeAt(i);
     }
     
-    // Décoder PCMU en Float32
-    const float32Data = decodePCMUBuffer(pcmuArray);
+    // Décoder PCMA en Float32
+    const float32Data = decodePCMABuffer(pcmaArray);
     
     // Créer un buffer audio
     const audioBuffer = audioContext.createBuffer(1, float32Data.length, SAMPLE_RATE);

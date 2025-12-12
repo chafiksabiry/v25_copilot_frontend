@@ -500,6 +500,9 @@ function App() {
                     <div className="history-info">
                       <div className="history-number">{formatPhoneNumber(call.to)}</div>
                       <div className="history-time">{formatTime(call.timestamp)}</div>
+                      {call.duration !== undefined && (
+                        <div className="history-duration">⏱️ {formatDuration(call.duration)}</div>
+                      )}
                     </div>
                     <div className={`history-status status-${call.status}`}>
                       {call.status}
