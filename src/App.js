@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { playRingtone, stopRingtone } from './ringtone';
-// import { 
-//   createAudioContext, 
-//   captureMicrophone, 
-//   createAudioProcessor, 
-//   playAudioChunk 
-// } from './audioUtils';
+import { 
+  createAudioContext, 
+  captureMicrophone, 
+  createAudioProcessor, 
+  playAudioChunk 
+} from './audioUtils';
 import './App.css';
 
 // Configuration de l'URL de l'API
@@ -121,10 +121,11 @@ function App() {
 
       // Événement : Audio reçu
       socket.on('audio-received', (data) => {
-        console.log('Audio recu:', data);
-        // if (audioContextRef.current && !isMuted) {
-        //   playAudioChunk(audioContextRef.current, data.audioChunk);
-        // }
+        console.log('🎵 Audio reçu:', data.audioChunk ? data.audioChunk.length : 0, 'bytes');
+        if (audioContextRef.current && !isMuted) {
+          // Décoder et jouer l'audio
+          playAudioChunk(audioContextRef.current, data.audioChunk);
+        }
       });
 
       // Événement : Appel terminé
@@ -252,9 +253,28 @@ function App() {
       console.log('🔔 Démarrage sonnerie...');
       playRingtone();
       
-      // TODO: Activer l'audio plus tard
-      // const stream = await captureMicrophone();
-      // audioStreamRef.current = stream;
+      // Créer le contexte audio et capturer le microphone
+      if (!audioContextRef.current) {
+        audioContextRef.current = createAudioContext();
+      }
+      
+      const stream = await captureMicrophone();
+      audioStreamRef.current = stream;
+      
+      // Créer le processeur audio pour envoyer le son du micro
+      audioProcessorRef.current = createAudioProcessor(
+        audioContextRef.current,
+        stream,
+        (audioData) => {
+          // Envoyer l'audio au serveur via Socket.IO
+          if (socketRef.current && currentCall) {
+            socketRef.current.emit('audio-data', {
+              callControlId: currentCall.callControlId,
+              audioChunk: audioData
+            });
+          }
+        }
+      );
       
       // Initier l'appel via WebSocket
       socketRef.current.emit('initiate-call', {
