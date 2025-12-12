@@ -6,7 +6,8 @@ import {
   createAudioContext, 
   captureMicrophone,
   createAudioProcessor,
-  playAudioChunk 
+  playAudioChunk,
+  resetAudioQueue
 } from './audioUtils';
 import './App.css';
 
@@ -203,6 +204,9 @@ function App() {
   const handleCallEnd = () => {
     stopRingtone(); // Arrêter la sonnerie
     setCallState('ended');
+    
+    // Réinitialiser la queue audio
+    resetAudioQueue();
     
     // Arrêter l'audio
     if (audioProcessorRef.current) {

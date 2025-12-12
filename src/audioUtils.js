@@ -114,6 +114,52 @@ const ulawMap = [
   120,   112,   104,    96,    88,    80,    72,    64,    56,    48,    40,    32,    24,    16,     8,     0
 ];
 
+// Encoder PCM 16-bit en u-law (PCMU)
+function encodeULaw(pcm_val) {
+  const BIAS = 0x84;
+  const CLIP = 32635;
+  let sign = (pcm_val >> 8) & 0x80;
+  
+  if (sign !== 0) pcm_val = -pcm_val;
+  if (pcm_val > CLIP) pcm_val = CLIP;
+  
+  pcm_val += BIAS;
+  let exponent = 7;
+  
+  // Determine exponent
+  const expMasks = [0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80];
+  for (let i = 0; i < 8; i++) {
+    if (pcm_val & expMasks[i]) {
+      exponent = 7 - i;
+      break;
+    }
+  }
+
+  let mantissa = (pcm_val >> (exponent + 3)) & 0x0F;
+  let ulaw = ~(sign | (exponent << 4) | mantissa);
+  
+  return ulaw & 0xFF;
+}
+
+// Encoder un buffer PCM Float32 en PCMU
+export function encodePCMUBuffer(float32Array) {
+  const pcm16 = new Int16Array(float32Array.length);
+  
+  // Convertir Float32 [-1, 1] en Int16 [-32768, 32767]
+  for (let i = 0; i < float32Array.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32Array[i]));
+    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  
+  // Encoder en u-law
+  const pcmu = new Uint8Array(pcm16.length);
+  for (let i = 0; i < pcm16.length; i++) {
+    pcmu[i] = encodeULaw(pcm16[i]);
+  }
+  
+  return pcmu;
+}
+
 // Décoder u-law (PCMU) en PCM 16-bit
 function decodeULaw(ulaw) {
   return ulawMap[ulaw];
@@ -175,11 +221,11 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
   processor.onaudioprocess = (e) => {
     const inputData = e.inputBuffer.getChannelData(0);
     
-    // Encoder en PCMA
-    const pcmaData = encodePCMABuffer(inputData);
+    // Encoder en PCMU (u-Law) - Le backend attend du PCMU
+    const pcmuData = encodePCMUBuffer(inputData);
     
     // Convertir en base64 pour transmission
-    const base64Audio = btoa(String.fromCharCode.apply(null, pcmaData));
+    const base64Audio = btoa(String.fromCharCode.apply(null, pcmuData));
     
     // Log tous les 50 chunks (environ toutes les 2 secondes)
     if (chunkCount % 50 === 0) {
@@ -199,7 +245,12 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
   return { source, processor };
 }
 
-// Lire l'audio reçu
+// Système de lecture audio continu avec queue
+let audioQueue = [];
+let isPlaying = false;
+let nextPlayTime = 0;
+
+// Lire l'audio reçu avec synchronisation
 export function playAudioChunk(audioContext, base64Audio) {
   try {
     // Décoder base64
@@ -217,15 +268,57 @@ export function playAudioChunk(audioContext, base64Audio) {
     const audioBuffer = audioContext.createBuffer(1, float32Data.length, SAMPLE_RATE);
     audioBuffer.getChannelData(0).set(float32Data);
     
-    // Lire le buffer
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-    source.start();
+    // Ajouter à la queue
+    audioQueue.push({
+      buffer: audioBuffer,
+      duration: audioBuffer.duration
+    });
+    
+    // Démarrer la lecture si pas déjà en cours
+    if (!isPlaying) {
+      playNextChunk(audioContext);
+    }
     
   } catch (error) {
     console.error('❌ Erreur lecture audio:', error);
   }
+}
+
+// Jouer le prochain chunk de la queue
+function playNextChunk(audioContext) {
+  if (audioQueue.length === 0) {
+    isPlaying = false;
+    nextPlayTime = 0;
+    return;
+  }
+  
+  isPlaying = true;
+  const chunk = audioQueue.shift();
+  
+  // Calculer le temps de démarrage
+  const currentTime = audioContext.currentTime;
+  const startTime = Math.max(currentTime, nextPlayTime);
+  
+  // Créer et démarrer la source
+  const source = audioContext.createBufferSource();
+  source.buffer = chunk.buffer;
+  source.connect(audioContext.destination);
+  source.start(startTime);
+  
+  // Mettre à jour le temps pour le prochain chunk
+  nextPlayTime = startTime + chunk.duration;
+  
+  // Programmer le prochain chunk
+  source.onended = () => {
+    playNextChunk(audioContext);
+  };
+}
+
+// Réinitialiser la queue audio (appelé quand l'appel se termine)
+export function resetAudioQueue() {
+  audioQueue = [];
+  isPlaying = false;
+  nextPlayTime = 0;
 }
 
 export { SAMPLE_RATE, CHUNK_SIZE };
