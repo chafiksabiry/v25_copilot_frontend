@@ -1,7 +1,7 @@
 // Utilitaires pour gérer l'audio PCMU (G.711 µ-law)
 
 const SAMPLE_RATE = 8000; // Hz
-const CHUNK_SIZE = 160; // samples = 20ms à 8000Hz
+const CHUNK_SIZE = 256; // samples (doit être une puissance de 2)
 
 // Table de conversion pour µ-law encoding
 const MULAW_BIAS = 0x84;
