@@ -59,11 +59,20 @@ function App() {
     };
   }, []);
   
+  const callStartTimeRef = useRef(null);
+
   // Timer pour la durée d'appel
   useEffect(() => {
     if (callState === 'active') {
+      callStartTimeRef.current = Date.now();
+      // Mettre à jour immédiatement
+      setCallDuration(0);
+      
       callTimerRef.current = setInterval(() => {
-        setCallDuration(prev => prev + 1);
+        if (callStartTimeRef.current) {
+          const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+          setCallDuration(duration);
+        }
       }, 1000);
     } else {
       if (callTimerRef.current) {
@@ -71,6 +80,7 @@ function App() {
       }
       if (callState === 'idle') {
         setCallDuration(0);
+        callStartTimeRef.current = null;
       }
     }
     
