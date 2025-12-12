@@ -270,15 +270,18 @@ function App() {
           audioContextRef.current,
           stream,
           (audioData) => {
-            // Envoyer l'audio au serveur via Socket.IO
-            if (socketRef.current && currentCall && callState === 'active' && !isMuted) {
+            // Envoyer l'audio au serveur via Socket.IO TOUJOURS (pas seulement quand active)
+            if (socketRef.current && currentCall) {
               socketRef.current.emit('audio-data', {
                 callControlId: currentCall.callControlId,
-                audioChunk: audioData
+                audioChunk: audioData,
+                timestamp: Date.now()
               });
             }
           }
         );
+        
+        console.log('✅ Audio processor créé - envoi activé');
       } catch (error) {
         console.error('❌ Erreur microphone:', error);
         showMessage('Impossible d\'accéder au microphone', 'error');

@@ -106,6 +106,8 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
   const source = audioContext.createMediaStreamSource(stream);
   const processor = audioContext.createScriptProcessor(CHUNK_SIZE, 1, 1);
   
+  let chunkCount = 0;
+  
   processor.onaudioprocess = (e) => {
     const inputData = e.inputBuffer.getChannelData(0);
     
@@ -115,12 +117,20 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
     // Convertir en base64 pour transmission
     const base64Audio = btoa(String.fromCharCode.apply(null, pcmuData));
     
+    // Log tous les 50 chunks (environ toutes les 2 secondes)
+    if (chunkCount % 50 === 0) {
+      console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars`);
+    }
+    chunkCount++;
+    
     // Envoyer au callback
     onAudioData(base64Audio);
   };
   
   source.connect(processor);
   processor.connect(audioContext.destination);
+  
+  console.log('✅ Audio processor connecté et prêt');
   
   return { source, processor };
 }
