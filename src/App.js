@@ -4,6 +4,8 @@ import { io } from 'socket.io-client';
 import { playRingtone, stopRingtone } from './ringtone';
 import { 
   createAudioContext, 
+  captureMicrophone,
+  createAudioProcessor,
   playAudioChunk 
 } from './audioUtils';
 import './App.css';
@@ -251,15 +253,36 @@ function App() {
       console.log('🔔 Démarrage sonnerie...');
       playRingtone();
       
-      // Créer le contexte audio pour pouvoir jouer l'audio reçu
+      // Créer le contexte audio
       if (!audioContextRef.current) {
         audioContextRef.current = createAudioContext();
         console.log('🎵 Contexte audio créé');
       }
       
-      // TODO: Activer le microphone plus tard si nécessaire
-      // const stream = await captureMicrophone();
-      // audioStreamRef.current = stream;
+      // Capturer le microphone pour pouvoir parler
+      try {
+        const stream = await captureMicrophone();
+        audioStreamRef.current = stream;
+        console.log('🎤 Microphone capturé');
+        
+        // Créer le processeur audio pour envoyer votre voix
+        audioProcessorRef.current = createAudioProcessor(
+          audioContextRef.current,
+          stream,
+          (audioData) => {
+            // Envoyer l'audio au serveur via Socket.IO
+            if (socketRef.current && currentCall && callState === 'active' && !isMuted) {
+              socketRef.current.emit('audio-data', {
+                callControlId: currentCall.callControlId,
+                audioChunk: audioData
+              });
+            }
+          }
+        );
+      } catch (error) {
+        console.error('❌ Erreur microphone:', error);
+        showMessage('Impossible d\'accéder au microphone', 'error');
+      }
       
       // Initier l'appel via WebSocket
       socketRef.current.emit('initiate-call', {
