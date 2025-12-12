@@ -4,8 +4,6 @@ import { io } from 'socket.io-client';
 import { playRingtone, stopRingtone } from './ringtone';
 import { 
   createAudioContext, 
-  captureMicrophone, 
-  createAudioProcessor, 
   playAudioChunk 
 } from './audioUtils';
 import './App.css';
@@ -253,28 +251,15 @@ function App() {
       console.log('🔔 Démarrage sonnerie...');
       playRingtone();
       
-      // Créer le contexte audio et capturer le microphone
+      // Créer le contexte audio pour pouvoir jouer l'audio reçu
       if (!audioContextRef.current) {
         audioContextRef.current = createAudioContext();
+        console.log('🎵 Contexte audio créé');
       }
       
-      const stream = await captureMicrophone();
-      audioStreamRef.current = stream;
-      
-      // Créer le processeur audio pour envoyer le son du micro
-      audioProcessorRef.current = createAudioProcessor(
-        audioContextRef.current,
-        stream,
-        (audioData) => {
-          // Envoyer l'audio au serveur via Socket.IO
-          if (socketRef.current && currentCall) {
-            socketRef.current.emit('audio-data', {
-              callControlId: currentCall.callControlId,
-              audioChunk: audioData
-            });
-          }
-        }
-      );
+      // TODO: Activer le microphone plus tard si nécessaire
+      // const stream = await captureMicrophone();
+      // audioStreamRef.current = stream;
       
       // Initier l'appel via WebSocket
       socketRef.current.emit('initiate-call', {
