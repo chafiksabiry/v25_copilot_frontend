@@ -227,7 +227,7 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
       sum += Math.abs(inputData[i]);
     }
     const average = sum / inputData.length;
-    const silenceThreshold = 0.01;
+    const silenceThreshold = 0.001; // RÉDUIT de 0.01 à 0.001 pour détecter plus de voix
     
     // Encoder en PCMU (u-Law) - Le backend attend du PCMU
     const pcmuData = encodePCMUBuffer(inputData);
@@ -237,15 +237,18 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
     
     // Log tous les 50 chunks (environ toutes les 2 secondes) avec niveau audio
     if (chunkCount % 50 === 0) {
-      if (average > silenceThreshold) {
-        console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars, volume: ${average.toFixed(4)}`);
+      if (average > silenceThreshold * 3) {
+        console.log(`🎙️ Audio significatif capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars, volume: ${average.toFixed(5)}`);
       } else {
-        console.log(`🔇 Silence détecté: volume ${average.toFixed(4)} (seuil: ${silenceThreshold})`);
+        // Log occasionnel pour le silence (1% des chunks)
+        if (Math.random() < 0.02) {
+          console.log(`🔇 Silence détecté: volume ${average.toFixed(5)} (seuil: ${silenceThreshold})`);
+        }
       }
     }
     chunkCount++;
     
-    // Envoyer au callback (même le silence pour garder la connexion active)
+    // TOUJOURS envoyer, même le silence (pour maintenir la connexion)
     onAudioData(base64Audio);
   };
   
@@ -266,6 +269,16 @@ let totalChunksReceived = 0;
 // Lire l'audio reçu avec synchronisation
 export function playAudioChunk(audioContext, base64Audio) {
   try {
+    // Vérifier que le contexte audio n'est pas suspendu
+    if (audioContext.state === 'suspended') {
+      console.warn('⚠️ AudioContext suspendu - tentative de reprise...');
+      audioContext.resume().then(() => {
+        console.log('✅ AudioContext repris');
+      }).catch(err => {
+        console.error('❌ Erreur reprise AudioContext:', err);
+      });
+    }
+    
     // Décoder base64
     const binaryString = atob(base64Audio);
     const pcmuArray = new Uint8Array(binaryString.length);
@@ -274,8 +287,20 @@ export function playAudioChunk(audioContext, base64Audio) {
       pcmuArray[i] = binaryString.charCodeAt(i);
     }
     
+    // Log pour les premiers packets pour diagnostiquer
+    if (totalChunksReceived === 0) {
+      console.log(`🔊 PREMIER AUDIO REÇU: ${base64Audio.length} chars base64, ${pcmuArray.length} bytes`);
+      console.log(`📊 Bytes de test: ${Array.from(pcmuArray.slice(0, 5)).join(', ')}`);
+    }
+    
     // Décoder PCMU (u-Law) en Float32 - Le backend envoie du PCMU après conversion
     const float32Data = decodePCMUBuffer(pcmuArray);
+    
+    // Vérifier que les données ne sont pas toutes à zéro (silence complet)
+    const maxValue = Math.max(...float32Data.map(Math.abs));
+    if (totalChunksReceived < 5 && maxValue > 0.001) {
+      console.log(`🎵 Audio non-silencieux détecté: max=${maxValue.toFixed(5)}, samples=${float32Data.length}`);
+    }
     
     // Créer un buffer audio
     const audioBuffer = audioContext.createBuffer(1, float32Data.length, SAMPLE_RATE);
@@ -295,7 +320,7 @@ export function playAudioChunk(audioContext, base64Audio) {
     // Log tous les chunks pour les 20 premiers, puis tous les 10
     if (totalChunksReceived <= 20 || totalChunksReceived % 10 === 0) {
       const totalDuration = audioQueue.reduce((sum, c) => sum + c.duration, 0);
-      console.log(`📥 Audio reçu #${totalChunksReceived} - Queue: ${audioQueue.length} chunks, Durée totale: ${totalDuration.toFixed(2)}s, Buffer: ${float32Data.length} samples (${(float32Data.length / SAMPLE_RATE * 1000).toFixed(1)}ms)`);
+      console.log(`📥 Audio reçu #${totalChunksReceived} - Queue: ${audioQueue.length} chunks, Durée totale: ${totalDuration.toFixed(2)}s, Buffer: ${float32Data.length} samples (${(float32Data.length / SAMPLE_RATE * 1000).toFixed(1)}ms), Max: ${maxValue.toFixed(5)}`);
     }
     
     // Démarrer la lecture si pas déjà en cours
@@ -306,6 +331,7 @@ export function playAudioChunk(audioContext, base64Audio) {
     
   } catch (error) {
     console.error('❌ Erreur lecture audio:', error);
+    console.error('Stack:', error.stack);
   }
 }
 

@@ -33,6 +33,12 @@ function App() {
     packetsReceived: 0,
     lastPacketTime: null
   });
+  const [audioDiagnostics, setAudioDiagnostics] = useState({
+    isAudioContextSuspended: false,
+    outputDevices: [],
+    inputDevices: [],
+    permissions: { microphone: false }
+  });
   
   const socketRef = useRef(null);
   const callTimerRef = useRef(null);
@@ -41,11 +47,88 @@ function App() {
   const audioProcessorRef = useRef(null);
   const currentCallIdRef = useRef(null); // Pour accès immédiat dans les callbacks
 
+  // Vérifier l'état audio au démarrage
+  const checkAudioDiagnostics = async () => {
+    // Vérifier si le contexte audio est suspendu (requiert une interaction utilisateur)
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      console.log('⚠️ AudioContext suspendu - nécessite une interaction utilisateur');
+      setAudioDiagnostics(prev => ({ ...prev, isAudioContextSuspended: true }));
+    }
+    
+    // Lister les périphériques audio
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(d => d.kind === 'audioinput');
+      const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
+      
+      setAudioDiagnostics(prev => ({
+        ...prev,
+        inputDevices: audioInputs,
+        outputDevices: audioOutputs
+      }));
+      
+      console.log('🎧 Périphériques d\'entrée:', audioInputs.map(d => d.label));
+      console.log('🔈 Périphériques de sortie:', audioOutputs.map(d => d.label));
+    } catch (error) {
+      console.error('❌ Erreur liste périphériques:', error);
+    }
+    
+    // Vérifier les permissions microphone
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioDiagnostics(prev => ({ ...prev, permissions: { microphone: true } }));
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.warn('⚠️ Permission microphone non accordée:', error);
+      setAudioDiagnostics(prev => ({ ...prev, permissions: { microphone: false } }));
+    }
+  };
+  
+  // Fonction pour tester l'audio indépendamment
+  const testAudio = async () => {
+    try {
+      console.log('🎵 Test audio démarré');
+      
+      // Créer contexte audio
+      const testContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Créer un oscillateur pour un son de test
+      const oscillator = testContext.createOscillator();
+      const gainNode = testContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(testContext.destination);
+      
+      oscillator.frequency.value = 440; // La 440 Hz
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.5, testContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, testContext.currentTime + 2);
+      
+      oscillator.start(testContext.currentTime);
+      oscillator.stop(testContext.currentTime + 2);
+      
+      console.log('🔊 Son de test joué (2 secondes, 440 Hz)');
+      showMessage('Son de test joué - Vérifiez si vous l\'entendez', 'info');
+      
+      // Vérifier le volume de sortie
+      setTimeout(() => {
+        console.log('🎵 Test terminé - Vérifiez si vous avez entendu le son');
+        testContext.close();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Erreur test audio:', error);
+      showMessage('Erreur lors du test audio', 'error');
+    }
+  };
+
   // Charger les numéros et initialiser WebSocket au démarrage
   useEffect(() => {
     loadNumbers();
     loadCallHistory();
     initializeWebSocket();
+    checkAudioDiagnostics();
     
     return () => {
       // Nettoyage lors du démontage
@@ -461,6 +544,24 @@ function App() {
           <span className="status-dot"></span>
           {isConnected ? '🟢 Serveur Connecté' : '🔴 Serveur Déconnecté'}
         </div>
+
+        {/* Bouton de test audio */}
+        <div style={{textAlign: 'center', marginTop: '10px', marginBottom: '10px'}}>
+          <button 
+            onClick={testAudio}
+            className="call-button"
+            style={{backgroundColor: '#6c5ce7', fontSize: '14px', padding: '8px 16px'}}
+          >
+            🎵 Tester l'audio
+          </button>
+        </div>
+
+        {/* Diagnostics audio (debug) */}
+        {audioDiagnostics.isAudioContextSuspended && (
+          <div className="message warning" style={{marginTop: '10px'}}>
+            ⚠️ Audio en pause - Cliquez sur "Tester l'audio" pour activer
+          </div>
+        )}
 
         {/* Interface d'appel en cours */}
         {currentCall && callState !== 'idle' && callState !== 'ended' && (
