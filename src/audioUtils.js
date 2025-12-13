@@ -271,10 +271,8 @@ export function playAudioChunk(audioContext, base64Audio) {
     
     totalChunksReceived++;
     
-    // Vérifier la taille du buffer (doit être ~256 samples = 32ms à 8kHz)
-    if (float32Data.length !== 256) {
-      console.warn(`⚠️ Taille buffer inattendue: ${float32Data.length} samples (attendu: 256)`);
-    }
+    // La taille du buffer peut varier (160 samples = 20ms pour G.711, 256 samples = 32ms, etc.)
+    // C'est normal, pas besoin de warning
     
     // Ajouter à la queue
     audioQueue.push({
@@ -282,10 +280,10 @@ export function playAudioChunk(audioContext, base64Audio) {
       duration: audioBuffer.duration
     });
     
-    // Log tous les 10 chunks pour debug
-    if (totalChunksReceived % 10 === 0) {
+    // Log tous les chunks pour les 20 premiers, puis tous les 10
+    if (totalChunksReceived <= 20 || totalChunksReceived % 10 === 0) {
       const totalDuration = audioQueue.reduce((sum, c) => sum + c.duration, 0);
-      console.log(`📥 Audio reçu #${totalChunksReceived} - Queue: ${audioQueue.length} chunks, Durée totale: ${totalDuration.toFixed(2)}s, Buffer: ${float32Data.length} samples`);
+      console.log(`📥 Audio reçu #${totalChunksReceived} - Queue: ${audioQueue.length} chunks, Durée totale: ${totalDuration.toFixed(2)}s, Buffer: ${float32Data.length} samples (${(float32Data.length / SAMPLE_RATE * 1000).toFixed(1)}ms)`);
     }
     
     // Démarrer la lecture si pas déjà en cours
