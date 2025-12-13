@@ -70,23 +70,30 @@ function App() {
   // Fonction pour télécharger automatiquement l'enregistrement
   const downloadRecording = async (recordingUrl, recordingId) => {
     try {
-      console.log(`📥 Téléchargement de l'enregistrement: ${recordingUrl}`);
+      console.log(`📥 Téléchargement de l'enregistrement: ${recordingUrl.substring(0, 100)}...`);
+      console.log(`📋 Recording ID: ${recordingId}`);
       
       // Créer un lien de téléchargement
       const link = document.createElement('a');
       link.href = recordingUrl;
       link.download = `call-recording-${recordingId}-${new Date().toISOString().split('T')[0]}.mp3`;
       link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
       // Ajouter au DOM, cliquer, puis retirer
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      
+      // Attendre un peu avant de retirer le lien
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
       
       console.log('✅ Enregistrement téléchargé avec succès');
       showMessage('Enregistrement téléchargé automatiquement', 'success');
     } catch (error) {
       console.error('❌ Erreur téléchargement enregistrement:', error);
+      console.error('Détails:', error.stack);
       showMessage('Erreur lors du téléchargement de l\'enregistrement', 'error');
     }
   };
