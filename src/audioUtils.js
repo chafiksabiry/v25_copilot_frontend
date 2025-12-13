@@ -303,15 +303,50 @@ function playNextChunk(audioContext) {
   const source = audioContext.createBufferSource();
   source.buffer = chunk.buffer;
   source.connect(audioContext.destination);
-  source.start(startTime);
   
-  // Mettre à jour le temps pour le prochain chunk
-  nextPlayTime = startTime + chunk.duration;
-  
-  // Programmer le prochain chunk
-  source.onended = () => {
-    playNextChunk(audioContext);
-  };
+  // Gérer les erreurs de timing
+  try {
+    source.start(startTime);
+    
+    // Mettre à jour le temps pour le prochain chunk
+    nextPlayTime = startTime + chunk.duration;
+    
+    // Programmer le prochain chunk immédiatement si la queue n'est pas vide
+    // Cela évite les gaps entre les chunks
+    source.onended = () => {
+      // Jouer le prochain chunk immédiatement
+      if (audioQueue.length > 0) {
+        playNextChunk(audioContext);
+      } else {
+        isPlaying = false;
+        nextPlayTime = 0;
+      }
+    };
+  } catch (error) {
+    console.error('❌ Erreur démarrage source audio:', error);
+    // En cas d'erreur, essayer de jouer immédiatement
+    try {
+      source.start(0);
+      nextPlayTime = audioContext.currentTime + chunk.duration;
+      source.onended = () => {
+        if (audioQueue.length > 0) {
+          playNextChunk(audioContext);
+        } else {
+          isPlaying = false;
+          nextPlayTime = 0;
+        }
+      };
+    } catch (err2) {
+      console.error('❌ Erreur critique lecture audio:', err2);
+      // Retirer ce chunk et continuer avec le suivant
+      if (audioQueue.length > 0) {
+        playNextChunk(audioContext);
+      } else {
+        isPlaying = false;
+        nextPlayTime = 0;
+      }
+    }
+  }
 }
 
 // Réinitialiser la queue audio (appelé quand l'appel se termine)
