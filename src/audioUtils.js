@@ -274,8 +274,14 @@ export function playAudioChunk(audioContext, base64Audio) {
       duration: audioBuffer.duration
     });
     
+    // Log tous les 50 chunks pour debug
+    if (audioQueue.length % 50 === 0) {
+      console.log(`📥 Audio ajouté à la queue (taille queue: ${audioQueue.length}, durée totale: ${audioQueue.reduce((sum, c) => sum + c.duration, 0).toFixed(2)}s)`);
+    }
+    
     // Démarrer la lecture si pas déjà en cours
     if (!isPlaying) {
+      console.log(`▶️ Démarrage lecture audio (queue: ${audioQueue.length} chunks)`);
       playNextChunk(audioContext);
     }
     
@@ -285,15 +291,26 @@ export function playAudioChunk(audioContext, base64Audio) {
 }
 
 // Jouer le prochain chunk de la queue
+let chunkPlayCount = 0;
 function playNextChunk(audioContext) {
   if (audioQueue.length === 0) {
     isPlaying = false;
     nextPlayTime = 0;
+    if (chunkPlayCount > 0) {
+      console.log(`🔇 Queue audio vide, arrêt lecture (${chunkPlayCount} chunks joués)`);
+      chunkPlayCount = 0;
+    }
     return;
   }
   
   isPlaying = true;
   const chunk = audioQueue.shift();
+  chunkPlayCount++;
+  
+  // Log tous les 10 chunks pour debug
+  if (chunkPlayCount % 10 === 0) {
+    console.log(`🔊 Lecture chunk audio #${chunkPlayCount} (durée: ${chunk.duration.toFixed(3)}s, queue: ${audioQueue.length})`);
+  }
   
   // Calculer le temps de démarrage
   const currentTime = audioContext.currentTime;
@@ -320,6 +337,10 @@ function playNextChunk(audioContext) {
       } else {
         isPlaying = false;
         nextPlayTime = 0;
+        if (chunkPlayCount > 0) {
+          console.log(`🔇 Fin lecture audio (${chunkPlayCount} chunks joués au total)`);
+          chunkPlayCount = 0;
+        }
       }
     };
   } catch (error) {
