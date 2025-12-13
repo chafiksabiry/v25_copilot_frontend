@@ -249,6 +249,7 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
 let audioQueue = [];
 let isPlaying = false;
 let nextPlayTime = 0;
+let totalChunksReceived = 0;
 
 // Lire l'audio reçu avec synchronisation
 export function playAudioChunk(audioContext, base64Audio) {
@@ -268,20 +269,28 @@ export function playAudioChunk(audioContext, base64Audio) {
     const audioBuffer = audioContext.createBuffer(1, float32Data.length, SAMPLE_RATE);
     audioBuffer.getChannelData(0).set(float32Data);
     
+    totalChunksReceived++;
+    
+    // Vérifier la taille du buffer (doit être ~256 samples = 32ms à 8kHz)
+    if (float32Data.length !== 256) {
+      console.warn(`⚠️ Taille buffer inattendue: ${float32Data.length} samples (attendu: 256)`);
+    }
+    
     // Ajouter à la queue
     audioQueue.push({
       buffer: audioBuffer,
       duration: audioBuffer.duration
     });
     
-    // Log tous les 50 chunks pour debug
-    if (audioQueue.length % 50 === 0) {
-      console.log(`📥 Audio ajouté à la queue (taille queue: ${audioQueue.length}, durée totale: ${audioQueue.reduce((sum, c) => sum + c.duration, 0).toFixed(2)}s)`);
+    // Log tous les 10 chunks pour debug
+    if (totalChunksReceived % 10 === 0) {
+      const totalDuration = audioQueue.reduce((sum, c) => sum + c.duration, 0);
+      console.log(`📥 Audio reçu #${totalChunksReceived} - Queue: ${audioQueue.length} chunks, Durée totale: ${totalDuration.toFixed(2)}s, Buffer: ${float32Data.length} samples`);
     }
     
     // Démarrer la lecture si pas déjà en cours
     if (!isPlaying) {
-      console.log(`▶️ Démarrage lecture audio (queue: ${audioQueue.length} chunks)`);
+      console.log(`▶️ Démarrage lecture audio (queue: ${audioQueue.length} chunks, durée: ${audioQueue[0].duration.toFixed(3)}s)`);
       playNextChunk(audioContext);
     }
     
@@ -372,9 +381,11 @@ function playNextChunk(audioContext) {
 
 // Réinitialiser la queue audio (appelé quand l'appel se termine)
 export function resetAudioQueue() {
+  console.log(`🔄 Réinitialisation queue audio (${audioQueue.length} chunks restants, ${totalChunksReceived} chunks reçus au total)`);
   audioQueue = [];
   isPlaying = false;
   nextPlayTime = 0;
+  totalChunksReceived = 0;
 }
 
 export { SAMPLE_RATE, CHUNK_SIZE };
