@@ -268,6 +268,13 @@ function App() {
           try {
             // Décoder et jouer l'audio (toujours, même si micro muté)
             playAudioChunk(audioContextRef.current, data.audioChunk);
+            
+            // Mettre à jour les statistiques audio
+            setAudioStats(prev => ({
+              ...prev,
+              packetsReceived: prev.packetsReceived + 1,
+              lastPacketTime: new Date()
+            }));
           } catch (error) {
             console.error('❌ Erreur lecture audio:', error);
           }
