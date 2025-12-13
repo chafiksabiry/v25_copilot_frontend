@@ -62,6 +62,30 @@ function App() {
   
   const callStartTimeRef = useRef(null);
 
+  // Fonction pour télécharger automatiquement l'enregistrement
+  const downloadRecording = async (recordingUrl, recordingId) => {
+    try {
+      console.log(`📥 Téléchargement de l'enregistrement: ${recordingUrl}`);
+      
+      // Créer un lien de téléchargement
+      const link = document.createElement('a');
+      link.href = recordingUrl;
+      link.download = `call-recording-${recordingId}-${new Date().toISOString().split('T')[0]}.mp3`;
+      link.target = '_blank';
+      
+      // Ajouter au DOM, cliquer, puis retirer
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('✅ Enregistrement téléchargé avec succès');
+      showMessage('Enregistrement téléchargé automatiquement', 'success');
+    } catch (error) {
+      console.error('❌ Erreur téléchargement enregistrement:', error);
+      showMessage('Erreur lors du téléchargement de l\'enregistrement', 'error');
+    }
+  };
+
   // Timer pour la durée d'appel
   useEffect(() => {
     if (callState === 'active') {
@@ -131,6 +155,14 @@ function App() {
       // Événement : Mise à jour du statut
       socket.on('call-status', (data) => {
         console.log('📞 Statut appel:', data);
+        
+        // Vérifier si c'est un enregistrement sauvegardé
+        if (data.status === 'recording-saved' && data.recordingUrl) {
+          console.log('💾 Enregistrement disponible:', data.recordingUrl);
+          // Télécharger automatiquement l'enregistrement
+          downloadRecording(data.recordingUrl, data.recordingId || 'recording');
+        }
+        
         handleCallStatusUpdate(data);
       });
 
