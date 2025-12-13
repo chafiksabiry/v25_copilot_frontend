@@ -298,8 +298,18 @@ export function playAudioChunk(audioContext, base64Audio) {
     
     // Vérifier que les données ne sont pas toutes à zéro (silence complet)
     const maxValue = Math.max(...float32Data.map(Math.abs));
-    if (totalChunksReceived < 5 && maxValue > 0.001) {
-      console.log(`🎵 Audio non-silencieux détecté: max=${maxValue.toFixed(5)}, samples=${float32Data.length}`);
+    const avgValue = float32Data.reduce((sum, val) => sum + Math.abs(val), 0) / float32Data.length;
+    
+    // Log pour les premiers packets pour diagnostiquer
+    if (totalChunksReceived < 10) {
+      console.log(`🎵 Audio décodé #${totalChunksReceived + 1}: max=${maxValue.toFixed(5)}, avg=${avgValue.toFixed(5)}, samples=${float32Data.length}`);
+      
+      // Vérifier si les valeurs sont dans une plage raisonnable
+      if (maxValue < 0.0001) {
+        console.warn(`⚠️ Audio très silencieux (max=${maxValue.toFixed(5)}) - peut-être un problème de conversion`);
+      } else if (maxValue > 1.0) {
+        console.warn(`⚠️ Audio saturé (max=${maxValue.toFixed(5)}) - peut-être un problème de conversion`);
+      }
     }
     
     // Créer un buffer audio
@@ -361,10 +371,17 @@ function playNextChunk(audioContext) {
   const currentTime = audioContext.currentTime;
   const startTime = Math.max(currentTime, nextPlayTime);
   
-  // Créer et démarrer la source
+  // Créer et démarrer la source avec un gain node pour amplifier le volume
   const source = audioContext.createBufferSource();
+  const gainNode = audioContext.createGain();
+  
+  // Amplifier le volume (gain de 2.0 = double le volume)
+  // Cela devrait aider si le volume est trop faible
+  gainNode.gain.value = 2.0;
+  
   source.buffer = chunk.buffer;
-  source.connect(audioContext.destination);
+  source.connect(gainNode);
+  gainNode.connect(audioContext.destination);
   
   // Gérer les erreurs de timing
   try {
