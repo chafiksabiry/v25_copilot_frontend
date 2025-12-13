@@ -221,19 +221,31 @@ export function createAudioProcessor(audioContext, stream, onAudioData) {
   processor.onaudioprocess = (e) => {
     const inputData = e.inputBuffer.getChannelData(0);
     
+    // Vérifier si c'est du silence
+    let sum = 0;
+    for (let i = 0; i < inputData.length; i++) {
+      sum += Math.abs(inputData[i]);
+    }
+    const average = sum / inputData.length;
+    const silenceThreshold = 0.01;
+    
     // Encoder en PCMU (u-Law) - Le backend attend du PCMU
     const pcmuData = encodePCMUBuffer(inputData);
     
     // Convertir en base64 pour transmission
     const base64Audio = btoa(String.fromCharCode.apply(null, pcmuData));
     
-    // Log tous les 50 chunks (environ toutes les 2 secondes)
+    // Log tous les 50 chunks (environ toutes les 2 secondes) avec niveau audio
     if (chunkCount % 50 === 0) {
-      console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars`);
+      if (average > silenceThreshold) {
+        console.log(`🎙️ Audio capturé: ${pcmuData.length} bytes, base64: ${base64Audio.length} chars, volume: ${average.toFixed(4)}`);
+      } else {
+        console.log(`🔇 Silence détecté: volume ${average.toFixed(4)} (seuil: ${silenceThreshold})`);
+      }
     }
     chunkCount++;
     
-    // Envoyer au callback
+    // Envoyer au callback (même le silence pour garder la connexion active)
     onAudioData(base64Audio);
   };
   

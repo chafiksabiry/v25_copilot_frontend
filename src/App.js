@@ -28,6 +28,11 @@ function App() {
   const [callState, setCallState] = useState('idle'); // idle, calling, ringing, active, ended
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [audioStats, setAudioStats] = useState({
+    packetsSent: 0,
+    packetsReceived: 0,
+    lastPacketTime: null
+  });
   
   const socketRef = useRef(null);
   const callTimerRef = useRef(null);
@@ -336,6 +341,12 @@ function App() {
                 timestamp: Date.now()
               });
               
+              // Mettre à jour les statistiques
+              setAudioStats(prev => ({
+                ...prev,
+                packetsSent: prev.packetsSent + 1
+              }));
+              
               // Log tous les 50 packets
               if (sentCount % 50 === 0) {
                 console.log(`📤 Audio envoyé au backend (#${sentCount})`);
@@ -469,6 +480,24 @@ function App() {
               {currentCall && currentCall.to && (
                 <div className="call-number">
                   {formatPhoneNumber(currentCall.to)}
+                </div>
+              )}
+
+              {/* Statistiques audio (debug) */}
+              {callState === 'active' && (
+                <div className="audio-stats" style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  marginTop: '10px',
+                  padding: '8px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '4px'
+                }}>
+                  <div>📤 Envoyés: {audioStats.packetsSent}</div>
+                  <div>📥 Reçus: {audioStats.packetsReceived}</div>
+                  {audioStats.lastPacketTime && (
+                    <div>🕐 Dernier: {audioStats.lastPacketTime.toLocaleTimeString()}</div>
+                  )}
                 </div>
               )}
 
