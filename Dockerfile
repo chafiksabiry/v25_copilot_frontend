@@ -39,7 +39,7 @@ ENV VITE_RUN_MODE=in-app
 ENV VITE_ENVIRONMENT=preprod
 ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
 ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
-ENV VITE_PREPROD_FRONT_URL=https://preprod-copilot.harx.ai/
+ENV VITE_PREPROD_FRONT_URL=https://harxv25copilotfrontend.netlify.app/
 ENV VITE_DASH_COMPANY_API_URL=https://preprod-api-dashboard.harx.ai/api
 # Construire l'application
 RUN npm run build
