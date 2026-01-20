@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { playRingtone, stopRingtone } from './ringtone';
-import { 
-  createAudioContext, 
+import {
+  createAudioContext,
   captureMicrophone,
   createAudioProcessor,
   playAudioChunk,
@@ -21,7 +21,7 @@ function App() {
   const [callHistory, setCallHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  
+
   // États WebSocket Audio
   const [isConnected, setIsConnected] = useState(false);
   const [currentCall, setCurrentCall] = useState(null);
@@ -39,7 +39,7 @@ function App() {
     inputDevices: [],
     permissions: { microphone: false }
   });
-  
+
   const socketRef = useRef(null);
   const callTimerRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -48,31 +48,31 @@ function App() {
   const currentCallIdRef = useRef(null); // Pour accès immédiat dans les callbacks
 
   // Vérifier l'état audio au démarrage
-  const checkAudioDiagnostics = async () => {
+  const checkAudioDiagnostics = useCallback(async () => {
     // Vérifier si le contexte audio est suspendu (requiert une interaction utilisateur)
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       console.log('⚠️ AudioContext suspendu - nécessite une interaction utilisateur');
       setAudioDiagnostics(prev => ({ ...prev, isAudioContextSuspended: true }));
     }
-    
+
     // Lister les périphériques audio
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(d => d.kind === 'audioinput');
       const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
-      
+
       setAudioDiagnostics(prev => ({
         ...prev,
         inputDevices: audioInputs,
         outputDevices: audioOutputs
       }));
-      
+
       console.log('🎧 Périphériques d\'entrée:', audioInputs.map(d => d.label));
       console.log('🔈 Périphériques de sortie:', audioOutputs.map(d => d.label));
     } catch (error) {
       console.error('❌ Erreur liste périphériques:', error);
     }
-    
+
     // Vérifier les permissions microphone
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -82,41 +82,41 @@ function App() {
       console.warn('⚠️ Permission microphone non accordée:', error);
       setAudioDiagnostics(prev => ({ ...prev, permissions: { microphone: false } }));
     }
-  };
-  
+  }, []);
+
   // Fonction pour tester l'audio indépendamment
   const testAudio = async () => {
     try {
       console.log('🎵 Test audio démarré');
-      
+
       // Créer contexte audio
       const testContext = new (window.AudioContext || window.webkitAudioContext)();
-      
+
       // Créer un oscillateur pour un son de test
       const oscillator = testContext.createOscillator();
       const gainNode = testContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(testContext.destination);
-      
+
       oscillator.frequency.value = 440; // La 440 Hz
       oscillator.type = 'sine';
-      
+
       gainNode.gain.setValueAtTime(0.5, testContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.001, testContext.currentTime + 2);
-      
+
       oscillator.start(testContext.currentTime);
       oscillator.stop(testContext.currentTime + 2);
-      
+
       console.log('🔊 Son de test joué (2 secondes, 440 Hz)');
       showMessage('Son de test joué - Vérifiez si vous l\'entendez', 'info');
-      
+
       // Vérifier le volume de sortie
       setTimeout(() => {
         console.log('🎵 Test terminé - Vérifiez si vous avez entendu le son');
         testContext.close();
       }, 2000);
-      
+
     } catch (error) {
       console.error('❌ Erreur test audio:', error);
       showMessage('Erreur lors du test audio', 'error');
@@ -129,7 +129,7 @@ function App() {
     loadCallHistory();
     initializeWebSocket();
     checkAudioDiagnostics();
-    
+
     return () => {
       // Nettoyage lors du démontage
       if (socketRef.current) {
@@ -146,8 +146,8 @@ function App() {
         audioStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
-  
+  }, [loadNumbers, loadCallHistory, initializeWebSocket, checkAudioDiagnostics]);
+
   const callStartTimeRef = useRef(null);
 
   // Fonction pour télécharger automatiquement l'enregistrement
@@ -155,23 +155,23 @@ function App() {
     try {
       console.log(`📥 Téléchargement de l'enregistrement: ${recordingUrl.substring(0, 100)}...`);
       console.log(`📋 Recording ID: ${recordingId}`);
-      
+
       // Créer un lien de téléchargement
       const link = document.createElement('a');
       link.href = recordingUrl;
       link.download = `call-recording-${recordingId}-${new Date().toISOString().split('T')[0]}.mp3`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      
+
       // Ajouter au DOM, cliquer, puis retirer
       document.body.appendChild(link);
       link.click();
-      
+
       // Attendre un peu avant de retirer le lien
       setTimeout(() => {
         document.body.removeChild(link);
       }, 100);
-      
+
       console.log('✅ Enregistrement téléchargé avec succès');
       showMessage('Enregistrement téléchargé automatiquement', 'success');
     } catch (error) {
@@ -187,7 +187,7 @@ function App() {
       callStartTimeRef.current = Date.now();
       // Mettre à jour immédiatement
       setCallDuration(0);
-      
+
       callTimerRef.current = setInterval(() => {
         if (callStartTimeRef.current) {
           const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
@@ -203,7 +203,7 @@ function App() {
         callStartTimeRef.current = null;
       }
     }
-    
+
     return () => {
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
@@ -212,10 +212,10 @@ function App() {
   }, [callState]);
 
   // Initialiser la connexion WebSocket
-  const initializeWebSocket = () => {
+  const initializeWebSocket = useCallback(() => {
     try {
       console.log('🔄 Connexion au serveur WebSocket...');
-      
+
       const socket = io(API_URL, {
         transports: ['websocket'],
         reconnection: true,
@@ -250,14 +250,14 @@ function App() {
       // Événement : Mise à jour du statut
       socket.on('call-status', (data) => {
         console.log('📞 Statut appel:', data);
-        
+
         // Vérifier si c'est un enregistrement sauvegardé
         if (data.status === 'recording-saved' && data.recordingUrl) {
           console.log('💾 Enregistrement disponible:', data.recordingUrl);
           // Télécharger automatiquement l'enregistrement
           downloadRecording(data.recordingUrl, data.recordingId || 'recording');
         }
-        
+
         handleCallStatusUpdate(data);
       });
 
@@ -268,7 +268,7 @@ function App() {
           try {
             // Décoder et jouer l'audio (toujours, même si micro muté)
             playAudioChunk(audioContextRef.current, data.audioChunk);
-            
+
             // Mettre à jour les statistiques audio
             setAudioStats(prev => ({
               ...prev,
@@ -298,18 +298,18 @@ function App() {
       });
 
       socketRef.current = socket;
-      
+
     } catch (error) {
       console.error('❌ Erreur initialisation WebSocket:', error);
       showMessage('Impossible de se connecter au serveur', 'error');
     }
-  };
+  }, [handleCallEnd, handleCallStatusUpdate]);
 
   // Gérer la mise à jour du statut d'appel
-  const handleCallStatusUpdate = (data) => {
+  const handleCallStatusUpdate = useCallback((data) => {
     const { status } = data;
-    
-    switch(status) {
+
+    switch (status) {
       case 'calling':
         setCallState('calling');
         playRingtone(); // Démarrer la sonnerie
@@ -332,28 +332,28 @@ function App() {
       default:
         break;
     }
-  };
+  }, [handleCallEnd]);
 
   // Gérer la fin d'appel
-  const handleCallEnd = () => {
+  const handleCallEnd = useCallback(() => {
     stopRingtone(); // Arrêter la sonnerie
     setCallState('ended');
-    
+
     // Réinitialiser la queue audio
     resetAudioQueue();
-    
+
     // Arrêter l'audio
     if (audioProcessorRef.current) {
       audioProcessorRef.current.processor.disconnect();
       audioProcessorRef.current.source.disconnect();
       audioProcessorRef.current = null;
     }
-    
+
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(track => track.stop());
       audioStreamRef.current = null;
     }
-    
+
     setTimeout(() => {
       currentCallIdRef.current = null;
       setCallState('idle');
@@ -361,9 +361,9 @@ function App() {
       setIsMuted(false);
       loadCallHistory();
     }, 2000);
-  };
+  }, [loadCallHistory]);
 
-  const loadNumbers = async () => {
+  const loadNumbers = useCallback(async () => {
     try {
       console.log('Chargement des numeros depuis:', `${API_URL}/api/numbers`);
       const response = await axios.get(`${API_URL}/api/numbers`);
@@ -378,9 +378,9 @@ function App() {
       showMessage('Erreur lors du chargement des numéros', 'error');
       setNumbers([]);
     }
-  };
+  }, []);
 
-  const loadCallHistory = async () => {
+  const loadCallHistory = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/call-history`);
       setCallHistory(response.data.calls || []);
@@ -388,7 +388,7 @@ function App() {
       console.error('Erreur chargement historique:', error);
       setCallHistory([]);
     }
-  };
+  }, []);
 
   const makeCall = async (phoneNumber) => {
     if (!isConnected || !socketRef.current) {
@@ -403,26 +403,26 @@ function App() {
 
     setLoading(true);
     setCallState('calling');
-    
+
     try {
       console.log('📞 Appel vers:', phoneNumber);
-      
+
       // Démarrer la sonnerie IMMÉDIATEMENT après le clic (interaction utilisateur)
       console.log('🔔 Démarrage sonnerie...');
       playRingtone();
-      
+
       // Créer le contexte audio
       if (!audioContextRef.current) {
         audioContextRef.current = createAudioContext();
         console.log('🎵 Contexte audio créé');
       }
-      
+
       // Capturer le microphone pour pouvoir parler
       try {
         const stream = await captureMicrophone();
         audioStreamRef.current = stream;
         console.log('🎤 Microphone capturé');
-        
+
         // Créer le processeur audio pour envoyer votre voix
         let sentCount = 0;
         audioProcessorRef.current = createAudioProcessor(
@@ -437,13 +437,13 @@ function App() {
                 audioChunk: audioData,
                 timestamp: Date.now()
               });
-              
+
               // Mettre à jour les statistiques
               setAudioStats(prev => ({
                 ...prev,
                 packetsSent: prev.packetsSent + 1
               }));
-              
+
               // Log tous les 50 packets
               if (sentCount % 50 === 0) {
                 console.log(`📤 Audio envoyé au backend (#${sentCount})`);
@@ -452,13 +452,13 @@ function App() {
             }
           }
         );
-        
+
         console.log('✅ Audio processor créé - envoi activé');
       } catch (error) {
         console.error('❌ Erreur microphone:', error);
         showMessage('Impossible d\'accéder au microphone', 'error');
       }
-      
+
       // Initier l'appel via WebSocket
       socketRef.current.emit('initiate-call', {
         to: phoneNumber,
@@ -481,12 +481,12 @@ function App() {
   // Raccrocher
   const hangupCall = () => {
     stopRingtone(); // Arrêter la sonnerie
-    
+
     if (currentCall && socketRef.current) {
       socketRef.current.emit('hangup-call', {
         callControlId: currentCall.callControlId
       });
-      
+
       handleCallEnd();
       showMessage('Appel terminé', 'info');
     }
@@ -496,12 +496,12 @@ function App() {
   const toggleMute = () => {
     if (currentCall && socketRef.current) {
       const newMutedState = !isMuted;
-      
+
       socketRef.current.emit('toggle-mute', {
         callControlId: currentCall.callControlId,
         muted: newMutedState
       });
-      
+
       setIsMuted(newMutedState);
     }
   };
@@ -553,11 +553,11 @@ function App() {
         </div>
 
         {/* Bouton de test audio */}
-        <div style={{textAlign: 'center', marginTop: '10px', marginBottom: '10px'}}>
-          <button 
+        <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '10px' }}>
+          <button
             onClick={testAudio}
             className="call-button"
-            style={{backgroundColor: '#6c5ce7', fontSize: '14px', padding: '8px 16px'}}
+            style={{ backgroundColor: '#6c5ce7', fontSize: '14px', padding: '8px 16px' }}
           >
             🎵 Tester l'audio
           </button>
@@ -565,7 +565,7 @@ function App() {
 
         {/* Diagnostics audio (debug) */}
         {audioDiagnostics.isAudioContextSuspended && (
-          <div className="message warning" style={{marginTop: '10px'}}>
+          <div className="message warning" style={{ marginTop: '10px' }}>
             ⚠️ Audio en pause - Cliquez sur "Tester l'audio" pour activer
           </div>
         )}
@@ -579,7 +579,7 @@ function App() {
                 {callState === 'ringing' && '🔔'}
                 {callState === 'active' && '✅'}
               </div>
-              
+
               <div className="call-status-text">
                 {callState === 'calling' && 'Appel en cours...'}
                 {callState === 'ringing' && 'Sonnerie...'}
@@ -619,7 +619,7 @@ function App() {
               {/* Bouton Raccrocher - visible pendant tout l'appel */}
               <div className="call-controls">
                 {callState === 'active' && (
-                  <button 
+                  <button
                     className={`control-button ${isMuted ? 'active' : ''}`}
                     onClick={toggleMute}
                     title={isMuted ? 'Activer le micro' : 'Couper le micro'}
@@ -627,8 +627,8 @@ function App() {
                     {isMuted ? '🔇' : '🎤'}
                   </button>
                 )}
-                
-                <button 
+
+                <button
                   className="control-button hangup"
                   onClick={hangupCall}
                   title="Raccrocher"
@@ -639,10 +639,10 @@ function App() {
             </div>
           </div>
         )}
-        
+
         {/* Message de fin d'appel */}
         {callState === 'ended' && (
-          <div className="message success" style={{marginTop: '20px'}}>
+          <div className="message success" style={{ marginTop: '20px' }}>
             Appel terminé - Durée: {formatDuration(callDuration)}
           </div>
         )}
@@ -664,7 +664,7 @@ function App() {
                   </button>
                 </div>
               )) : (
-                <div style={{padding: '20px', textAlign: 'center'}}>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
                   Aucun contact disponible
                 </div>
               )}
