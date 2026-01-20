@@ -123,35 +123,96 @@ function App() {
     }
   };
 
-  // Charger les numéros et initialiser WebSocket au démarrage
-  useEffect(() => {
-    loadNumbers();
-    loadCallHistory();
-    initializeWebSocket();
-    checkAudioDiagnostics();
+  const showMessage = useCallback((text, type) => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 5000);
+  }, []);
 
-    return () => {
-      // Nettoyage lors du démontage
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-      if (callTimerRef.current) {
-        clearInterval(callTimerRef.current);
-      }
-      if (audioProcessorRef.current) {
-        audioProcessorRef.current.processor.disconnect();
-        audioProcessorRef.current.source.disconnect();
-      }
-      if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [loadNumbers, loadCallHistory, initializeWebSocket, checkAudioDiagnostics]);
+  const loadNumbers = useCallback(async () => {
+    try {
+      console.log('Chargement des numeros depuis:', `${API_URL}/api/numbers`);
+      const response = await axios.get(`${API_URL}/api/numbers`);
+      console.log('Numeros recus:', response.data);
+      console.log('frenchNumbers:', response.data.frenchNumbers);
+      setNumbers(response.data.frenchNumbers || []);
+      setTelnyxNumber(response.data.telnyxNumber || '');
+      console.log('State numbers mis a jour');
+    } catch (error) {
+      console.error('Erreur chargement numeros:', error);
+      console.error('API_URL:', API_URL);
+      showMessage('Erreur lors du chargement des numéros', 'error');
+      setNumbers([]);
+    }
+  }, [showMessage]);
 
-  const callStartTimeRef = useRef(null);
+  const loadCallHistory = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/call-history`);
+      setCallHistory(response.data.calls || []);
+    } catch (error) {
+      console.error('Erreur chargement historique:', error);
+      setCallHistory([]);
+    }
+  }, []);
+
+  const handleCallEnd = useCallback(() => {
+    stopRingtone(); // Arrêter la sonnerie
+    setCallState('ended');
+
+    // Réinitialiser la queue audio
+    resetAudioQueue();
+
+    // Arrêter l'audio
+    if (audioProcessorRef.current) {
+      audioProcessorRef.current.processor.disconnect();
+      audioProcessorRef.current.source.disconnect();
+      audioProcessorRef.current = null;
+    }
+
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+
+    setTimeout(() => {
+      currentCallIdRef.current = null;
+      setCallState('idle');
+      setCurrentCall(null);
+      setIsMuted(false);
+      loadCallHistory();
+    }, 2000);
+  }, [loadCallHistory]);
+
+  const handleCallStatusUpdate = useCallback((data) => {
+    const { status } = data;
+
+    switch (status) {
+      case 'calling':
+        setCallState('calling');
+        playRingtone(); // Démarrer la sonnerie
+        showMessage('Appel en cours...', 'info');
+        break;
+      case 'ringing':
+        setCallState('ringing');
+        playRingtone(); // Continuer la sonnerie
+        showMessage('Sonnerie...', 'info');
+        break;
+      case 'active':
+        stopRingtone(); // Arrêter la sonnerie
+        setCallState('active');
+        showMessage('Appel connecté !', 'success');
+        break;
+      case 'ended':
+        stopRingtone(); // Arrêter la sonnerie
+        handleCallEnd();
+        break;
+      default:
+        break;
+    }
+  }, [handleCallEnd, showMessage]);
 
   // Fonction pour télécharger automatiquement l'enregistrement
-  const downloadRecording = async (recordingUrl, recordingId) => {
+  const downloadRecording = useCallback(async (recordingUrl, recordingId) => {
     try {
       console.log(`📥 Téléchargement de l'enregistrement: ${recordingUrl.substring(0, 100)}...`);
       console.log(`📋 Recording ID: ${recordingId}`);
@@ -179,37 +240,7 @@ function App() {
       console.error('Détails:', error.stack);
       showMessage('Erreur lors du téléchargement de l\'enregistrement', 'error');
     }
-  };
-
-  // Timer pour la durée d'appel
-  useEffect(() => {
-    if (callState === 'active') {
-      callStartTimeRef.current = Date.now();
-      // Mettre à jour immédiatement
-      setCallDuration(0);
-
-      callTimerRef.current = setInterval(() => {
-        if (callStartTimeRef.current) {
-          const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
-          setCallDuration(duration);
-        }
-      }, 1000);
-    } else {
-      if (callTimerRef.current) {
-        clearInterval(callTimerRef.current);
-      }
-      if (callState === 'idle') {
-        setCallDuration(0);
-        callStartTimeRef.current = null;
-      }
-    }
-
-    return () => {
-      if (callTimerRef.current) {
-        clearInterval(callTimerRef.current);
-      }
-    };
-  }, [callState]);
+  }, [showMessage]);
 
   // Initialiser la connexion WebSocket
   const initializeWebSocket = useCallback(() => {
@@ -230,7 +261,7 @@ function App() {
         showMessage('Prêt pour les appels', 'success');
       });
 
-      // Événement : Déconnexion
+      // Événement : Dévénement : Déconnexion
       socket.on('disconnect', () => {
         console.log('🔌 WebSocket déconnecté');
         setIsConnected(false);
@@ -303,92 +334,70 @@ function App() {
       console.error('❌ Erreur initialisation WebSocket:', error);
       showMessage('Impossible de se connecter au serveur', 'error');
     }
-  }, [handleCallEnd, handleCallStatusUpdate]);
+  }, [handleCallEnd, handleCallStatusUpdate, downloadRecording, showMessage]);
 
-  // Gérer la mise à jour du statut d'appel
-  const handleCallStatusUpdate = useCallback((data) => {
-    const { status } = data;
+  // Charger les numéros et initialiser WebSocket au démarrage
+  useEffect(() => {
+    loadNumbers();
+    loadCallHistory();
+    initializeWebSocket();
+    checkAudioDiagnostics();
 
-    switch (status) {
-      case 'calling':
-        setCallState('calling');
-        playRingtone(); // Démarrer la sonnerie
-        showMessage('Appel en cours...', 'info');
-        break;
-      case 'ringing':
-        setCallState('ringing');
-        playRingtone(); // Continuer la sonnerie
-        showMessage('Sonnerie...', 'info');
-        break;
-      case 'active':
-        stopRingtone(); // Arrêter la sonnerie
-        setCallState('active');
-        showMessage('Appel connecté !', 'success');
-        break;
-      case 'ended':
-        stopRingtone(); // Arrêter la sonnerie
-        handleCallEnd();
-        break;
-      default:
-        break;
+    return () => {
+      // Nettoyage lors du démontage
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+      }
+      if (audioProcessorRef.current) {
+        audioProcessorRef.current.processor.disconnect();
+        audioProcessorRef.current.source.disconnect();
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [loadNumbers, loadCallHistory, initializeWebSocket, checkAudioDiagnostics]);
+
+  const callStartTimeRef = useRef(null);
+
+
+  // Timer pour la durée d'appel
+  useEffect(() => {
+    if (callState === 'active') {
+      callStartTimeRef.current = Date.now();
+      // Mettre à jour immédiatement
+      setCallDuration(0);
+
+      callTimerRef.current = setInterval(() => {
+        if (callStartTimeRef.current) {
+          const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+          setCallDuration(duration);
+        }
+      }, 1000);
+    } else {
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+      }
+      if (callState === 'idle') {
+        setCallDuration(0);
+        callStartTimeRef.current = null;
+      }
     }
-  }, [handleCallEnd]);
 
-  // Gérer la fin d'appel
-  const handleCallEnd = useCallback(() => {
-    stopRingtone(); // Arrêter la sonnerie
-    setCallState('ended');
+    return () => {
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+      }
+    };
+  }, [callState]);
 
-    // Réinitialiser la queue audio
-    resetAudioQueue();
 
-    // Arrêter l'audio
-    if (audioProcessorRef.current) {
-      audioProcessorRef.current.processor.disconnect();
-      audioProcessorRef.current.source.disconnect();
-      audioProcessorRef.current = null;
-    }
 
-    if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach(track => track.stop());
-      audioStreamRef.current = null;
-    }
 
-    setTimeout(() => {
-      currentCallIdRef.current = null;
-      setCallState('idle');
-      setCurrentCall(null);
-      setIsMuted(false);
-      loadCallHistory();
-    }, 2000);
-  }, [loadCallHistory]);
 
-  const loadNumbers = useCallback(async () => {
-    try {
-      console.log('Chargement des numeros depuis:', `${API_URL}/api/numbers`);
-      const response = await axios.get(`${API_URL}/api/numbers`);
-      console.log('Numeros recus:', response.data);
-      console.log('frenchNumbers:', response.data.frenchNumbers);
-      setNumbers(response.data.frenchNumbers || []);
-      setTelnyxNumber(response.data.telnyxNumber || '');
-      console.log('State numbers mis a jour');
-    } catch (error) {
-      console.error('Erreur chargement numeros:', error);
-      console.error('API_URL:', API_URL);
-      showMessage('Erreur lors du chargement des numéros', 'error');
-      setNumbers([]);
-    }
-  }, []);
-
-  const loadCallHistory = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/call-history`);
-      setCallHistory(response.data.calls || []);
-    } catch (error) {
-      console.error('Erreur chargement historique:', error);
-      setCallHistory([]);
-    }
-  }, []);
 
   const makeCall = async (phoneNumber) => {
     if (!isConnected || !socketRef.current) {
@@ -506,10 +515,6 @@ function App() {
     }
   };
 
-  const showMessage = (text, type) => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 5000);
-  };
 
   const formatPhoneNumber = (number) => {
     return number.replace(/(\+33)(\d)(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5 $6');
