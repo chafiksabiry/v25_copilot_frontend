@@ -33,14 +33,14 @@ ENV VITE_SPEECH_API_KEY=your_speech_api_key
 
 ENV VITE_API_URL_CALL=https://preprod-api-dash-calls.harx.ai
 ENV VITE_WS_URL=wss://preprod-api-dash-calls.harx.ai/speech-to-text
-ENV VITE_GIGS_API=https://preprod-api-gigsmanual.harx.ai/api
+ENV VITE_GIGS_API=https://v25gigsmanualcreationbackend-production.up.railway.app/api
 ENV NODE_ENV=development
 ENV VITE_RUN_MODE=in-app
 ENV VITE_ENVIRONMENT=preprod
 ENV VITE_LOCAL_FRONT_URL=http://localhost:5186/
-ENV VITE_SANDBOX_FRONT_URL=https://copilot.harx.ai/
+ENV VITE_SANDBOX_FRONT_URL=https://harxv25copilotfrontend.netlify.app/
 ENV VITE_PREPROD_FRONT_URL=https://harxv25copilotfrontend.netlify.app/
-ENV VITE_DASH_COMPANY_API_URL=https://preprod-api-dashboard.harx.ai/api
+ENV VITE_DASH_COMPANY_API_URL=https://harxv25dashboardfrontend.netlify.app/api
 # Construire l'application
 RUN npm run build
 
