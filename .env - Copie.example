@@ -1,6 +1,0 @@
-# URL de l'API backend
-# En local
-REACT_APP_API_URL=http://localhost:5000
-
-# En production Vercel
-# REACT_APP_API_URL=https://votre-projet.vercel.app
