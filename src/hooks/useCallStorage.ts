@@ -8,7 +8,7 @@ const getGigIdFromCookie = (): string | null => {
   const runMode = import.meta.env.VITE_RUN_MODE;
   
   // GigId du document MongoDB fourni (gigId.$oid: "68e3dca594628dcffb5f6fa3")
-  const defaultGigId = '68e3dca594628dcffb5f6fa3';
+  const defaultGigId = '68b5b12701557c476f728ea4';
   
   if (runMode === 'sandbox') {
     return '686e8ddcf74ddc5ba5d4b493'; // GigId fixe pour sandbox
