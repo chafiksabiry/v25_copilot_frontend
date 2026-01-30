@@ -20,6 +20,27 @@ export const useGigPhoneNumber = () => {
     setIsLoading(true);
     setError(null);
 
+    // Mock direct pour test, comme demandé
+    const mockResponse: PhoneNumberResponse = {
+      hasNumber: true,
+      number: {
+        phoneNumber: '+33423340775',
+        provider: 'telnyx',
+        status: 'success',
+        features: {
+          voice: true,
+          sms: true
+        }
+      },
+      message: 'Mocked number for test'
+    };
+
+    console.log('✅ Using hardcoded number:', mockResponse);
+    setPhoneNumberData(mockResponse);
+    setIsLoading(false);
+    return mockResponse;
+
+    /* REPLACED FOR TEST
     try {
       const gigId = getGigIdFromCookie();
       console.log('🔍 Checking gig phone number with gigId:', gigId);
@@ -41,6 +62,7 @@ export const useGigPhoneNumber = () => {
     } finally {
       setIsLoading(false);
     }
+    */
   }, [getGigIdFromCookie]);
 
   const configureVoiceFeature = useCallback(async (number: PhoneNumberResponse['number']): Promise<boolean> => {
@@ -54,7 +76,7 @@ export const useGigPhoneNumber = () => {
 
     try {
       const response = await PhoneNumberService.configureVoiceFeature(number.phoneNumber);
-      
+
       if (response.success) {
         console.log('✅ Voice feature configured successfully');
         return true;
