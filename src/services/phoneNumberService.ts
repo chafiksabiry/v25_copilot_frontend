@@ -30,12 +30,12 @@ export interface VoiceConfigResponse {
 }
 
 export class PhoneNumberService {
-  private static baseUrl = import.meta.env.VITE_COMP_ORCH_API;
+  private static baseUrl = import.meta.env.VITE_API_URL_CALL;
 
   static async checkGigPhoneNumber(gigId: string): Promise<PhoneNumberResponse> {
     try {
       if (!this.baseUrl) {
-        console.error('❌ VITE_COMP_ORCH_API environment variable is not set');
+        console.error('❌ VITE_API_URL_CALL environment variable is not set');
         throw new Error('API URL is not configured');
       }
 
