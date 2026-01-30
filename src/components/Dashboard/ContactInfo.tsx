@@ -472,8 +472,10 @@ export function ContactInfo() {
           const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
 
           if (currentCallId) {
-            const inboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${currentCallId}`;
-            const outboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${currentCallId}`;
+            // Include callControlId in the connection URL to route audio correctly
+            const encodedCallId = encodeURIComponent(currentCallId);
+            const inboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${encodedCallId}`;
+            const outboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${encodedCallId}`;
 
             console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
             console.log('🎧 Setting stream URLs for audio streaming');
