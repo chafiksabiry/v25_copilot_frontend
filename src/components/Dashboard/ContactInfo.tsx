@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
@@ -14,8 +14,8 @@ import { useGigPhoneNumber } from '../../hooks/useGigPhoneNumber';
 import { useCallManager } from '../../hooks/useCallManager';
 import { MicrophoneService } from '../../services/MicrophoneService';
 import { AudioStreamManager } from '../../services/AudioStreamManager';
-import { 
-  User, Phone, Mail, MapPin, Clock, 
+import {
+  User, Phone, Mail, MapPin, Clock,
   Star, Tag, Calendar, MessageSquare, Video,
   PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp, Loader2,
   AlertCircle
@@ -28,20 +28,20 @@ interface TokenResponse {
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
   const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
-  
+
   // Récupérer le leadId depuis l'URL
   const leadId = useUrlParam('leadId');
-  
+
   // Récupérer les données du lead depuis l'API
   const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
-  
+
   // Utiliser le contexte de transcription global
-  const { 
-    startTranscription, 
-    stopTranscription, 
+  const {
+    startTranscription,
+    stopTranscription,
     isActive: isTranscriptionActive
   } = useTranscription();
-  
+
   const { state, dispatch } = useAgent();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
@@ -55,11 +55,11 @@ export function ContactInfo() {
   const [phoneNumberError, setPhoneNumberError] = useState<string | null>(null);
   const [microphoneService, setMicrophoneService] = useState<MicrophoneService | null>(null);
   const audioManagerRef = useRef<AudioStreamManager | null>(null);
-  
+
   // Hook for gig phone number management
-  const { 
-    checkPhoneNumber, 
-    configureVoiceFeature, 
+  const {
+    checkPhoneNumber,
+    configureVoiceFeature,
     isLoading: isPhoneNumberLoading,
     error: phoneNumberCheckError,
     phoneNumberData
@@ -137,9 +137,9 @@ export function ContactInfo() {
   const contact = apiLead ? getContactFromApiLead(apiLead) : fallbackContact;
 
   // Debug: Log contact data whenever it changes
- /*  console.log("Contact data:", contact);
-  console.log("Contact phone:", contact.phone);
-  console.log("Call status:", callStatus); */
+  /*  console.log("Contact data:", contact);
+   console.log("Contact phone:", contact.phone);
+   console.log("Call status:", callStatus); */
 
   const initiateTwilioCall = async (phoneNumber: string) => {
     console.log("Starting Twilio call with number:", phoneNumber);
@@ -153,35 +153,35 @@ export function ContactInfo() {
       const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
       const tokenUrl = `${apiUrl}/api/calls/token`;
       console.log("Fetching token from:", tokenUrl);
-      
+
       const response = await axios.get<TokenResponse>(tokenUrl);
       const token = response.data.token;
       console.log("Token received:", token ? "Token exists" : "No token");
-      
+
       if (!token) {
         throw new Error("No token received from server");
       }
-      
+
       // Create Twilio Device
       console.log("Creating Twilio Device...");
       const newDevice = new Device(token, {
         codecPreferences: ['pcmu', 'pcma'] as any,
         edge: ['ashburn', 'dublin', 'sydney']
       });
-      
+
       // Register device
       console.log("Registering device...");
       await newDevice.register();
       console.log("Device registered successfully");
-      
+
       // Connect call
       console.log("Connecting call...");
       const conn = await newDevice.connect({
-        params: { 
+        params: {
           To: phoneNumber,
           MediaStream: true,
         },
-        rtcConfiguration: { 
+        rtcConfiguration: {
           sdpSemantics: "unified-plan",
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' }
@@ -201,7 +201,7 @@ export function ContactInfo() {
       // Store active connection and device locally
       setActiveConnection(conn);
       setActiveDevice(newDevice);
-      
+
       // Store connection in global state for mute controls
       setTwilioConnection(conn, newDevice);
 
@@ -214,12 +214,12 @@ export function ContactInfo() {
           console.log("✅ CallSid stored on connect:", callSid);
         }
       });
-      
+
       // Écouter les événements de sonnerie
       conn.on('ringing', () => {
         console.log('🔔 Call is ringing - outbound call audio should be heard');
         setCallStatus('ringing');
-        
+
         // Double check CallSid during ringing
         const callSid = conn.parameters?.CallSid;
         if (callSid && !currentCallSid) {
@@ -238,7 +238,7 @@ export function ContactInfo() {
         console.log("CallSid recupéré", Sid);
         setCurrentCallSid(Sid);
         setCallStatus('active');
-        
+
         console.log('🎧 Call connected - setting up audio streams');
 
         // Ajout : dispatcher l'action START_CALL dans le contexte global
@@ -247,7 +247,7 @@ export function ContactInfo() {
           participants: [], // tu peux mettre la vraie liste si tu l'as
           contact: contact
         });
-        
+
         // Start transcription when call is accepted
         setTimeout(async () => {
           try {
@@ -255,10 +255,10 @@ export function ContactInfo() {
             if (stream) {
               setMediaStream(stream);
               dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
-              
+
               // Log de debug pour la transcription
               console.log('🌍 Starting transcription with global context');
-              
+
               await startTranscription(stream, contact.phone);
               console.log('🎤 Transcription started for call phases');
             }
@@ -266,7 +266,7 @@ export function ContactInfo() {
             console.error('Failed to start transcription:', error);
           }
         }, 1000);
-        
+
         // Set call details in global state
         console.log('Setting call details:', { callSid: Sid, agentId: contact.id });
       });
@@ -276,7 +276,7 @@ export function ContactInfo() {
         // Get the final CallSid directly from the connection
         const finalCallSid = conn.parameters?.CallSid || currentCallSid;
         console.log("📞 Final CallSid for storage:", finalCallSid);
-        
+
         // Store the call with the CallSid we have right now
         if (finalCallSid && contact?.id) {
           console.log("💾 Storing call with final CallSid:", finalCallSid);
@@ -284,7 +284,7 @@ export function ContactInfo() {
         } else {
           console.warn("⚠️ Missing data for initial call storage:", { finalCallSid, contactId: contact?.id });
         }
-        
+
         // Then proceed with cleanup
         await cleanupAndStoreCall();
       });
@@ -305,17 +305,17 @@ export function ContactInfo() {
   // Fonction pour gérer la fin d'appel (commune aux deux cas)
   const handleCallEnd = async (callSid: string, contactId: string) => {
     console.log("📞 Handling call end with:", { callSid, contactId });
-    
+
     try {
       // 1. Sauvegarder l'appel AVANT tout nettoyage d'état
       if (callSid && contactId) {
         console.log("💾 Storing call in database:", { callSid, contactId });
         await storeCall(callSid, contactId);
       }
-      
+
       // 2. Arrêter la transcription
       await stopTranscription();
-      
+
       // 3. Nettoyer les états
       setCallStatus('idle');
       setActiveConnection(null);
@@ -323,10 +323,10 @@ export function ContactInfo() {
       setMediaStream(null);
       dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
       clearTwilioConnection();
-      
+
       // 4. Mettre à jour le contexte global
       dispatch({ type: 'END_CALL' });
-      
+
       console.log("✅ Call end handling completed");
     } catch (error) {
       console.error("❌ Error during call end handling:", error);
@@ -337,10 +337,10 @@ export function ContactInfo() {
   // Fonction pour nettoyer et stocker l'appel
   const cleanupAndStoreCall = async () => {
     console.log("📞 [CLEANUP] Starting call cleanup process...");
-    
+
     // Get CallSid from active connection if available
     const finalCallSid = activeConnection?.parameters?.CallSid || currentCallSid;
-    
+
     console.log("📊 [CLEANUP] Current state:", {
       callSid: finalCallSid,
       storedCallSid: currentCallSid,
@@ -350,13 +350,13 @@ export function ContactInfo() {
       hasMediaStream: !!mediaStream,
       isTranscriptionActive
     });
-    
+
     try {
       // 1. Stocker l'appel d'abord
       if (finalCallSid && contact?.id) {
-        console.log("💾 [CLEANUP] Storing call in database:", { 
-          callSid: finalCallSid, 
-          contactId: contact.id 
+        console.log("💾 [CLEANUP] Storing call in database:", {
+          callSid: finalCallSid,
+          contactId: contact.id
         });
         await storeCall(finalCallSid, contact.id);
         console.log("✅ [CLEANUP] Call stored successfully");
@@ -367,12 +367,12 @@ export function ContactInfo() {
           contactId: contact?.id
         });
       }
-      
+
       // 2. Arrêter la transcription
       console.log("🎤 [CLEANUP] Stopping transcription...");
       await stopTranscription();
       console.log("✅ [CLEANUP] Transcription stopped");
-      
+
       // 3. Nettoyer les états
       console.log("🧹 [CLEANUP] Cleaning up states...");
       setActiveConnection(null);
@@ -382,12 +382,12 @@ export function ContactInfo() {
       dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
       clearTwilioConnection();
       console.log("✅ [CLEANUP] States cleaned");
-      
+
       // 4. Mettre à jour le contexte global
       console.log("🌍 [CLEANUP] Updating global context...");
       dispatch({ type: 'END_CALL' });
       console.log("✅ [CLEANUP] Global context updated");
-      
+
       console.log("🏁 [CLEANUP] Call cleanup completed successfully");
     } catch (error) {
       console.error("❌ [CLEANUP] Error during cleanup:", error);
@@ -415,7 +415,7 @@ export function ContactInfo() {
         // Pour les appels Twilio
         console.log("📞 Ending Twilio call...");
         activeConnection.disconnect();
-        
+
         // Forcer le nettoyage après 1 seconde si la déconnexion est lente
         setTimeout(() => {
           if (callStatus !== 'idle') {
@@ -427,7 +427,7 @@ export function ContactInfo() {
         // Pour les appels Telnyx
         console.log("📞 Ending Telnyx call...");
         await endTelnyxCall();
-        
+
         // Mettre à jour l'état immédiatement
         setCallStatus('idle');
         setStreamUrl(null);
@@ -442,7 +442,7 @@ export function ContactInfo() {
     } catch (error) {
       console.error('❌ Failed to end call:', error);
       setPhoneNumberError('Failed to end call');
-      
+
       // Forcer le nettoyage en cas d'erreur
       setCallStatus('idle');
       setStreamUrl(null);
@@ -452,6 +452,7 @@ export function ContactInfo() {
 
   const {
     callStatus: telnyxCallStatus,
+    currentCallId, // Added currentCallId
     error: telnyxCallError,
     initiateCall: initiateTelnyxCallRaw,
     endCall: endTelnyxCall,
@@ -469,19 +470,24 @@ export function ContactInfo() {
           setCallStatus('initiating');
           // Set stream URLs when call is initiated
           const baseWsUrl = import.meta.env.VITE_API_URL_CALL?.replace('http://', 'ws://').replace('https://', 'wss://');
-          const inboundWsUrl = `${baseWsUrl}/frontend-audio`;
-          const outboundWsUrl = `${baseWsUrl}/frontend-audio`;
-          
-          console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
-          console.log('🎧 Setting stream URLs for audio streaming');
-          setStreamUrl(inboundWsUrl);
-          setOutboundStreamUrl(outboundWsUrl);
+
+          if (currentCallId) {
+            const inboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${currentCallId}`;
+            const outboundWsUrl = `${baseWsUrl}/frontend-audio?callControlId=${currentCallId}`;
+
+            console.log('🔍 Generated WebSocket URLs:', { inboundWsUrl, outboundWsUrl });
+            console.log('🎧 Setting stream URLs for audio streaming');
+            setStreamUrl(inboundWsUrl);
+            setOutboundStreamUrl(outboundWsUrl);
+          } else {
+            console.log('⚠️ Call initiated but no currentCallId available yet for streams');
+          }
           break;
         case 'call.answered':
           console.log('📞 Call answered');
           setCallStatus('active');
           dispatch({ type: 'START_CALL', participants: [], contact: contact });
-          
+
           // Le micro sera démarré automatiquement quand il sera créé (dans onopen)
           // Si le micro existe déjà, le démarrer maintenant
           startMicrophoneCapture();
@@ -495,7 +501,7 @@ export function ContactInfo() {
           break;
       }
     }
-  }, [telnyxCallStatus, activeConnection]);
+  }, [telnyxCallStatus, activeConnection, currentCallId]); // Added currentCallId to dependencies
 
   // Fonction pour démarrer le micro
   const startMicrophoneCapture = async () => {
@@ -532,7 +538,7 @@ export function ContactInfo() {
   useEffect(() => {
     if (streamUrl) {
       console.log('🎧 Initializing inbound audio stream manager for URL:', streamUrl);
-      
+
       // Create new AudioStreamManager if not exists
       if (!audioManagerRef.current) {
         audioManagerRef.current = new AudioStreamManager((error) => {
@@ -561,16 +567,16 @@ export function ContactInfo() {
   useEffect(() => {
     if (outboundStreamUrl) {
       console.log('🎤 Initializing outbound audio stream for URL:', outboundStreamUrl);
-      
+
       // Create WebSocket for microphone service (outbound audio)
       const outboundWs = new WebSocket(outboundStreamUrl);
-      
+
       outboundWs.onopen = async () => {
         console.log('🎤 Outbound WebSocket connected for microphone');
         // Créer le service micro avec le WebSocket outbound connecté
         const mic = new MicrophoneService(outboundWs);
         setMicrophoneService(mic);
-        
+
         // Démarrer la capture micro maintenant qu'il est créé et le WebSocket est connecté
         try {
           const permissionTest = await MicrophoneService.testMicrophonePermissions();
@@ -579,7 +585,7 @@ export function ContactInfo() {
             setPhoneNumberError(`Microphone error: ${permissionTest.error}`);
             return;
           }
-          
+
           await mic.startCapture();
           console.log('🎤 Capture micro démarrée');
         } catch (error) {
@@ -624,7 +630,7 @@ export function ContactInfo() {
         from: phoneNumber,
         agentId: getAgentIdFromStorage()
       });
-      
+
       await initiateTelnyxCallRaw(
         contact.phone,           // To number (contact's number)
         phoneNumber,             // From number (our Telnyx number)
@@ -644,11 +650,11 @@ export function ContactInfo() {
   const initiateCall = async () => {
     setPhoneNumberError(null);
     setIsCallLoading(true);
-    
+
     try {
       // Check gig phone number
       const phoneNumberResponse = await checkPhoneNumber();
-      
+
       if (!phoneNumberResponse) {
         throw new Error('Failed to check gig phone number');
       }
@@ -658,11 +664,11 @@ export function ContactInfo() {
       }
 
       const { number } = phoneNumberResponse;
-      
+
       if (!number) {
         throw new Error('Phone number not found in response');
       }
-      
+
       // Verify number status and features
       if (number.provider === 'telnyx') {
         console.log('📞 Processing Telnyx number:', {
@@ -678,7 +684,7 @@ export function ContactInfo() {
         // Always check and configure voice feature for Telnyx numbers
         if (!number.features.voice) {
           console.log('🔧 Configuring voice feature for Telnyx number:', number);
-          
+
           try {
             const success = await configureVoiceFeature(number);
             if (!success) {
@@ -725,7 +731,7 @@ export function ContactInfo() {
     try {
       console.log('🧪 Testing microphone permissions...');
       const result = await MicrophoneService.testMicrophonePermissions();
-      
+
       if (result.success) {
         console.log('✅ Microphone permissions OK');
         setPhoneNumberError(null);
@@ -768,8 +774,8 @@ export function ContactInfo() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -796,8 +802,8 @@ export function ContactInfo() {
             <AlertCircle className="w-5 h-5" />
             {leadError && (
               <>
-            <span className="text-sm font-medium">Error loading lead:</span>
-            <span className="text-sm">{leadError}</span>
+                <span className="text-sm font-medium">Error loading lead:</span>
+                <span className="text-sm">{leadError}</span>
               </>
             )}
             {phoneNumberError && (
@@ -809,7 +815,7 @@ export function ContactInfo() {
           </div>
         </div>
       )}
-      
+
       {/* Loading state */}
       {leadLoading && (
         <div className="w-full flex items-center justify-center py-4 bg-[#1b253a] rounded-xl">
@@ -817,72 +823,72 @@ export function ContactInfo() {
           <span className="text-slate-300">Loading lead data...</span>
         </div>
       )}
-      
+
       {/* Main content - only show when not loading */}
       {!leadLoading && (
         <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
-        {/* Avatar + Infos */}
-        <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
-            <User className="w-8 h-8" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="text-lg font-bold text-white">{contact.name}</span>
-              <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
+          {/* Avatar + Infos */}
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
+              <User className="w-8 h-8" />
             </div>
-            <div className="flex items-center space-x-2 text-slate-300 text-sm">
-              <span className="text-yellow-400 flex items-center"><Star className="w-4 h-4 mr-1" />{contact.leadScore}/100</span>
-            </div>
-          </div>
-        </div>
-        {/* Bouton Start Call + Tabs */}
-        <div className="flex-1 flex flex-col items-center">
-          {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
-            <button
-              onClick={endCall}
-              className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-red-500 hover:bg-red-600 text-white"
-            >
-              <Phone className="w-5 h-5 mr-2" />
-              End Call
-            </button>
-          ) : (
-            <button
-              onClick={handleStartCall}
-              disabled={isCallLoading || callStatus === 'initiating'}
-              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
-                ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-            >
-              <Phone className="w-5 h-5 mr-2" />
-              {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Start Call'}
-            </button>
-          )}
-          <div className="flex items-center space-x-6 mt-3">
-            <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
-            <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
-          </div>
-        </div>
-        {/* Actions à droite */}
-              <div className="flex items-center space-x-3">
-          <button 
-            onClick={testMicrophonePermissions}
-            className="bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg"
-            title="Test Microphone Permissions"
-          >
-            🎤
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
-          <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
+            <div>
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-lg font-bold text-white">{contact.name}</span>
+                <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
               </div>
-        {/* Toggle à droite */}
-        <button
-          className="ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
-          onClick={() => setExpanded(e => !e)}
-          aria-label="Toggle contact details"
-        >
-          {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
-        </button>
+              <div className="flex items-center space-x-2 text-slate-300 text-sm">
+                <span className="text-yellow-400 flex items-center"><Star className="w-4 h-4 mr-1" />{contact.leadScore}/100</span>
+              </div>
+            </div>
+          </div>
+          {/* Bouton Start Call + Tabs */}
+          <div className="flex-1 flex flex-col items-center">
+            {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
+              <button
+                onClick={endCall}
+                className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-red-500 hover:bg-red-600 text-white"
+              >
+                <Phone className="w-5 h-5 mr-2" />
+                End Call
+              </button>
+            ) : (
+              <button
+                onClick={handleStartCall}
+                disabled={isCallLoading || callStatus === 'initiating'}
+                className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
+                ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+              >
+                <Phone className="w-5 h-5 mr-2" />
+                {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Start Call'}
+              </button>
+            )}
+            <div className="flex items-center space-x-6 mt-3">
+              <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
+              <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
+            </div>
+          </div>
+          {/* Actions à droite */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={testMicrophonePermissions}
+              className="bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg"
+              title="Test Microphone Permissions"
+            >
+              🎤
+            </button>
+            <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
+            <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
+            <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
+          </div>
+          {/* Toggle à droite */}
+          <button
+            className="ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
+            onClick={() => setExpanded(e => !e)}
+            aria-label="Toggle contact details"
+          >
+            {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
+          </button>
         </div>
       )}
 
@@ -901,17 +907,17 @@ export function ContactInfo() {
               <div className="flex items-center gap-2 text-slate-200">
                 <Phone className="w-5 h-5 text-blue-400" />
                 <span className="font-medium text-sm">{contact.phone}</span>
-                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
                 <span className="font-medium text-sm">{contact.email}</span>
-                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-            </div>
+                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+              </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-sm">EST Timezone</span>
-                </div>
+              </div>
             </div>
             {/* Colonne droite */}
             <div className="flex flex-row items-center justify-between w-full">
@@ -924,10 +930,10 @@ export function ContactInfo() {
                 <div className="text-slate-300 text-sm text-center">Lead Score</div>
                 <div className="mt-2 text-green-400 text-lg font-bold text-center">${contact.value?.toLocaleString() || '0'}</div>
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
-                </div>
+              </div>
               {/* Bouton à droite */}
               {(callStatus === 'active' || telnyxCallStatus === 'call.answered') ? (
-                <button 
+                <button
                   onClick={endCall}
                   className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
                 >
@@ -935,7 +941,7 @@ export function ContactInfo() {
                   End Call
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={handleCallNow}
                   disabled={isCallLoading || callStatus === 'initiating'}
                   className={`ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md
