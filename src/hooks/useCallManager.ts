@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CallEvent } from '../types/call';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
-const WS_URL = `${BACKEND_URL?.replace('http', 'ws')}/call-events`;
+const WS_URL = `${BACKEND_URL?.replace('http', 'ws')}/ws/call-events`;
 
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
 
