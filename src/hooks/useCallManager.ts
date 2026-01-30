@@ -1,112 +1,130 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CallEvent } from '../types/call';
+import { io, Socket } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
-const WS_URL = `${BACKEND_URL?.replace('http', 'ws')}/ws/call-events`;
 
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
 
 export const useCallManager = () => {
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
-  // Établir la connexion WebSocket
+  // Use a ref to keep track of the socket instance
+  const socketRef = useRef<Socket | null>(null);
+
+  // Établir la connexion WebSocket (Socket.IO)
   useEffect(() => {
     if (!BACKEND_URL) {
       console.error('VITE_API_URL_CALL is not defined');
       return;
     }
 
-    console.log('🔌 Connecting to WebSocket:', WS_URL);
-    const websocket = new WebSocket(WS_URL);
+    console.log('🔌 Connecting to Socket.IO:', BACKEND_URL);
 
-    // Set ws immediately to handle the "not ready" error
-    setWs(websocket);
+    // Initialize Socket.IO connection
+    const newSocket = io(BACKEND_URL, {
+      transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
-    websocket.onopen = () => {
-      console.log('✅ Connected to call events WebSocket');
-    };
+    socketRef.current = newSocket;
 
-    websocket.onmessage = (event) => {
-      const data: CallEvent = JSON.parse(event.data);
-      console.log('📞 Received call event:', data);
-      
-      switch (data.type) {
-        case 'welcome':
-          console.log('🤝 WebSocket connection established');
-          break;
-        
-        case 'call.initiated':
-          console.log('📞 Call initiated:', data.payload.call_control_id);
+    newSocket.on('connect', () => {
+      console.log('✅ Connected to call events Socket.IO server', newSocket.id);
+      setError(null);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('❌ Socket.IO connection error:', err);
+      // Don't set global error immediately to avoid UI disruption on temporary disconnects
+      // unless it persists.
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('🔌 Socket.IO disconnected:', reason);
+    });
+
+    // Handle call status updates from backend
+    newSocket.on('call-status', (data: { callControlId: string, status: string, recordingUrl?: string }) => {
+      console.log('📞 Received call status update:', data);
+
+      switch (data.status) {
+        case 'initiated':
           setCallStatus('call.initiated');
-          setCurrentCallId(data.payload.call_control_id);
+          setCurrentCallId(data.callControlId);
           break;
-        
-        case 'call.answered':
-          console.log('📞 Call answered');
+        case 'ringing':
+          console.log('📞 Call ringing...');
+          break;
+        case 'active':
+        case 'answered':
           setCallStatus('call.answered');
           break;
-        
-        case 'call.hangup':
-          console.log('📞 Call ended');
+        case 'ended':
+        case 'completed':
           setCallStatus('call.hangup');
           setCurrentCallId(null);
           break;
+        case 'failed':
+          setCallStatus('error');
+          setError('Call failed');
+          setCurrentCallId(null);
+          break;
+        case 'recording-saved':
+          console.log('💾 Recording saved:', data.recordingUrl);
+          break;
+        default:
+          console.log('Unknown status:', data.status);
       }
-    };
+    });
 
-    websocket.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
-      setError('WebSocket connection error');
-    };
+    // Handle call initiated confirmation (specific to initiate-call emission)
+    newSocket.on('call-initiated', (data: { success: boolean, callControlId: string, status: string }) => {
+      console.log('✅ Call initiated event received:', data);
+      if (data.success) {
+        setCallStatus('call.initiated');
+        setCurrentCallId(data.callControlId);
+      }
+    });
 
-    websocket.onclose = () => {
-      console.log('🔌 WebSocket connection closed');
-      // Tentative de reconnexion
-      setTimeout(() => {
-        console.log('🔄 Attempting to reconnect...');
-        setWs(new WebSocket(WS_URL));
-      }, 5000);
-    };
-
-    setWs(websocket);
+    newSocket.on('call-error', (data: { error: string, details?: any }) => {
+      console.error('❌ Call error event:', data);
+      setError(data.error);
+      setCallStatus('error');
+    });
 
     return () => {
-      console.log('🔌 Closing WebSocket connection');
-      websocket.close();
+      console.log('🔌 Disconnecting Socket.IO');
+      newSocket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
   const initiateCall = useCallback(async (to: string, from: string, agentId: string) => {
+    if (!socketRef.current) {
+      const err = 'Socket not initialized';
+      console.error(err);
+      setError(err);
+      return;
+    }
+
     try {
-      console.log('📞 Initiating call:', { to, from, agentId });
+      console.log('📞 Initiating call via Socket.IO:', { to, from, agentId });
       setError(null);
+      setCallStatus('initiating');
 
-      const response = await fetch(`${BACKEND_URL}/api/calls/telnyx/initiate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ to, from, agentId })
-      });
+      // Emit event to backend to start call
+      socketRef.current.emit('initiate-call', { to, from, agentId });
 
-      if (!response.ok) {
-        throw new Error('Failed to initiate call');
-      }
-
-      const data = await response.json();
-      console.log('✅ Call initiated:', data);
-      
-      // Le callId sera reçu via WebSocket dans l'événement call.initiated
-      return data;
     } catch (err) {
       console.error('❌ Error initiating call:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate call');
       setCallStatus('error');
-      throw err;
     }
   }, []);
 
@@ -117,43 +135,37 @@ export const useCallManager = () => {
       return;
     }
 
+    if (!socketRef.current) {
+      const err = 'Socket not initialized';
+      console.error(err);
+      setError(err);
+      return;
+    }
+
     try {
-      console.log('📞 Ending call:', currentCallId);
+      console.log('📞 Ending call via Socket.IO:', currentCallId);
       setError(null);
 
-       const response = await fetch(`${BACKEND_URL}/api/calls/telnyx/end`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          call_control_id: currentCallId
-        })
-      });
+      // Emit event to hangup
+      socketRef.current.emit('hangup-call', { callControlId: currentCallId });
 
-      if (!response.ok) {
-        throw new Error('Failed to end call');
-      }
+      // Optimistically update status
+      setCallStatus('call.hangup');
+      setCurrentCallId(null);
 
-      const data = await response.json();
-      console.log('✅ Call end request sent:', data);
-      
-      // Le statut sera mis à jour via WebSocket quand l'événement call.hangup sera reçu
-      return data;
     } catch (err) {
       console.error('❌ Error ending call:', err);
       setError(err instanceof Error ? err.message : 'Failed to end call');
-      throw err;
     }
   }, [currentCallId]);
 
-    return {
+  return {
     callStatus,
     currentCallId,
     error,
     initiateCall,
     endCall,
     mediaStream,
-    isConnected: ws?.readyState === WebSocket.OPEN
+    isConnected: socketRef.current?.connected ?? false
   };
 };
