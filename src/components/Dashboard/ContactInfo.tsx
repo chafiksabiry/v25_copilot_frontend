@@ -5,8 +5,8 @@ import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
-import { 
-  User, Phone, Mail, Building, MapPin, Clock, 
+import {
+  User, Phone, Mail, Building, MapPin, Clock,
   Star, Tag, Calendar, MessageSquare, Video,
   PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp
 } from 'lucide-react';
@@ -17,14 +17,14 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
-  
+
   // Utiliser le contexte de transcription global
-  const { 
-    startTranscription, 
-    stopTranscription, 
+  const {
+    startTranscription,
+    stopTranscription,
     isActive: isTranscriptionActive
   } = useTranscription();
-  
+
   const { state, dispatch } = useAgent();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
@@ -39,7 +39,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+18154652196',
+    phone: '+1637446431',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -89,19 +89,19 @@ export function ContactInfo() {
   const contact = originalContact;
 
   // Debug: Log contact data whenever it changes
- /*  console.log("Contact data:", contact);
-  console.log("Contact phone:", contact.phone);
-  console.log("Call status:", callStatus); */
+  /*  console.log("Contact data:", contact);
+   console.log("Contact phone:", contact.phone);
+   console.log("Call status:", callStatus); */
 
   const initiateTwilioCall = async () => {
-   /*  console.log("Contact phone number:", contact.phone);
-    console.log("Contact object:", contact);
-    console.log("Call status at start:", callStatus); */
-    
+    /*  console.log("Contact phone number:", contact.phone);
+     console.log("Contact object:", contact);
+     console.log("Call status at start:", callStatus); */
+
     // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+18154652196'; // Fallback to default
+    const phoneNumber = contact?.phone || '+1637446431'; // Fallback to default
     console.log("Using phone number:", phoneNumber);
-    
+
     if (!phoneNumber) {
       console.error('No phone number available');
       return;
@@ -116,35 +116,35 @@ export function ContactInfo() {
       const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
       const tokenUrl = `${apiUrl}/api/calls/token`;
       console.log("Fetching token from:", tokenUrl);
-      
+
       const response = await axios.get<TokenResponse>(tokenUrl);
       const token = response.data.token;
       console.log("Token received:", token ? "Token exists" : "No token");
-      
+
       if (!token) {
         throw new Error("No token received from server");
       }
-      
+
       // Create Twilio Device
       console.log("Creating Twilio Device...");
       const newDevice = new Device(token, {
         codecPreferences: ['pcmu', 'pcma'] as any,
         edge: ['ashburn', 'dublin', 'sydney']
       });
-      
+
       // Register device
       console.log("Registering device...");
       await newDevice.register();
       console.log("Device registered successfully");
-      
+
       // Connect call
       console.log("Connecting call...");
       const conn = await newDevice.connect({
-        params: { 
+        params: {
           To: phoneNumber,
           MediaStream: true,
         },
-        rtcConfiguration: { 
+        rtcConfiguration: {
           sdpSemantics: "unified-plan",
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' }
@@ -181,7 +181,7 @@ export function ContactInfo() {
           participants: [], // tu peux mettre la vraie liste si tu l'as
           contact: contact
         });
-        
+
         // Start transcription when call is accepted
         setTimeout(async () => {
           try {
@@ -189,10 +189,10 @@ export function ContactInfo() {
             if (stream) {
               setMediaStream(stream);
               dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
-              
+
               // Log de debug pour la transcription
               console.log('🌍 Starting transcription with global context');
-              
+
               await startTranscription(stream, contact.phone);
               console.log('🎤 Transcription started for call phases');
             }
@@ -200,7 +200,7 @@ export function ContactInfo() {
             console.error('Failed to start transcription:', error);
           }
         }, 1000);
-        
+
         // Set call details in global state
         console.log('Setting call details:', { callSid: Sid, agentId: contact.id });
       });
@@ -212,15 +212,15 @@ export function ContactInfo() {
         setActiveDevice(null);
         setMediaStream(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
-        
+
         // Stop transcription
         await stopTranscription();
-        
+
         // Store call in database when it disconnects
         if (currentCallSid && contact.id) {
           await storeCall(currentCallSid, contact.id);
         }
-        
+
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
       });
@@ -230,7 +230,7 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
-        
+
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
       });
@@ -247,29 +247,29 @@ export function ContactInfo() {
     console.log("Ending call...");
     console.log("Contact before ending call:", contact);
     console.log("Contact phone before ending call:", contact.phone);
-    
+
     if (activeConnection) {
       activeConnection.disconnect();
     }
-    
+
     // Reset call-related states only
     setActiveConnection(null);
     setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
     setMediaStream(null);
     dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
-    
+
     // Stop transcription
     await stopTranscription();
-    
+
     // Store call in database when it ends
     if (currentCallSid && contact.id) {
       await storeCall(currentCallSid, contact.id);
     }
-    
+
     // Ajout : dispatch END_CALL pour mettre à jour le context global
     dispatch({ type: 'END_CALL' });
-    
+
     console.log("Call ended. Contact after ending call:", contact);
     console.log("Contact phone after ending call:", contact.phone);
   };
@@ -306,8 +306,8 @@ export function ContactInfo() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -342,7 +342,7 @@ export function ContactInfo() {
               <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
             </div>
             <div className="flex items-center space-x-2 text-slate-300 text-sm">
-                <Building className="w-4 h-4" />
+              <Building className="w-4 h-4" />
               <span>{contact.company}</span>
               <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />85/100</span>
             </div>
@@ -375,11 +375,11 @@ export function ContactInfo() {
           </div>
         </div>
         {/* Actions à droite */}
-              <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3">
           <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
           <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
           <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
-              </div>
+        </div>
         {/* Toggle à droite */}
         <button
           className="ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
@@ -388,7 +388,7 @@ export function ContactInfo() {
         >
           {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
         </button>
-              </div>
+      </div>
       {expanded && (
         <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
           <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
@@ -410,17 +410,17 @@ export function ContactInfo() {
               <div className="flex items-center gap-2 text-slate-200">
                 <Phone className="w-5 h-5 text-blue-400" />
                 <span className="font-medium text-sm">{contact.phone}</span>
-                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
                 <span className="font-medium text-sm">sarah.johnson@techcorp.com</span>
-                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-            </div>
+                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+              </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-sm">EST Timezone</span>
-                </div>
+              </div>
             </div>
             {/* Colonne droite */}
             <div className="flex flex-row items-center justify-between w-full">
@@ -433,10 +433,10 @@ export function ContactInfo() {
                 <div className="text-slate-300 text-sm text-center">Lead Score</div>
                 <div className="mt-2 text-green-400 text-lg font-bold text-center">$75 000</div>
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
-                </div>
+              </div>
               {/* Bouton à droite */}
               {callStatus === 'active' ? (
-                <button 
+                <button
                   onClick={endCall}
                   className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
                 >
@@ -444,7 +444,7 @@ export function ContactInfo() {
                   End Call
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={handleCallNow}
                   disabled={isCallLoading || callStatus === 'initiating'}
                   className={`ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md

@@ -4,11 +4,11 @@ import { useTranscriptionIntegration } from '../../hooks/useTranscriptionIntegra
 
 export const TranscriptionTest: React.FC = () => {
   const [testGigId] = useState('686e8ddcf74ddc5ba5d4b493'); // GigId de test
-  const [testPhoneNumber] = useState('+18154652196'); // Numéro français
-  
+  const [testPhoneNumber] = useState('+1637446431'); // Numéro français
+
   // Récupérer la zone de destination
   const { zone: destinationZone, loading: zoneLoading, error: zoneError, gigId } = useDestinationZone(testGigId);
-  
+
   // Utiliser la transcription avec la zone
   const {
     isActive,
@@ -23,7 +23,7 @@ export const TranscriptionTest: React.FC = () => {
       console.log('🧪 Testing transcription with destination zone:', destinationZone);
       console.log('🧪 Gig ID used:', gigId);
       console.log('🧪 Phone number:', testPhoneNumber);
-      
+
       // Note: Ceci est juste pour tester la logique, pas pour démarrer une vraie transcription
       // car nous n'avons pas de vrai stream audio
     } catch (error) {
@@ -34,7 +34,7 @@ export const TranscriptionTest: React.FC = () => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold mb-4">Test de Transcription avec Zone de Destination</h3>
-      
+
       {/* Informations de debug */}
       <div className="mb-4 p-3 bg-blue-50 rounded">
         <h4 className="font-medium text-blue-700 mb-2">Informations de Debug</h4>
@@ -55,11 +55,11 @@ export const TranscriptionTest: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-green-600 font-medium">✅ Zone: {destinationZone}</span>
             <span className="text-sm text-gray-500">
-              (Langue attendue: {destinationZone === 'FR' ? 'Français (fr-FR)' : 
-                                destinationZone === 'DE' ? 'Allemand (de-DE)' :
-                                destinationZone === 'ES' ? 'Espagnol (es-ES)' :
-                                destinationZone === 'MA' ? 'Arabe (ar-MA)' :
-                                destinationZone === 'GB' ? 'Anglais (en-GB)' : 'Détectée automatiquement'})
+              (Langue attendue: {destinationZone === 'FR' ? 'Français (fr-FR)' :
+                destinationZone === 'DE' ? 'Allemand (de-DE)' :
+                  destinationZone === 'ES' ? 'Espagnol (es-ES)' :
+                    destinationZone === 'MA' ? 'Arabe (ar-MA)' :
+                      destinationZone === 'GB' ? 'Anglais (en-GB)' : 'Détectée automatiquement'})
             </span>
           </div>
         )}
