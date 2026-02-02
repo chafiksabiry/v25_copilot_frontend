@@ -132,18 +132,16 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
       {/* Call Phases Section */}
       <div className="space-y-1 mb-4">
         {phases.map((phase) => (
-          <div
+                      <div
               key={phase.id}
               className="relative mb-1"
             >
-              {!isCallActive && (
-                <div className="absolute inset-0 z-10 pointer-events-none">
-                  <div className="bg-[#232f47]/50 absolute inset-0 rounded-md" />
-                </div>
-              )}
+              <div className="absolute inset-0 z-10 pointer-events-none">
+                <div className="bg-[#232f47]/50 absolute inset-0 rounded-md" />
+              </div>
               <div
                 className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm
-                bg-[#3a4661] ${isCallActive ? '' : 'pointer-events-none'} relative
+                bg-[#3a4661] pointer-events-none relative
                 ${phase.id === currentPhase ? 'border-blue-500 border' : ''}
               `}
                 onClick={() => onPhaseClick?.(phase.id)}

@@ -1,9 +1,12 @@
-import React, { useState, useRef, useMemo } from 'react';
-// Removed unused imports
+import React, { useState, useContext, useRef } from 'react';
+import { CallMetrics } from './CallMetrics';
+import { CallStructureGuide } from './CallStructureGuide';
+import { TransactionTargeting } from './TransactionTargeting';
+import { Recommendations } from './Recommendations';
 import { CallPhasesDisplay } from './CallPhasesDisplay';
 import { ScriptPrompter } from './ScriptPrompter';
 import StatusCard from './StatusCard';
-import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, FileText, ArrowUp } from 'lucide-react';
+import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, Phone, FileText, ArrowUp } from 'lucide-react';
 import DiscPersonalityAnalysis from './DiscPersonalityAnalysis';
 import TransactionProgressDetails from './TransactionProgressDetails';
 import CallStructureGuideDetails from './CallStructureGuideDetails';
@@ -11,9 +14,15 @@ import CoachingDetails from './CoachingDetails';
 import TargetingDetails from './TargetingDetails';
 import RecommendationsDetails from './RecommendationsDetails';
 import { useAgent } from '../../contexts/AgentContext';
-import { useCallMethodologies } from '../../hooks/useCallMethodologies';
 
-// PlaceholderCard removed (unused)
+// Placeholders stylés pour les widgets vides
+const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, title: string, subtitle: string }) => (
+  <div className="bg-[#232f47] rounded-xl flex flex-col items-center justify-center p-6 min-h-[140px] h-full">
+    <div className="mb-2">{icon}</div>
+    <div className="text-white font-semibold text-lg mb-1">{title}</div>
+    <div className="text-slate-400 text-sm text-center">{subtitle}</div>
+  </div>
+);
 
 const repsPhases = [
   { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-100 text-blue-800' },
@@ -30,61 +39,12 @@ const repsPhases = [
 const DashboardGrid: React.FC = () => {
   const { state, dispatch } = useAgent();
   const [discExpanded, setDiscExpanded] = useState(false);
-  const [transactionExpanded] = useState(false);
-  const [callStructureExpanded] = useState(false);
-  const [coachingExpanded] = useState(false);
-  const [targetingExpanded] = useState(false);
-  const [recommendationsExpanded] = useState(false);
+  const [transactionExpanded, setTransactionExpanded] = useState(false);
+  const [callStructureExpanded, setCallStructureExpanded] = useState(false);
+  const [coachingExpanded, setCoachingExpanded] = useState(false);
+  const [targetingExpanded, setTargetingExpanded] = useState(false);
+  const [recommendationsExpanded, setRecommendationsExpanded] = useState(false);
   const discSectionRef = useRef<HTMLDivElement>(null);
-
-  const { getCurrentMethodology } = useCallMethodologies();
-  const currentMethodology = getCurrentMethodology?.();
-  const currentPhase = state.callStructureGuidance?.currentPhase;
-
-  // Allow local overrides for script sections (active toggle, edited content)
-  const [sectionOverrides, setSectionOverrides] = useState<Record<string, { isActive?: boolean; content?: string }>>({});
-
-  // Build script sections from methodology phases + DISC adaptation
-  const scriptSections = useMemo(() => {
-    const phases: any[] = currentMethodology?.phases || [];
-    return phases.map((phase: any) => {
-      const id: string = phase.id;
-      const title: string = phase.name || id;
-      const objectives: string[] = phase.objectives || [];
-      const keyQuestions: string[] = phase.keyQuestions || [];
-      const suggestedPhrases: string[] = phase.suggestedPhrases || [];
-
-      const baseParts: string[] = [];
-      if (suggestedPhrases.length) baseParts.push(...suggestedPhrases);
-      if (keyQuestions.length) baseParts.push(...keyQuestions.map(q => `Q: ${q}`));
-      if (objectives.length) baseParts.push(...objectives.map(o => `Goal: ${o}`));
-
-      const personality = state.personalityProfile;
-      const adaptationPrefix = personality
-        ? `Adaptation ${personality.type}: ${personality.description}\n`
-        : '';
-
-      const generatedContent = `${adaptationPrefix}${baseParts.join('\n')}`;
-      const override = sectionOverrides[id] || {};
-
-      const inferredType: 'introduction' | 'main' | 'objection' | 'closing' =
-        id.includes('sbam')
-          ? 'introduction'
-          : id.includes('objection')
-          ? 'objection'
-          : id.includes('closing')
-          ? 'closing'
-          : 'main';
-
-      return {
-        id,
-        title,
-        content: override.content ?? generatedContent,
-        type: inferredType,
-        isActive: override.isActive ?? (currentPhase ? currentPhase.id === id : false)
-      };
-    });
-  }, [currentMethodology, currentPhase, state.personalityProfile, sectionOverrides]);
 
   // Génère une transcription propre pour DISC : uniquement les textes finaux uniques
   const transcriptTexts = state.transcript
@@ -149,16 +109,14 @@ const DashboardGrid: React.FC = () => {
                icon={<MapPin className="text-cyan-400" />}
                title="Call Structure"
                value={
-              <div className="flex flex-col items-center justify-center w-full mt-2">
-                <MapPin className="w-10 h-10 text-slate-500 mb-5" />
-                <span className="text-slate-400 text-base text-center">
-                  {state.callState.isActive ? 'REPS methodology active' : 'No active methodology'}
-                </span>
-              </div>
+                 <div className="flex flex-col items-center justify-center w-full mt-2">
+                   <MapPin className="w-10 h-10 text-slate-500 mb-5" />
+                   <span className="text-slate-400 text-base text-center">No active methodology</span>
+                 </div>
                }
                expandable
-            expanded={callStructureExpanded}
-            onToggle={() => { /* preserve collapsed for now */ }}
+               expanded={false}
+               onToggle={() => {}}
              />
            </div>
          </div>
@@ -326,40 +284,20 @@ const DashboardGrid: React.FC = () => {
           </div>
         </div>
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] relative">
+          {/* Overlay pour le grisé */}
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0" />
+          </div>
+          
           <div className="relative z-0 h-full flex flex-col">
             <div className="flex items-center mb-4 self-start">
               <Brain className="text-cyan-400 mr-2" />
               <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
             </div>
-            {state.callState.isActive && currentMethodology ? (
-              <div className="flex-1 overflow-hidden">
-                <ScriptPrompter
-                  sections={scriptSections as any}
-                  currentSection={currentPhase?.id}
-                  onSectionClick={(sectionId) => {
-                    if (!sectionId) return;
-                    console.log('Script section clicked:', sectionId);
-                  }}
-                  onSectionToggle={(sectionId, isActive) => {
-                    setSectionOverrides(prev => ({
-                      ...prev,
-                      [sectionId]: { ...(prev[sectionId] || {}), isActive }
-                    }));
-                  }}
-                  onContentEdit={(sectionId, content) => {
-                    setSectionOverrides(prev => ({
-                      ...prev,
-                      [sectionId]: { ...(prev[sectionId] || {}), content }
-                    }));
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center flex-1">
-                <FileText className="w-10 h-10 text-slate-500 mb-5" />
-                <div className="text-slate-400 text-base text-center">Script prompter will activate when call starts</div>
-              </div>
-            )}
+            <div className="flex flex-col items-center justify-center flex-1">
+              <FileText className="w-10 h-10 text-slate-500 mb-5" />
+              <div className="text-slate-400 text-base text-center">Script prompter will activate when call starts</div>
+            </div>
           </div>
         </div>
       </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
-import { useTwilioMute } from '../../hooks/useTwilioMute';
 
 interface CallControlsProps {
   phoneNumber?: string;
@@ -34,8 +33,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
   onCallSidChange
 }) => {
   const { storeCall } = useCallStorage();
-  const { setTwilioConnection, clearTwilioConnection } = useTwilioMute();
-  
   const [device, setDevice] = useState<Device | null>(null);
   const [connection, setConnection] = useState<any>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
@@ -109,9 +106,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
       setDevice(newDevice);
       setCallStatus("initiating");
       onCallStatusChange?.("initiating");
-      
-      // Store connection in global state for mute controls
-      setTwilioConnection(conn, newDevice);
 
       // Add device event listeners
       newDevice.on('ready', () => {
@@ -151,9 +145,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
         setConnection(null);
         setDevice(null);
         
-        // Clear Twilio connection from global state
-        clearTwilioConnection();
-        
         // Store call in database when it disconnects
         if (callSid && agentId) {
           await storeCall(callSid, agentId);
@@ -165,9 +156,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
         setError(`Call error: ${error.message}`);
         setCallStatus("error");
         onCallStatusChange?.("error");
-        
-        // Clear Twilio connection from global state on error
-        clearTwilioConnection();
       });
 
       console.log("Call initiation completed successfully");

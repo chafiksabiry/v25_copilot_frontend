@@ -5,7 +5,6 @@ export interface CallStorageData {
   agentId: string;
   leadId: string;
   userId: string;
-  gigId?: string; // Optional pour la rétrocompatibilité
 }
 
 export class TwilioCallService {
@@ -34,17 +33,14 @@ export class TwilioCallService {
       }
       
       // Step 4: Store call in database
-      const payload = {
+      const callInDB = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/store-call`, {
         CallSid: data.callSid,
         agentId: data.agentId,
         leadId: data.leadId,
         call,
         cloudinaryrecord: cloudinaryRecord.data.url,
-        userId: data.userId,
-        ...(data.gigId && { gigId: data.gigId }) // Inclure gigId seulement s'il est fourni
-      };
-      
-      const callInDB = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/store-call`, payload);
+        userId: data.userId
+      });
       
       console.log('📝 Call stored in DB:', (callInDB.data as any)._id);
       return callInDB.data;

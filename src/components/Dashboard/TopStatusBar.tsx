@@ -1,79 +1,25 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX } from 'lucide-react';
 import StatusCard from './StatusCard';
 import CallControlsPanel from './CallControlsPanel';
 import { useAgent } from '../../contexts/AgentContext';
-import { useTwilioMute } from '../../hooks/useTwilioMute';
 
 const TopStatusBar: React.FC = () => {
   const { state } = useAgent();
-  const { 
-    toggleMicMute, 
-    isMicMuted, 
-    isConnected,
-    canMute 
-  } = useTwilioMute();
-  
   const [callExpanded, setCallExpanded] = useState(false);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Auto-ouvrir le panel audio quand un appel commence
-  useEffect(() => {
-    if (state.callState.isActive && !callExpanded) {
-      console.log('🎧 Auto-opening call controls panel for active call');
-      setCallExpanded(true);
-    }
-  }, [state.callState.isActive, callExpanded]);
 
-  // Attach remote media stream to a hidden audio element for proper output mute
-  useEffect(() => {
-    if (!audioRef.current) return;
-    const audioEl = audioRef.current as HTMLAudioElement & { srcObject?: MediaStream };
-    if (state.mediaStream) {
-      try {
-        audioEl.srcObject = state.mediaStream;
-        console.log('🔊 Setting up audio element with media stream');
-      } catch {
-        // Fallback for older browsers
-        const url = URL.createObjectURL(state.mediaStream as any);
-        audioEl.src = url;
-        console.log('🔊 Fallback: Using object URL for audio');
-      }
-      audioEl.muted = isSpeakerMuted;
-      audioEl.volume = isSpeakerMuted ? 0 : 1;
-      
-      // Assurer que l'audio peut être joué - important pour les sons d'appel
-      audioEl.play?.().catch((error) => {
-        console.log('⚠️ Audio play failed (normal for some browsers):', error.message);
-      });
-    } else {
-      if ('srcObject' in audioEl) {
-        (audioEl as any).srcObject = null;
-      } else {
-        audioEl.src = '';
-      }
-    }
-  }, [state.mediaStream, isSpeakerMuted]);
-
-  // Mute/unmute microphone using Twilio SDK
+  // Mute/unmute microphone
   const handleToggleMic = () => {
-    if (canMute) {
-      // Use Twilio call.mute() method - this affects server-side recording
-      toggleMicMute();
-    } else {
-      // Fallback: local MediaStream control when no Twilio connection
-      if (state.mediaStream) {
-        state.mediaStream.getAudioTracks().forEach(track => {
-          track.enabled = !track.enabled;
-        });
-        console.log('📱 Local MediaStream muted (no Twilio connection)');
-      } else {
-        console.warn('⚠️ No active call to mute/unmute');
-      }
+    if (state.mediaStream) {
+      state.mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = !isMicMuted;
+      });
+      setIsMicMuted(m => !m);
     }
   };
 
@@ -81,6 +27,8 @@ const TopStatusBar: React.FC = () => {
   // Note: This only toggles a local state; actual output mute requires control of an <audio> element
   const handleToggleSpeaker = () => {
     setIsSpeakerMuted(m => !m);
+    // If you have an <audio> element, you can set its volume or muted property here
+    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
   };
 
   return (
@@ -215,8 +163,6 @@ const TopStatusBar: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Hidden audio element for remote stream playback */}
-      <audio id="call-audio" ref={audioRef} autoPlay hidden />
       {callExpanded && (
         <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -232,54 +178,14 @@ const TopStatusBar: React.FC = () => {
           <div className="flex gap-x-16">
             {/* Audio Controls */}
             <div className="flex-1">
-              <div className="text-lg font-semibold text-white mb-2">
-                Audio Controls
-                {isConnected && (
-                  <span className="ml-2 text-xs text-green-400">• Twilio Connected</span>
-                )}
-                {!isConnected && (
-                  <span className="ml-2 text-xs text-slate-400">• No Call Active</span>
-                )}
-              </div>
-              
-              {/* Message d'aide UX */}
-              {state.callState.isActive && (
-                <div className="text-sm text-green-400 mb-2 flex items-center">
-                  ✨ Contrôles audio disponibles - Gérez votre micro pendant l'appel
-                </div>
-              )}
-              
-              {/* Feedback pour l'état de mute */}
-              {isMicMuted && (
-                <div className="text-sm text-red-400 mb-2 flex items-center">
-                  <MicOff size={14} className="mr-1" />
-                  {isConnected 
-                    ? '🚫 Twilio recording paused - Server-side mute active' 
-                    : '🚫 Local microphone muted'
-                  }
-                </div>
-              )}
-              
+              <div className="text-lg font-semibold text-white mb-2">Audio Controls</div>
               <div className="flex space-x-3">
                 <button
-                  className={`p-3 rounded-lg transition-all duration-200 ${
-                    isMicMuted 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
-                      : isConnected
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-[#1b253a] hover:bg-[#22304a] text-slate-300'
-                  }`}
+                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleMic}
                   aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
-                  title={
-                    isConnected
-                      ? (isMicMuted 
-                          ? 'Unmute microphone - Resume Twilio recording' 
-                          : 'Mute microphone - Pause Twilio recording')
-                      : 'No active call - Local mute only'
-                  }
                 >
-                  {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
@@ -293,36 +199,11 @@ const TopStatusBar: React.FC = () => {
             {/* Call Status */}
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Call Status</div>
-              <div className="space-y-2">
-                {state.callState.isActive ? (
-                  <span className="text-green-400 font-semibold">Active</span>
-                ) : (
-                  <span className="text-slate-400 font-semibold">Inactive</span>
-                )}
-                
-                {/* Status détaillé */}
-                <div className="text-xs text-slate-400 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span>Twilio Connection:</span>
-                    <span className={isConnected ? 'text-green-400' : 'text-slate-400'}>
-                      {isConnected ? 'Connected' : 'Disconnected'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Microphone:</span>
-                    <span className={isMicMuted ? 'text-red-400' : 'text-green-400'}>
-                      {isMicMuted ? 'Muted' : 'Active'}
-                      {isConnected ? ' (Twilio)' : ' (Local)'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Recording:</span>
-                    <span className={isMicMuted ? 'text-red-400' : 'text-green-400'}>
-                      {isMicMuted ? 'Paused' : 'Active'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              {state.callState.isActive ? (
+                <span className="text-green-400 font-semibold">Active</span>
+              ) : (
+                <span className="text-slate-400 font-semibold">Inactive</span>
+              )}
             </div>
             {/* Recording Status */}
             <div className="flex-1">

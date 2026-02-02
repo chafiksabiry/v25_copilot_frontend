@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Phone, PhoneOff, Mic, MicOff, Settings, User, Volume2, VolumeX } from 'lucide-react';
-import { getAgentName } from '../../utils';
 
 export function Header() {
   const { state } = useAgent();
@@ -51,7 +50,7 @@ export function Header() {
           </div>
           <div className="flex items-center space-x-2 text-slate-200 font-medium">
             <User className="w-5 h-5" />
-            <span className="text-base text-gray-400">{getAgentName()}</span>
+            <span className="text-base text-gray-400">Agent Smith</span>
           </div>
         </div>
       </div>
