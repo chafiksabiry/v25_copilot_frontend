@@ -21,14 +21,14 @@ export default defineConfig(({ mode }) => {
   const isQiankun = mode === 'qiankun';
 
   return {
-    base: process.env.VITE_ENVIRONMENT === 'local' 
+    base: process.env.VITE_ENVIRONMENT === 'local'
       ? 'http://localhost:5186/'
       : process.env.VITE_ENVIRONMENT === 'sandbox'
         ? 'https://harxv25copilotfrontend.netlify.app/'
         : 'https://harxv25copilotfrontend.netlify.app/',
     plugins: [
       react({
-        jsxRuntime: 'classic',
+        jsxRuntime: 'automatic',
       }),
       qiankun('copilot', {
         useDevMode: true,
