@@ -10,7 +10,7 @@ interface TranscriptionContextState {
   currentPhase: string;
   analysisConfidence: number;
   nextStepSuggestion: string;
-  startTranscription: (stream: MediaStream, phoneNumber: string) => Promise<void>;
+  startTranscription: (remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) => Promise<void>;
   stopTranscription: () => Promise<void>;
   clearTranscripts: () => void;
   addTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
@@ -63,7 +63,7 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
     }
   }, []);
 
-  const startTranscription = useCallback(async (stream: MediaStream, phoneNumber: string) => {
+  const startTranscription = useCallback(async (remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) => {
     try {
       setState(prev => ({ ...prev, error: null, isActive: true }));
 
@@ -105,7 +105,7 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
         });
       });
 
-      await transcriptionService.initializeTranscription(stream, phoneNumber);
+      await transcriptionService.initializeTranscription(remoteStream, phoneNumber, localStream);
     } catch (error) {
       console.error('Failed to start transcription:', error);
       setState(prev => ({

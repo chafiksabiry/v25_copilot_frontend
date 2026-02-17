@@ -205,15 +205,36 @@ export class TranscriptionService {
     return 'en-US';
   }
 
-  async initializeTranscription(stream: MediaStream, phoneNumber: string) {
+  async initializeTranscription(remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) {
     try {
       this.isCallActive = true;
 
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.source = this.audioContext.createMediaStreamSource(stream);
+
+      // Create sources
+      const remoteSource = this.audioContext.createMediaStreamSource(remoteStream);
+      let localSource: MediaStreamAudioSourceNode | null = null;
+
+      if (localStream) {
+        localSource = this.audioContext.createMediaStreamSource(localStream);
+      }
+
+      // Create stereo merger
+      const merger = this.audioContext.createChannelMerger(2);
+
+      // Connect sources to merger channels
+      // Channel 0: Local (Agent) - Priority for "Me"
+      // Channel 1: Remote (Customer)
+      if (localSource) {
+        localSource.connect(merger, 0, 0);
+      }
+      remoteSource.connect(merger, 0, 1);
+
       this.analyzer = this.audioContext.createAnalyser();
       this.analyzer.fftSize = 2048;
-      this.source.connect(this.analyzer);
+
+      // Connect merger to analyzer (mixed visualization)
+      merger.connect(this.analyzer);
 
       const wsUrl = import.meta.env.VITE_WS_URL || `${import.meta.env.VITE_API_URL_CALL.replace('http', 'ws')}/speech-to-text`;
       this.ws = new WebSocket(wsUrl);
@@ -236,7 +257,11 @@ export class TranscriptionService {
             sampleRateHertz: 16000,
             languageCode: detectedLanguage,
             alternativeLanguageCodes: alternativeLanguages,
-            enableAutomaticPunctuation: true
+            enableAutomaticPunctuation: true,
+            audioChannelCount: 2, // Enable stereo
+            enableSpeakerDiarization: true,
+            minSpeakerCount: 2,
+            maxSpeakerCount: 2,
           },
           interimResults: true
         };
@@ -260,38 +285,57 @@ export class TranscriptionService {
             const workletCode = `
               class AudioProcessor extends AudioWorkletProcessor {
                 constructor(options) {
-                    super();
-                    this.targetSampleRate = 16000;
-                    this.sourceSampleRate = options.processorOptions.sampleRate || 48000;
-                    this.bufferSize = 2112; // Adjusted for better chunking
-                    this.buffer = new Float32Array(this.bufferSize);
-                    this.bufferIndex = 0;
-                    this.ratio = this.sourceSampleRate / this.targetSampleRate;
+                  super();
+                  this.targetSampleRate = 16000;
+                  this.sourceSampleRate = options.processorOptions.sampleRate || 48000;
+                  this.bufferSize = 4096;
+                  this.channelCount = 1;
+                  this.buffer = new Float32Array(this.bufferSize);
+                  this.bufferIndex = 0;
+                  this.ratio = this.sourceSampleRate / this.targetSampleRate;
                 }
+
                 process(inputs, outputs, parameters) {
                   const input = inputs[0];
-                  if (input.length > 0) {
-                    const channelData = input[0];
-                    for (let i = 0; i < channelData.length; i++) {
-                        this.buffer[this.bufferIndex++] = channelData[i];
-                        if (this.bufferIndex >= this.bufferSize) {
-                            this.sendDownsampledData();
-                            this.bufferIndex = 0;
-                        }
+                  if (input && input.length > 0) {
+                    const channels = input.length;
+                    this.channelCount = channels;
+                    const frameCount = input[0].length;
+                    
+                    for (let i = 0; i < frameCount; i++) {
+                      for (let c = 0; c < channels; c++) {
+                        this.buffer[this.bufferIndex++] = input[c][i];
+                      }
+                      if (this.bufferIndex >= this.bufferSize) {
+                        this.sendDownsampledData();
+                        this.bufferIndex = 0;
+                      }
                     }
                   }
                   return true;
                 }
+
                 sendDownsampledData() {
-                    const outputLength = Math.floor(this.bufferSize / this.ratio);
-                    const pcmData = new Int16Array(outputLength);
-                    for (let i = 0; i < outputLength; i++) {
-                        const nextIndex = Math.floor(i * this.ratio);
-                        const sample = nextIndex < this.bufferSize ? this.buffer[nextIndex] : 0;
-                        const s = Math.max(-1, Math.min(1, sample));
-                        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                  const inputSamples = this.bufferIndex;
+                  const frames = inputSamples / this.channelCount;
+                  const outputFrames = Math.floor(frames / this.ratio);
+                  const outputSamples = outputFrames * this.channelCount;
+                  
+                  const pcmData = new Int16Array(outputSamples);
+
+                  for (let i = 0; i < outputFrames; i++) {
+                    const inputFrameIndex = Math.floor(i * this.ratio);
+                    for (let c = 0; c < this.channelCount; c++) {
+                      const sampleIndex = (inputFrameIndex * this.channelCount) + c;
+                      let sample = 0;
+                      if (sampleIndex < inputSamples) {
+                        sample = this.buffer[sampleIndex];
+                      }
+                      const s = Math.max(-1, Math.min(1, sample));
+                      pcmData[(i * this.channelCount) + c] = s < 0 ? s * 0x8000 : s * 0x7FFF;
                     }
-                    this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
+                  }
+                  this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
                 }
               }
               registerProcessor('audio-processor', AudioProcessor);
@@ -305,10 +349,14 @@ export class TranscriptionService {
           this.audioProcessor = new AudioWorkletNode(this.audioContext!, 'audio-processor', {
             processorOptions: {
               sampleRate: this.audioContext!.sampleRate
-            }
+            },
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            outputChannelCount: [2] // Ensure worklet handles 2 channels
           });
 
-          this.source!.connect(this.audioProcessor);
+          // Connect the STEREO MERGER to the processor
+          merger.connect(this.audioProcessor);
           this.audioProcessor.connect(this.audioContext!.destination);
 
           let packetCount = 0;

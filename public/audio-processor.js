@@ -3,7 +3,9 @@ class AudioProcessor extends AudioWorkletProcessor {
         super();
         this.targetSampleRate = 16000;
         this.sourceSampleRate = options.processorOptions.sampleRate || 48000;
-        this.bufferSize = 2112; // Multiple of 128 and works well with 48k/44.1k/16k ratios
+        // Increase buffer size to handle potential stereo data
+        this.bufferSize = 4096;
+        this.channelCount = 1; // Default
         this.buffer = new Float32Array(this.bufferSize);
         this.bufferIndex = 0;
 
@@ -13,14 +15,20 @@ class AudioProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs, parameters) {
         const input = inputs[0];
-        if (input.length > 0) {
-            const channelData = input[0];
+        if (input && input.length > 0) {
+            const channels = input.length;
+            this.channelCount = channels; // Update dynamically
 
-            // Collect audio data
-            for (let i = 0; i < channelData.length; i++) {
-                this.buffer[this.bufferIndex++] = channelData[i];
+            const frameCount = input[0].length;
 
-                // When buffer is full, downsample and send
+            // Iterate through frames
+            for (let i = 0; i < frameCount; i++) {
+                // For each frame, push samples from all channels (interleaved)
+                for (let c = 0; c < channels; c++) {
+                    this.buffer[this.bufferIndex++] = input[c][i];
+                }
+
+                // If buffer full, process
                 if (this.bufferIndex >= this.bufferSize) {
                     this.sendDownsampledData();
                     this.bufferIndex = 0;
@@ -31,23 +39,43 @@ class AudioProcessor extends AudioWorkletProcessor {
     }
 
     sendDownsampledData() {
-        const outputLength = Math.floor(this.bufferSize / this.ratio);
-        const pcmData = new Int16Array(outputLength);
+        // Calculate output length based on ratio and channel count
+        // We have 'bufferIndex' samples filled.
+        // We want to downsample PER CHANNEL.
 
-        for (let i = 0; i < outputLength; i++) {
-            const nextIndex = Math.floor(i * this.ratio);
-            // Simple nearest-neighbor downsampling for performance, or linear interpolation
-            let sample = 0;
-            if (nextIndex < this.bufferSize) {
-                sample = this.buffer[nextIndex];
+        // Strategy: De-interleave -> Downsample each -> Re-interleave
+        // Simplified: Just downsample the interleaved stream directly? 
+        // No, that mixes channels. We must preserve channel separation.
+
+        const inputSamples = this.bufferIndex;
+        const frames = inputSamples / this.channelCount;
+        const outputFrames = Math.floor(frames / this.ratio);
+        const outputSamples = outputFrames * this.channelCount;
+
+        const pcmData = new Int16Array(outputSamples);
+
+        for (let i = 0; i < outputFrames; i++) {
+            const inputFrameIndex = Math.floor(i * this.ratio);
+
+            for (let c = 0; c < this.channelCount; c++) {
+                // Index in interleaved buffer: frameIndex * channels + channelIndex
+                const sampleIndex = (inputFrameIndex * this.channelCount) + c;
+
+                let sample = 0;
+                if (sampleIndex < inputSamples) {
+                    sample = this.buffer[sampleIndex];
+                }
+
+                // Clamp and convert
+                const s = Math.max(-1, Math.min(1, sample));
+                // Store in interleaved output
+                pcmData[(i * this.channelCount) + c] = s < 0 ? s * 0x8000 : s * 0x7FFF;
             }
-
-            // Clamp and convert float32 to int16
-            const s = Math.max(-1, Math.min(1, sample));
-            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
 
         this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
+        // Also send channel count info occasionally or assume constant?
+        // For simplicity, backend assumes constant channel count from config.
     }
 }
 

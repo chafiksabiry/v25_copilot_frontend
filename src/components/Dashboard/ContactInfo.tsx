@@ -193,7 +193,16 @@ export function ContactInfo() {
               // Log de debug pour la transcription
               console.log('🌍 Starting transcription with global context');
 
-              await startTranscription(stream, contact.phone);
+              // NEW: Capture local microphone stream for full bidirectional transcription
+              try {
+                const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log('🎤 Local microphone captured for bidirectional transcription');
+                await startTranscription(stream, contact.phone, localStream);
+              } catch (micError) {
+                console.warn('⚠️ Could not capture local microphone, defaulting to remote only:', micError);
+                await startTranscription(stream, contact.phone);
+              }
+
               console.log('🎤 Transcription started for call phases');
             }
           } catch (error) {
