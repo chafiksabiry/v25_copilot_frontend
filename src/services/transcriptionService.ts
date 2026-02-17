@@ -9,6 +9,8 @@ export interface TranscriptionMessage {
   // AI Analysis fields
   current_phase?: string;
   next_step_suggestion?: string;
+  strengths?: string[];
+  improvements?: string[];
 }
 
 export interface TranscriptionConfig {
