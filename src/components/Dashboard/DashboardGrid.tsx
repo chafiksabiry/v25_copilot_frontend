@@ -1,12 +1,7 @@
-import React, { useState, useContext, useRef } from 'react';
-import { CallMetrics } from './CallMetrics';
-import { CallStructureGuide } from './CallStructureGuide';
-import { TransactionTargeting } from './TransactionTargeting';
-import { Recommendations } from './Recommendations';
+import React, { useState, useRef } from 'react';
 import { CallPhasesDisplay } from './CallPhasesDisplay';
-import { ScriptPrompter } from './ScriptPrompter';
 import StatusCard from './StatusCard';
-import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, Phone, FileText, ArrowUp } from 'lucide-react';
+import { Brain, Radar, MapPin, GraduationCap, Target, Lightbulb, FileText, ArrowUp } from 'lucide-react';
 import DiscPersonalityAnalysis from './DiscPersonalityAnalysis';
 import TransactionProgressDetails from './TransactionProgressDetails';
 import CallStructureGuideDetails from './CallStructureGuideDetails';
@@ -16,6 +11,7 @@ import RecommendationsDetails from './RecommendationsDetails';
 import { useAgent } from '../../contexts/AgentContext';
 
 // Placeholders stylés pour les widgets vides
+/*
 const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, title: string, subtitle: string }) => (
   <div className="bg-[#232f47] rounded-xl flex flex-col items-center justify-center p-6 min-h-[140px] h-full">
     <div className="mb-2">{icon}</div>
@@ -23,6 +19,7 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
     <div className="text-slate-400 text-sm text-center">{subtitle}</div>
   </div>
 );
+*/
 
 const repsPhases = [
   { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-100 text-blue-800' },
@@ -39,11 +36,11 @@ const repsPhases = [
 const DashboardGrid: React.FC = () => {
   const { state, dispatch } = useAgent();
   const [discExpanded, setDiscExpanded] = useState(false);
-  const [transactionExpanded, setTransactionExpanded] = useState(false);
-  const [callStructureExpanded, setCallStructureExpanded] = useState(false);
-  const [coachingExpanded, setCoachingExpanded] = useState(false);
-  const [targetingExpanded, setTargetingExpanded] = useState(false);
-  const [recommendationsExpanded, setRecommendationsExpanded] = useState(false);
+  const transactionExpanded = false;
+  const callStructureExpanded = false;
+  const coachingExpanded = false;
+  const targetingExpanded = false;
+  const recommendationsExpanded = false;
   const discSectionRef = useRef<HTMLDivElement>(null);
 
   // Génère une transcription propre pour DISC : uniquement les textes finaux uniques
@@ -75,121 +72,121 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-                 <div className="relative w-full h-full">
-           <div className="absolute inset-0 z-10 pointer-events-none">
-             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-           </div>
-           <div className="pointer-events-none w-full h-full">
-             <StatusCard
-               icon={<Radar className="text-cyan-400" />}
-               title="Transaction Progress"
-               value={
-                 <div className="flex flex-col w-full">
-                   <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
-                   <span className="text-slate-300 text-sm mb-1">Success Probability</span>
-                   <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
-                     <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
-                   </div>
-                   <span className="text-slate-400 text-sm">0% to goal</span>
-                 </div>
-               }
-               expandable
-               expanded={false}
-               onToggle={() => {}}
-             />
-           </div>
-         </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Radar className="text-cyan-400" />}
+              title="Transaction Progress"
+              value={
+                <div className="flex flex-col w-full">
+                  <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
+                  <span className="text-slate-300 text-sm mb-1">Success Probability</span>
+                  <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
+                    <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
+                  </div>
+                  <span className="text-slate-400 text-sm">0% to goal</span>
+                </div>
+              }
+              expandable
+              expanded={false}
+              onToggle={() => { }}
+            />
+          </div>
+        </div>
 
-         <div className="relative w-full h-full">
-           <div className="absolute inset-0 z-10 pointer-events-none">
-             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-           </div>
-           <div className="pointer-events-none w-full h-full">
-             <StatusCard
-               icon={<MapPin className="text-cyan-400" />}
-               title="Call Structure"
-               value={
-                 <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <MapPin className="w-10 h-10 text-slate-500 mb-5" />
-                   <span className="text-slate-400 text-base text-center">No active methodology</span>
-                 </div>
-               }
-               expandable
-               expanded={false}
-               onToggle={() => {}}
-             />
-           </div>
-         </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<MapPin className="text-cyan-400" />}
+              title="Call Structure"
+              value={
+                <div className="flex flex-col items-center justify-center w-full mt-2">
+                  <MapPin className="w-10 h-10 text-slate-500 mb-5" />
+                  <span className="text-slate-400 text-base text-center">No active methodology</span>
+                </div>
+              }
+              expandable
+              expanded={false}
+              onToggle={() => { }}
+            />
+          </div>
+        </div>
 
-         <div className="relative w-full h-full">
-           <div className="absolute inset-0 z-10 pointer-events-none">
-             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-           </div>
-           <div className="pointer-events-none w-full h-full">
-             <StatusCard
-               icon={<GraduationCap className="text-blue-400" />}
-               title="Coaching"
-               value={
-                 <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
-                   <span className="text-slate-400 text-base text-center">Start call for coaching</span>
-                 </div>
-               }
-               expandable
-               expanded={false}
-               onToggle={() => {}}
-             />
-           </div>
-         </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<GraduationCap className="text-blue-400" />}
+              title="Coaching"
+              value={
+                <div className="flex flex-col items-center justify-center w-full mt-2">
+                  <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
+                  <span className="text-slate-400 text-base text-center">Start call for coaching</span>
+                </div>
+              }
+              expandable
+              expanded={false}
+              onToggle={() => { }}
+            />
+          </div>
+        </div>
 
-         <div className="relative w-full h-full">
-           <div className="absolute inset-0 z-10 pointer-events-none">
-             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-           </div>
-           <div className="pointer-events-none w-full h-full">
-             <StatusCard
-               icon={<Target className="text-cyan-400" />}
-               title="Targeting"
-               value={
-                 <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Target className="w-10 h-10 text-slate-500 mb-5" />
-                   <span className="text-slate-400 text-base text-center">No transaction goal set</span>
-                 </div>
-               }
-               expandable
-               expanded={false}
-               onToggle={() => {}}
-             />
-           </div>
-         </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Target className="text-cyan-400" />}
+              title="Targeting"
+              value={
+                <div className="flex flex-col items-center justify-center w-full mt-2">
+                  <Target className="w-10 h-10 text-slate-500 mb-5" />
+                  <span className="text-slate-400 text-base text-center">No transaction goal set</span>
+                </div>
+              }
+              expandable
+              expanded={false}
+              onToggle={() => { }}
+            />
+          </div>
+        </div>
 
-         <div className="relative w-full h-full">
-           <div className="absolute inset-0 z-10 pointer-events-none">
-             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-           </div>
-           <div className="pointer-events-none w-full h-full">
-             <StatusCard
-               icon={<Lightbulb className="text-yellow-400" />}
-               title="Recommendations"
-               value={
-                 <div className="flex flex-col items-center justify-center w-full mt-2">
-                   <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
-                   <span className="text-slate-400 text-base text-center">No recommendations yet</span>
-                 </div>
-               }
-               expandable
-               expanded={false}
-               onToggle={() => {}}
-             />
-           </div>
-         </div>
+        <div className="relative w-full h-full">
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          </div>
+          <div className="pointer-events-none w-full h-full">
+            <StatusCard
+              icon={<Lightbulb className="text-yellow-400" />}
+              title="Recommendations"
+              value={
+                <div className="flex flex-col items-center justify-center w-full mt-2">
+                  <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
+                  <span className="text-slate-400 text-base text-center">No recommendations yet</span>
+                </div>
+              }
+              expandable
+              expanded={false}
+              onToggle={() => { }}
+            />
+          </div>
+        </div>
       </div>
       {discExpanded && (
         <>
           {console.log('[DASHBOARD] state.transcript:', state.transcript)}
           {console.log('[DASHBOARD] transcription prop:', fullTranscription)}
           <div ref={discSectionRef} className="w-full mt-2 mb-8">
-            <DiscPersonalityAnalysis 
+            <DiscPersonalityAnalysis
               transcription={fullTranscription}
               context={state.transcript || []}
               callDuration={state.callState.isActive ? Math.floor((Date.now() - (state.callState.startTime?.getTime() || Date.now())) / 60000) : 0}
@@ -207,7 +204,7 @@ const DashboardGrid: React.FC = () => {
                   recommendations: profile.recommendations
                 };
                 dispatch({ type: 'UPDATE_PERSONALITY_PROFILE', profile: adaptedProfile });
-                
+
                 // Notification pour informer l'utilisateur
                 if (profile.confidence >= 70) {
                   // Scroll automatique vers le DISC si confiance élevée
@@ -261,18 +258,7 @@ const DashboardGrid: React.FC = () => {
         <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
           <div className="relative">
             <CallPhasesDisplay
-              phases={repsPhases.map((phase, idx) => ({
-                ...phase,
-                status:
-                  state.callState.isActive
-                    ? idx === 0
-                      ? 'completed'
-                      : idx === 1
-                      ? 'in-progress'
-                      : 'pending'
-                    : 'pending'
-              }))}
-              currentPhase={state.callState.isActive ? repsPhases[1].id : undefined}
+              phases={repsPhases as any}
               isCallActive={state.callState.isActive}
               phoneNumber="+13024440090"
               mediaStream={state.mediaStream}
@@ -288,7 +274,7 @@ const DashboardGrid: React.FC = () => {
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0" />
           </div>
-          
+
           <div className="relative z-0 h-full flex flex-col">
             <div className="flex items-center mb-4 self-start">
               <Brain className="text-cyan-400 mr-2" />

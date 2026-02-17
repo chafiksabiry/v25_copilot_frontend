@@ -16,7 +16,6 @@ interface CallPhase {
 
 interface CallPhasesDisplayProps {
   phases?: CallPhase[];
-  currentPhase?: string;
   onPhaseClick?: (phaseId: string) => void;
   isCallActive?: boolean;
   phoneNumber?: string;
@@ -26,7 +25,6 @@ interface CallPhasesDisplayProps {
 
 export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   phases = [],
-  currentPhase,
   onPhaseClick,
   isCallActive = false,
   phoneNumber,
@@ -127,33 +125,45 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Call Phases Section */}
       <div className="space-y-1 mb-4">
-        {phases.map((phase) => {
-          const isActive = phase.name === aiCurrentPhase || phase.id === currentPhase;
-          return (
-            <div key={phase.id} className="relative mb-1">
-              <div
-                className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm
-                ${isActive ? 'bg-[#4a5578] border-cyan-500 border-2' : 'bg-[#3a4661]'}
-                relative
-              `}
-                onClick={() => onPhaseClick?.(phase.id)}
-              >
-                <span className={`flex items-center justify-center w-7 h-7 mr-2 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')}`}>
-                  {phase.icon}
-                </span>
-                <span className={`font-medium truncate max-w-[60%] ${isActive ? 'text-cyan-400' : 'text-white'}`}>
-                  {phase.name}
-                </span>
-                <span className={`px-2 py-0.5 rounded text-xs ml-2 ${isActive ? 'bg-cyan-900 text-cyan-100 animate-pulse' :
-                    phase.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      'bg-[#22304a] text-blue-200'
-                  }`}>
-                  {isActive ? 'Current' : phase.status}
-                </span>
-              </div>
-            </div>
+        {(() => {
+          // Trouver l'index de la phase actuelle suggérée par l'IA
+          const currentPhaseIndex = phases.findIndex(p =>
+            p.name.toLowerCase().includes(aiCurrentPhase.toLowerCase()) ||
+            aiCurrentPhase.toLowerCase().includes(p.name.toLowerCase())
           );
-        })}
+
+          return phases.map((phase, index) => {
+            const isActive = index === currentPhaseIndex;
+            const isCompleted = currentPhaseIndex > index;
+            const status = isActive ? 'in-progress' : (isCompleted ? 'completed' : 'pending');
+
+            return (
+              <div key={phase.id} className="relative mb-1">
+                <div
+                  className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm
+                  ${isActive ? 'bg-[#4a5578] border-cyan-500 border-2 scale-[1.02]' : 'bg-[#3a4661] opacity-80'}
+                  ${isCompleted ? 'border-green-500/30' : ''}
+                  relative
+                `}
+                  onClick={() => onPhaseClick?.(phase.id)}
+                >
+                  <span className={`flex items-center justify-center w-7 h-7 mr-2 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')}`}>
+                    {isCompleted ? '✅' : phase.icon}
+                  </span>
+                  <span className={`font-medium truncate max-w-[60%] ${isActive ? 'text-cyan-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
+                    {phase.name}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs ml-2 ${isActive ? 'bg-cyan-900 text-cyan-100 animate-pulse' :
+                    isCompleted ? 'bg-green-900/40 text-green-300' :
+                      'bg-[#22304a] text-blue-200'
+                    }`}>
+                    {isActive ? 'Current' : status}
+                  </span>
+                </div>
+              </div>
+            );
+          });
+        })()}
       </div>
 
       {/* AI Suggestion Section */}
@@ -180,8 +190,8 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
               <button
                 onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
                 className={`ml-4 px-3 py-1 rounded text-xs font-medium transition-colors ${autoScrollEnabled
-                    ? 'bg-blue-500 text-white hover:bg-blue-600'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                   }`}
               >
                 {autoScrollEnabled ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
