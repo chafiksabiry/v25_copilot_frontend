@@ -247,7 +247,12 @@ export class TranscriptionService {
         this.configSent = true;
 
         try {
-          await this.audioContext!.audioWorklet.addModule('/audio-processor.js');
+          // Use the microfrontend's public path if available
+          const publicPath = (window as any).__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || '/';
+          const workletUrl = new URL('audio-processor.js', publicPath).href;
+          console.log('🎤 Loading audio worklet from:', workletUrl);
+
+          await this.audioContext!.audioWorklet.addModule(workletUrl);
           this.audioProcessor = new AudioWorkletNode(this.audioContext!, 'audio-processor', {
             processorOptions: {
               sampleRate: this.audioContext!.sampleRate
@@ -292,6 +297,7 @@ export class TranscriptionService {
       const data = JSON.parse(event.data);
 
       if (data.type === 'analysis') {
+        console.log('📊 Frontend received AI Analysis:', data);
         if (this.onTranscriptionUpdate) {
           this.onTranscriptionUpdate({
             type: 'analysis',
@@ -319,6 +325,7 @@ export class TranscriptionService {
           });
         }
       } else if (typeof data.transcript === 'string' && this.onTranscriptionUpdate) {
+        console.log('💬 Received legacy transcript message:', data.transcript);
         this.onTranscriptionUpdate({
           type: data.isFinal ? 'final' : 'interim',
           text: data.transcript,
