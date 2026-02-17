@@ -2,9 +2,11 @@ import { useCallback } from 'react';
 import { TwilioCallService } from '../services/twilioCallService';
 
 export const useCallStorage = () => {
-  const storeCall = useCallback(async (callSid: string, agentId: string) => {
-    if (!callSid || !agentId) {
-      console.warn('Missing callSid or agentId for call storage');
+  const storeCall = useCallback(async (callSid: string, leadId: string) => {
+    const agentId = "6807abfc2c1ca099fe2b13c5"; // Hardcoded agent ID for now
+
+    if (!callSid || !leadId) {
+      console.warn('Missing callSid or leadId for call storage');
       return;
     }
 
@@ -12,8 +14,8 @@ export const useCallStorage = () => {
       await TwilioCallService.storeCallInDB({
         callSid,
         agentId,
-        leadId: agentId, // Using agentId as leadId for now
-        userId: "6807abfc2c1ca099fe2b13c5" // Hardcoded for now
+        leadId,
+        userId: agentId
       });
     } catch (error) {
       console.error('Failed to store call in database:', error);
