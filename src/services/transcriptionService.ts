@@ -223,11 +223,17 @@ export class TranscriptionService {
         }
 
         const detectedLanguage = this.getLanguageFromPhoneNumber(phoneNumber, this.destinationZone || undefined);
+
+        // Define common languages for code-switching (English, French, Arabic)
+        const commonLanguages = ['en-US', 'fr-FR', 'ar-MA', 'ar-SA'];
+        const alternativeLanguages = commonLanguages.filter(lang => lang !== detectedLanguage);
+
         const config = {
           config: {
             encoding: 'LINEAR16',
             sampleRateHertz: 16000,
             languageCode: detectedLanguage,
+            alternativeLanguageCodes: alternativeLanguages,
             enableAutomaticPunctuation: true
           },
           interimResults: true
