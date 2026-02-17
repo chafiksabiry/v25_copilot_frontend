@@ -303,10 +303,15 @@ export class TranscriptionService {
           this.source!.connect(this.audioProcessor);
           this.audioProcessor.connect(this.audioContext!.destination);
 
+          let packetCount = 0;
           this.audioProcessor.port.onmessage = (event) => {
             if (this.ws?.readyState === WebSocket.OPEN && this.isCallActive && this.configSent) {
               // Now receiving already processed/downsampled Int16 buffer
               this.ws!.send(event.data);
+              packetCount++;
+              if (packetCount % 50 === 0) {
+                console.log(`📤 [TranscriptionService] Sent ${packetCount} audio packets (last size: ${event.data.byteLength} bytes)`);
+              }
             }
           };
 
