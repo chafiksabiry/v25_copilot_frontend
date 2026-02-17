@@ -226,21 +226,15 @@ export class TranscriptionService {
         const config = {
           config: {
             encoding: 'LINEAR16',
-            sampleRateHertz: 16000, // Forcé à 16kHz pour la compatibilité STT
+            sampleRateHertz: 16000,
             languageCode: detectedLanguage,
             enableAutomaticPunctuation: true,
-            model: 'phone_call',
+            model: 'latest_long',
             useEnhanced: true,
             audioChannelCount: 1,
-            enableWordConfidence: true,
-            enableSpeakerDiarization: true,
-            diarizationConfig: {
-              enableSpeakerDiarization: true,
-              minSpeakerCount: 1,
-              maxSpeakerCount: 2
-            },
-            interimResults: true
-          }
+            enableWordConfidence: true
+          },
+          interimResults: true
         };
 
         this.ws!.send(JSON.stringify(config));
