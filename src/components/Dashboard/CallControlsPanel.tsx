@@ -3,7 +3,7 @@ import { CallControls } from './CallControls';
 
 const CallControlsPanel: React.FC = () => {
   // Mock data - replace with actual data from your app state
-  const phoneNumber = "+212637446431"; // Replace with actual phone number
+  const phoneNumber = "+212777073155"; // Replace with actual phone number
   const agentId = "agent123"; // Replace with actual agent ID
 
   const handleCallStatusChange = (status: string) => {
