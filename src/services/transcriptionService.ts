@@ -252,7 +252,36 @@ export class TranscriptionService {
           const workletUrl = new URL('audio-processor.js', publicPath).href;
           console.log('🎤 Loading audio worklet from:', workletUrl);
 
-          await this.audioContext!.audioWorklet.addModule(workletUrl);
+          try {
+            await this.audioContext!.audioWorklet.addModule(workletUrl);
+          } catch (urlError) {
+            console.warn('⚠️ Failed to load audio worklet from URL, trying Blob fallback:', urlError);
+
+            // Inline fallback version of audio-processor.js
+            const workletCode = `
+              class AudioProcessor extends AudioWorkletProcessor {
+                process(inputs, outputs, parameters) {
+                  const input = inputs[0];
+                  if (input.length > 0) {
+                    const channelData = input[0];
+                    const pcmData = new Int16Array(channelData.length);
+                    for (let i = 0; i < channelData.length; i++) {
+                      const s = Math.max(-1, Math.min(1, channelData[i]));
+                      pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
+                  }
+                  return true;
+                }
+              }
+              registerProcessor('audio-processor', AudioProcessor);
+            `;
+            const blob = new Blob([workletCode], { type: 'application/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            await this.audioContext!.audioWorklet.addModule(blobUrl);
+            console.log('✅ Audio worklet loaded successfully via Blob fallback');
+          }
+
           this.audioProcessor = new AudioWorkletNode(this.audioContext!, 'audio-processor', {
             processorOptions: {
               sampleRate: this.audioContext!.sampleRate
@@ -277,7 +306,7 @@ export class TranscriptionService {
           this.startAudioLevelMonitoring();
 
         } catch (error) {
-          console.error('❌ Error initializing audio worklet:', error);
+          console.error('❌ Error initializing audio worklet (even with fallback):', error);
         }
       };
 
