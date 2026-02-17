@@ -247,8 +247,8 @@ export class TranscriptionService {
         this.configSent = true;
 
         try {
-          // Use the microfrontend's public path if available
-          const publicPath = (window as any).__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || '/';
+          // Use the microfrontend's public path if available, fallback to location.origin
+          const publicPath = (window as any).__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || window.location.origin;
           const workletUrl = new URL('audio-processor.js', publicPath).href;
           console.log('🎤 Loading audio worklet from:', workletUrl);
 
