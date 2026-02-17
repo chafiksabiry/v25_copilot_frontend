@@ -9,8 +9,8 @@ import CoachingDetails from './CoachingDetails';
 import TargetingDetails from './TargetingDetails';
 import RecommendationsDetails from './RecommendationsDetails';
 import { RealTimeCoaching } from './RealTimeCoaching';
+import { LiveTranscript } from './LiveTranscript';
 import { useAgent } from '../../contexts/AgentContext';
-import { useTranscription } from '../../contexts/TranscriptionContext';
 
 // Placeholders stylés pour les widgets vides
 /*

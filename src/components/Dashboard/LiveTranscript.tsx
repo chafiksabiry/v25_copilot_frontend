@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranscription } from '../../contexts/TranscriptionContext';
-import { MessageSquare, Clock, User } from 'lucide-react';
+import { MessageSquare, User } from 'lucide-react';
 
 export const LiveTranscript: React.FC = () => {
     const { transcripts, currentInterimText, isActive } = useTranscription();
