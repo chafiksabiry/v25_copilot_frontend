@@ -324,9 +324,30 @@ export class TranscriptionService {
   private handleWebSocketMessage(event: MessageEvent) {
     try {
       const data = JSON.parse(event.data);
+      console.log('📥 [TranscriptionService] Received message:', data.type || 'unknown');
 
+      // Handle connection status
+      if (data.type === 'connected') {
+        console.log('✅ [TranscriptionService] Backend confirmed connection:', data.message);
+        return;
+      }
+
+      // Handle errors from backend
+      if (data.type === 'error') {
+        console.error('❌ [TranscriptionService] Backend error:', data.message || data.error);
+        if (this.onTranscriptionUpdate) {
+          this.onTranscriptionUpdate({
+            type: 'transcript', // Use transcript as a carrier for error text if needed, or handle separately
+            text: `Error: ${data.message || 'Unknown error'}`,
+            timestamp: Date.now()
+          } as any);
+        }
+        return;
+      }
+
+      // Handle AI Analysis
       if (data.type === 'analysis') {
-        console.log('📊 Frontend received AI Analysis:', data);
+        console.log('📊 [TranscriptionService] Received AI Analysis:', data);
         if (this.onTranscriptionUpdate) {
           this.onTranscriptionUpdate({
             type: 'analysis',
@@ -340,6 +361,21 @@ export class TranscriptionService {
         return;
       }
 
+      // Handle Transcripts (New Format)
+      if (data.type === 'interim' || data.type === 'final') {
+        const transcript = data.transcript || '';
+        if (transcript.trim() && this.onTranscriptionUpdate) {
+          this.onTranscriptionUpdate({
+            type: data.type,
+            text: transcript,
+            confidence: data.confidence || 0,
+            timestamp: data.timestamp || Date.now()
+          });
+        }
+        return;
+      }
+
+      // Handle Transcripts (Legacy Google Format)
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
         const isFinal = result.isFinal;
@@ -354,7 +390,7 @@ export class TranscriptionService {
           });
         }
       } else if (typeof data.transcript === 'string' && this.onTranscriptionUpdate) {
-        console.log('💬 Received legacy transcript message:', data.transcript);
+        // Older legacy format
         this.onTranscriptionUpdate({
           type: data.isFinal ? 'final' : 'interim',
           text: data.transcript,
@@ -363,7 +399,7 @@ export class TranscriptionService {
         });
       }
     } catch (error) {
-      console.error('❌ Error parsing WebSocket message:', error);
+      console.error('❌ [TranscriptionService] Error parsing WebSocket message:', error);
     }
   }
 

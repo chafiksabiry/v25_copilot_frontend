@@ -8,7 +8,9 @@ import CallStructureGuideDetails from './CallStructureGuideDetails';
 import CoachingDetails from './CoachingDetails';
 import TargetingDetails from './TargetingDetails';
 import RecommendationsDetails from './RecommendationsDetails';
+import { RealTimeCoaching } from './RealTimeCoaching';
 import { useAgent } from '../../contexts/AgentContext';
+import { useTranscription } from '../../contexts/TranscriptionContext';
 
 // Placeholders stylés pour les widgets vides
 /*
@@ -253,14 +255,19 @@ const DashboardGrid: React.FC = () => {
         </button>
       )}
 
-      {/* Grille 2 colonnes toujours visible */}
-      <div className="grid grid-cols-2 gap-6 mt-2">
-        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] overflow-hidden">
-          <div className="relative">
+      {/* Featured Real-Time Section */}
+      <div className="grid grid-cols-12 gap-6 mt-6 min-h-[450px]">
+        {/* Left Column: Phases & Coaching (7 cols) */}
+        <div className="col-span-7 flex flex-col space-y-6">
+          <div className="bg-[#232f47] rounded-xl p-8 flex flex-col h-full shadow-xl border border-slate-700/50">
+            <RealTimeCoaching />
+          </div>
+
+          <div className="bg-[#232f47] rounded-xl p-8 flex flex-col shadow-xl border border-slate-700/50">
             <CallPhasesDisplay
               phases={repsPhases as any}
               isCallActive={state.callState.isActive}
-              phoneNumber="+13024440090"
+              phoneNumber={state.callState.contact?.phone || "+13024440090"}
               mediaStream={state.mediaStream}
               disableAutoScroll={true}
               onPhaseClick={(phaseId) => {
@@ -269,20 +276,26 @@ const DashboardGrid: React.FC = () => {
             />
           </div>
         </div>
-        <div className="bg-[#232f47] rounded-xl p-8 flex flex-col min-h-[220px] relative">
-          {/* Overlay pour le grisé */}
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0" />
-          </div>
 
+        {/* Right Column: Live Transcript (5 cols) */}
+        <div className="col-span-5 h-full">
+          <div className="bg-[#232f47] rounded-xl p-1 h-full shadow-2xl border border-slate-700/30">
+            <LiveTranscript />
+          </div>
+        </div>
+      </div>
+
+      {/* Adaptive Script Prompter Overlay/Section */}
+      <div className="grid grid-cols-1 gap-6 mt-6">
+        <div className="bg-[#1b253a] rounded-xl p-8 flex flex-col min-h-[180px] relative border border-slate-800 shadow-inner">
           <div className="relative z-0 h-full flex flex-col">
             <div className="flex items-center mb-4 self-start">
               <Brain className="text-cyan-400 mr-2" />
-              <span className="text-lg font-bold text-white">Adaptive Script Prompter</span>
+              <span className="text-lg font-bold text-white tracking-wide">Adaptive Script Prompter</span>
             </div>
-            <div className="flex flex-col items-center justify-center flex-1">
-              <FileText className="w-10 h-10 text-slate-500 mb-5" />
-              <div className="text-slate-400 text-base text-center">Script prompter will activate when call starts</div>
+            <div className="flex flex-col items-center justify-center flex-1 opacity-50">
+              <FileText className="w-8 h-8 text-slate-500 mb-3" />
+              <div className="text-slate-400 text-sm italic">Script prompter will activate when call starts</div>
             </div>
           </div>
         </div>
