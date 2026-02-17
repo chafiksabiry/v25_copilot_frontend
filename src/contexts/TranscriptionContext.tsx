@@ -6,6 +6,10 @@ interface TranscriptionContextState {
   transcripts: TranscriptionMessage[];
   currentInterimText: string;
   error: string | null;
+  // AI Analysis fields
+  currentPhase: string;
+  analysisConfidence: number;
+  nextStepSuggestion: string;
   startTranscription: (stream: MediaStream, phoneNumber: string) => Promise<void>;
   stopTranscription: () => Promise<void>;
   clearTranscripts: () => void;
@@ -20,18 +24,21 @@ interface TranscriptionProviderProps {
   destinationZone?: string;
 }
 
-export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({ 
-  children, 
-  destinationZone 
+export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
+  children,
+  destinationZone
 }) => {
   const [transcriptionService] = useState(() => new TranscriptionService());
   const [state, setState] = useState({
     isActive: false,
     transcripts: [] as TranscriptionMessage[],
     currentInterimText: '',
-    error: null as string | null
+    error: null as string | null,
+    currentPhase: 'Intro / Hook',
+    analysisConfidence: 0,
+    nextStepSuggestion: ''
   });
-  
+
   // Référence pour stocker les callbacks externes
   const externalCallbacks = useRef<((message: TranscriptionMessage) => void)[]>([]);
 
@@ -59,19 +66,26 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
   const startTranscription = useCallback(async (stream: MediaStream, phoneNumber: string) => {
     try {
       setState(prev => ({ ...prev, error: null, isActive: true }));
-      
+
       // S'assurer que la zone de destination est définie avant de démarrer
       if (destinationZone) {
         transcriptionService.setDestinationZone(destinationZone);
         console.log('🌍 [Context] Setting destination zone before transcription start:', destinationZone);
       }
-      
+
       transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
         // Mettre à jour l'état interne
         setState(prev => {
-          if (message.type === 'interim') {
+          if (message.type === 'analysis') {
+            return {
+              ...prev,
+              currentPhase: message.current_phase || prev.currentPhase,
+              analysisConfidence: message.confidence || prev.analysisConfidence,
+              nextStepSuggestion: message.next_step_suggestion || prev.nextStepSuggestion
+            };
+          } else if (message.type === 'interim') {
             return { ...prev, currentInterimText: message.text };
-          } else if (message.type === 'final') {
+          } else if (message.type === 'final' || message.type === 'transcript') {
             return {
               ...prev,
               transcripts: [...prev.transcripts, message],
@@ -80,7 +94,7 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
           }
           return prev;
         });
-        
+
         // Appeler tous les callbacks externes
         externalCallbacks.current.forEach(callback => {
           try {
@@ -94,10 +108,10 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
       await transcriptionService.initializeTranscription(stream, phoneNumber);
     } catch (error) {
       console.error('Failed to start transcription:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         error: error instanceof Error ? error.message : 'Failed to start transcription',
-        isActive: false 
+        isActive: false
       }));
     }
   }, [transcriptionService, destinationZone]);
@@ -105,11 +119,11 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
   const stopTranscription = useCallback(async () => {
     try {
       await transcriptionService.cleanup();
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isActive: false,
         currentInterimText: '',
-        error: null 
+        error: null
       }));
     } catch (error) {
       console.error('Failed to stop transcription:', error);
@@ -117,7 +131,14 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
   }, [transcriptionService]);
 
   const clearTranscripts = useCallback(() => {
-    setState(prev => ({ ...prev, transcripts: [], currentInterimText: '' }));
+    setState(prev => ({
+      ...prev,
+      transcripts: [],
+      currentInterimText: '',
+      currentPhase: 'Intro / Hook',
+      analysisConfidence: 0,
+      nextStepSuggestion: ''
+    }));
   }, []);
 
   // Cleanup on unmount

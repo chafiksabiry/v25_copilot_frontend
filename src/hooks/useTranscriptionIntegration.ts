@@ -6,6 +6,10 @@ export interface TranscriptionState {
   transcripts: TranscriptionMessage[];
   currentInterimText: string;
   error: string | null;
+  // AI Analysis fields
+  currentPhase: string;
+  analysisConfidence: number;
+  nextStepSuggestion: string;
 }
 
 export const useTranscriptionIntegration = (destinationZone?: string) => {
@@ -14,9 +18,12 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
     isActive: false,
     transcripts: [],
     currentInterimText: '',
-    error: null
+    error: null,
+    currentPhase: 'Intro / Hook',
+    analysisConfidence: 0,
+    nextStepSuggestion: ''
   });
-  
+
   // Référence pour stocker les callbacks externes
   const externalCallbacks = useRef<((message: TranscriptionMessage) => void)[]>([]);
 
@@ -44,19 +51,26 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
   const startTranscription = useCallback(async (stream: MediaStream, phoneNumber: string) => {
     try {
       setState(prev => ({ ...prev, error: null, isActive: true }));
-      
+
       // S'assurer que la zone de destination est définie avant de démarrer
       if (destinationZone) {
         transcriptionService.setDestinationZone(destinationZone);
         console.log('🌍 Setting destination zone before transcription start:', destinationZone);
       }
-      
+
       transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
         // Mettre à jour l'état interne
         setState(prev => {
-          if (message.type === 'interim') {
+          if (message.type === 'analysis') {
+            return {
+              ...prev,
+              currentPhase: message.current_phase || prev.currentPhase,
+              analysisConfidence: message.confidence || prev.analysisConfidence,
+              nextStepSuggestion: message.next_step_suggestion || prev.nextStepSuggestion
+            };
+          } else if (message.type === 'interim') {
             return { ...prev, currentInterimText: message.text };
-          } else if (message.type === 'final') {
+          } else if (message.type === 'final' || message.type === 'transcript') {
             return {
               ...prev,
               transcripts: [...prev.transcripts, message],
@@ -65,7 +79,7 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
           }
           return prev;
         });
-        
+
         // Appeler tous les callbacks externes
         externalCallbacks.current.forEach(callback => {
           try {
@@ -79,10 +93,10 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
       await transcriptionService.initializeTranscription(stream, phoneNumber);
     } catch (error) {
       console.error('Failed to start transcription:', error);
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         error: error instanceof Error ? error.message : 'Failed to start transcription',
-        isActive: false 
+        isActive: false
       }));
     }
   }, [transcriptionService, destinationZone]);
@@ -90,11 +104,11 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
   const stopTranscription = useCallback(async () => {
     try {
       await transcriptionService.cleanup();
-      setState(prev => ({ 
-        ...prev, 
+      setState(prev => ({
+        ...prev,
         isActive: false,
         currentInterimText: '',
-        error: null 
+        error: null
       }));
     } catch (error) {
       console.error('Failed to stop transcription:', error);
@@ -102,7 +116,14 @@ export const useTranscriptionIntegration = (destinationZone?: string) => {
   }, [transcriptionService]);
 
   const clearTranscripts = useCallback(() => {
-    setState(prev => ({ ...prev, transcripts: [], currentInterimText: '' }));
+    setState(prev => ({
+      ...prev,
+      transcripts: [],
+      currentInterimText: '',
+      currentPhase: 'Intro / Hook',
+      analysisConfidence: 0,
+      nextStepSuggestion: ''
+    }));
   }, []);
 
   // Cleanup on unmount
