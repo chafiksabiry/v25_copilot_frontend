@@ -226,7 +226,7 @@ export class TranscriptionService {
         const config = {
           config: {
             encoding: 'LINEAR16',
-            sampleRateHertz: this.audioContext!.sampleRate,
+            sampleRateHertz: 16000, // Forcé à 16kHz pour la compatibilité STT
             languageCode: detectedLanguage,
             enableAutomaticPunctuation: true,
             model: 'phone_call',
@@ -260,18 +260,39 @@ export class TranscriptionService {
             // Inline fallback version of audio-processor.js
             const workletCode = `
               class AudioProcessor extends AudioWorkletProcessor {
+                constructor(options) {
+                    super();
+                    this.targetSampleRate = 16000;
+                    this.sourceSampleRate = options.processorOptions.sampleRate || 48000;
+                    this.bufferSize = 2112; // Adjusted for better chunking
+                    this.buffer = new Float32Array(this.bufferSize);
+                    this.bufferIndex = 0;
+                    this.ratio = this.sourceSampleRate / this.targetSampleRate;
+                }
                 process(inputs, outputs, parameters) {
                   const input = inputs[0];
                   if (input.length > 0) {
                     const channelData = input[0];
-                    const pcmData = new Int16Array(channelData.length);
                     for (let i = 0; i < channelData.length; i++) {
-                      const s = Math.max(-1, Math.min(1, channelData[i]));
-                      pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        this.buffer[this.bufferIndex++] = channelData[i];
+                        if (this.bufferIndex >= this.bufferSize) {
+                            this.sendDownsampledData();
+                            this.bufferIndex = 0;
+                        }
                     }
-                    this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
                   }
                   return true;
+                }
+                sendDownsampledData() {
+                    const outputLength = Math.floor(this.bufferSize / this.ratio);
+                    const pcmData = new Int16Array(outputLength);
+                    for (let i = 0; i < outputLength; i++) {
+                        const nextIndex = Math.floor(i * this.ratio);
+                        const sample = nextIndex < this.bufferSize ? this.buffer[nextIndex] : 0;
+                        const s = Math.max(-1, Math.min(1, sample));
+                        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    this.port.postMessage(pcmData.buffer, [pcmData.buffer]);
                 }
               }
               registerProcessor('audio-processor', AudioProcessor);
@@ -293,13 +314,8 @@ export class TranscriptionService {
 
           this.audioProcessor.port.onmessage = (event) => {
             if (this.ws?.readyState === WebSocket.OPEN && this.isCallActive && this.configSent) {
-              const audioData = event.data;
-              const view = new DataView(audioData);
-              const pcmData = new Int16Array(audioData.byteLength / 2);
-              for (let i = 0; i < pcmData.length; i++) {
-                pcmData[i] = view.getInt16(i * 2, true);
-              }
-              this.ws!.send(pcmData.buffer);
+              // Now receiving already processed/downsampled Int16 buffer
+              this.ws!.send(event.data);
             }
           };
 
