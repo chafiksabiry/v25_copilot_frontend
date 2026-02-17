@@ -228,15 +228,12 @@ export class TranscriptionService {
             encoding: 'LINEAR16',
             sampleRateHertz: 16000,
             languageCode: detectedLanguage,
-            enableAutomaticPunctuation: true,
-            model: 'latest_long',
-            useEnhanced: true,
-            audioChannelCount: 1,
-            enableWordConfidence: true
+            enableAutomaticPunctuation: true
           },
           interimResults: true
         };
 
+        console.log('📤 [TranscriptionService] Sending initial configuration:', JSON.stringify(config));
         this.ws!.send(JSON.stringify(config));
         this.configSent = true;
 
