@@ -5,6 +5,7 @@ import { Header } from './components/Dashboard/Header';
 import TopStatusBar from './components/Dashboard/TopStatusBar';
 import { ContactInfo } from './components/Dashboard/ContactInfo';
 import DashboardGrid from './components/Dashboard/DashboardGrid';
+import { TranscriptionBridge } from './components/TranscriptionBridge';
 
 import { useDestinationZone } from './hooks/useDestinationZone';
 
@@ -14,6 +15,7 @@ function AppContent() {
 
   return (
     <TranscriptionProvider destinationZone={destinationZone || undefined}>
+      <TranscriptionBridge />
       <div className="min-h-screen bg-[#151e2e]">
         <Header />
         <div className="max-w-[1800px] mx-auto px-2">

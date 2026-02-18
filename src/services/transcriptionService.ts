@@ -235,9 +235,9 @@ export class TranscriptionService {
         : 'https://v25dashcallsbackend-production.up.railway.app'; // Fallback to US/Prod for now as EU url might differ
 
       const wsUrl = baseUrl.replace('http', 'ws');
-      this.socket = new WebSocket(`${wsUrl}/speech-to-text`);
+      this.ws = new WebSocket(`${wsUrl}/speech-to-text`);
 
-      this.socket.onopen = () => {
+      this.ws.onopen = () => {
         console.log('✅ [Simulation] WebSocket connected');
         // Send initial config
         const configMessage = {
@@ -254,15 +254,15 @@ export class TranscriptionService {
             maxSpeakerCount: 2,
           }
         };
-        this.socket?.send(JSON.stringify(configMessage));
+        this.ws?.send(JSON.stringify(configMessage));
 
         // Start streaming chunks
         this.streamAudioBuffer(audioBuffer);
       };
 
-      this.socket.onmessage = this.handleSocketMessage;
-      this.socket.onerror = (error) => console.error('❌ [Simulation] Socket error:', error);
-      this.socket.onclose = () => console.log('🔌 [Simulation] Socket closed');
+      this.ws.onmessage = this.handleWebSocketMessage;
+      this.ws.onerror = (error) => console.error('❌ [Simulation] Socket error:', error);
+      this.ws.onclose = () => console.log('🔌 [Simulation] Socket closed');
 
     } catch (error) {
       console.error('❌ [Simulation] Error starting simulation:', error);
@@ -290,7 +290,7 @@ export class TranscriptionService {
       const chunkLength = Math.floor(bufferSize * ratio);
       if (offset + chunkLength >= rawDataLeft.length) {
         console.log('✅ [Simulation] Audio finished');
-        this.stopTranscription();
+        // this.stopTranscription(); // Keep socket open for results
         clearInterval(interval);
         return;
       }
