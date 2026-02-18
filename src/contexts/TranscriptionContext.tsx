@@ -12,6 +12,7 @@ interface TranscriptionContextState {
   nextStepSuggestion: string;
   startTranscription: (remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) => Promise<void>;
   stopTranscription: () => Promise<void>;
+  simulateAudioStream: (audioUrl: string, phoneNumber: string) => Promise<void>;
   clearTranscripts: () => void;
   addTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
   removeTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
@@ -150,10 +151,58 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
     };
   }, [state.isActive, transcriptionService]);
 
+  const simulateAudioStream = useCallback(async (audioUrl: string, phoneNumber: string) => {
+    try {
+      setState(prev => ({ ...prev, error: null, isActive: true }));
+
+      // Setup callback for simulation events if needed, similar to startTranscription
+      transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
+        setState(prev => {
+          if (message.type === 'analysis') {
+            return {
+              ...prev,
+              currentPhase: message.current_phase || prev.currentPhase,
+              analysisConfidence: message.confidence || prev.analysisConfidence,
+              nextStepSuggestion: message.next_step_suggestion || prev.nextStepSuggestion
+            };
+          } else if (message.type === 'interim') {
+            return { ...prev, currentInterimText: message.text };
+          } else if (message.type === 'final' || message.type === 'transcript') {
+            return {
+              ...prev,
+              transcripts: [...prev.transcripts, message],
+              currentInterimText: ''
+            };
+          }
+          return prev;
+        });
+
+        externalCallbacks.current.forEach(callback => {
+          try {
+            callback(message);
+          } catch (error) {
+            console.error('Error in external transcription callback:', error);
+          }
+        });
+      });
+
+      await transcriptionService.simulateAudioStream(audioUrl, phoneNumber);
+    } catch (error) {
+      console.error('Failed to start simulation:', error);
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to start simulation',
+        isActive: false
+      }));
+    }
+  }, [transcriptionService]);
+
+
   const contextValue: TranscriptionContextState = {
     ...state,
     startTranscription,
     stopTranscription,
+    simulateAudioStream,
     clearTranscripts,
     addTranscriptionCallback,
     removeTranscriptionCallback
