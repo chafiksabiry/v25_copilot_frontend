@@ -22,6 +22,7 @@ export function ContactInfo() {
   const {
     startTranscription,
     stopTranscription,
+    simulateAudioStream,
     isActive: isTranscriptionActive
   } = useTranscription();
 
@@ -287,6 +288,26 @@ export function ContactInfo() {
     initiateTwilioCall();
   };
 
+  const handleSimulateCall = async () => {
+    if (callStatus === 'active') return;
+    setCallStatus('active');
+
+    try {
+      await simulateAudioStream(
+        'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav',
+        contact.phone
+      );
+      dispatch({
+        type: 'START_CALL',
+        participants: [],
+        contact: contact
+      });
+    } catch (e) {
+      console.error("Simulation failed", e);
+      setCallStatus('idle');
+    }
+  };
+
   const handleCallNow = () => {
     initiateTwilioCall();
   };
@@ -368,105 +389,116 @@ export function ContactInfo() {
               End Call
             </button>
           ) : (
-            <button
-              onClick={handleStartCall}
-              disabled={isCallLoading || callStatus === 'initiating'}
-              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
-                ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-            >
-              <Phone className="w-5 h-5 mr-2" />
-              {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Start Call'}
-            </button>
+          ): (
+              <div className = "flex gap-2">
+              <button
+                onClick = { handleStartCall }
+                disabled = {isCallLoading || callStatus === 'initiating'}
+          className={`w-40 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
+                  ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+              >
+          <Phone className="w-5 h-5 mr-2" />
+          {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
+        </button>
+        <button
+          onClick={handleSimulateCall}
+          className="w-40 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          <Phone className="w-5 h-5 mr-2" />
+          Simulate
+        </button>
+      </div>
           )}
-          <div className="flex items-center space-x-6 mt-3">
-            <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
-            <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
-          </div>
-        </div>
-        {/* Actions à droite */}
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-6 mt-3">
+        <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
+        <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
+      </div>
+    </div >
+      {/* Actions à droite */ }
+      < div className = "flex items-center space-x-3" >
           <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
           <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
           <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
+        </div >
+    {/* Toggle à droite */ }
+    < button
+  className = "ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
+  onClick = {() => setExpanded(e => !e)
+}
+aria - label="Toggle contact details"
+  >
+  { expanded?<ChevronDown size = { 22 } /> : <ChevronUp size={22} />}
+        </button >
+      </div >
+  { expanded && (
+    <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
+      <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
+        {/* Colonne gauche */}
+        <div className="flex flex-col items-start">
+          <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-xl font-bold mb-2">
+            {contact.avatar ? (
+              <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
+            ) : (
+              contact.name.split(' ').map(n => n[0]).join('')
+            )}
+          </div>
+          <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
+          <div className="text-slate-300 text-sm">VP of Operations</div>
+          <div className="text-slate-400 text-sm">TechCorp Solutions</div>
         </div>
-        {/* Toggle à droite */}
-        <button
-          className="ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
-          onClick={() => setExpanded(e => !e)}
-          aria-label="Toggle contact details"
-        >
-          {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
-        </button>
-      </div>
-      {expanded && (
-        <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
-          <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
-            {/* Colonne gauche */}
-            <div className="flex flex-col items-start">
-              <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-xl font-bold mb-2">
-                {contact.avatar ? (
-                  <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
-                ) : (
-                  contact.name.split(' ').map(n => n[0]).join('')
-                )}
-              </div>
-              <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
-              <div className="text-slate-300 text-sm">VP of Operations</div>
-              <div className="text-slate-400 text-sm">TechCorp Solutions</div>
-            </div>
-            {/* Colonne centre */}
-            <div className="flex flex-col items-start gap-2">
-              <div className="flex items-center gap-2 text-slate-200">
-                <Phone className="w-5 h-5 text-blue-400" />
-                <span className="font-medium text-sm">{contact.phone}</span>
-                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
-              </div>
-              <div className="flex items-center gap-2 text-slate-200">
-                <Mail className="w-5 h-5 text-green-400" />
-                <span className="font-medium text-sm">sarah.johnson@techcorp.com</span>
-                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
-              </div>
-              <div className="flex items-center gap-2 text-slate-200">
-                <Calendar className="w-5 h-5 text-purple-400" />
-                <span className="font-medium text-sm">EST Timezone</span>
-              </div>
-            </div>
-            {/* Colonne droite */}
-            <div className="flex flex-row items-center justify-between w-full">
-              {/* Bloc gauche : badge + score + valeur */}
-              <div className="flex flex-col items-center flex-1">
-                <div className="w-[240px]">
-                  <span className="block bg-[#25594B] text-green-200 py-2 rounded-full text-lg font-medium text-center">Qualified</span>
-                </div>
-                <div className="mt-2 text-white text-xl font-bold text-center">85/100</div>
-                <div className="text-slate-300 text-sm text-center">Lead Score</div>
-                <div className="mt-2 text-green-400 text-lg font-bold text-center">$75 000</div>
-                <div className="text-slate-300 text-sm text-center">Potential Value</div>
-              </div>
-              {/* Bouton à droite */}
-              {callStatus === 'active' ? (
-                <button
-                  onClick={endCall}
-                  className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  End Call
-                </button>
-              ) : (
-                <button
-                  onClick={handleCallNow}
-                  disabled={isCallLoading || callStatus === 'initiating'}
-                  className={`ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md
-                    ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Call Now'}
-                </button>
-              )}
-            </div>
+        {/* Colonne centre */}
+        <div className="flex flex-col items-start gap-2">
+          <div className="flex items-center gap-2 text-slate-200">
+            <Phone className="w-5 h-5 text-blue-400" />
+            <span className="font-medium text-sm">{contact.phone}</span>
+            <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+          </div>
+          <div className="flex items-center gap-2 text-slate-200">
+            <Mail className="w-5 h-5 text-green-400" />
+            <span className="font-medium text-sm">sarah.johnson@techcorp.com</span>
+            <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+          </div>
+          <div className="flex items-center gap-2 text-slate-200">
+            <Calendar className="w-5 h-5 text-purple-400" />
+            <span className="font-medium text-sm">EST Timezone</span>
           </div>
         </div>
-      )}
+        {/* Colonne droite */}
+        <div className="flex flex-row items-center justify-between w-full">
+          {/* Bloc gauche : badge + score + valeur */}
+          <div className="flex flex-col items-center flex-1">
+            <div className="w-[240px]">
+              <span className="block bg-[#25594B] text-green-200 py-2 rounded-full text-lg font-medium text-center">Qualified</span>
+            </div>
+            <div className="mt-2 text-white text-xl font-bold text-center">85/100</div>
+            <div className="text-slate-300 text-sm text-center">Lead Score</div>
+            <div className="mt-2 text-green-400 text-lg font-bold text-center">$75 000</div>
+            <div className="text-slate-300 text-sm text-center">Potential Value</div>
+          </div>
+          {/* Bouton à droite */}
+          {callStatus === 'active' ? (
+            <button
+              onClick={endCall}
+              className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
+            >
+              <Phone className="w-5 h-5 mr-2" />
+              End Call
+            </button>
+          ) : (
+            <button
+              onClick={handleCallNow}
+              disabled={isCallLoading || callStatus === 'initiating'}
+              className={`ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md
+                    ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+            >
+              <Phone className="w-5 h-5 mr-2" />
+              {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Call Now'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
     </>
   );
 }

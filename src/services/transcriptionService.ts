@@ -50,6 +50,7 @@ export class TranscriptionService {
   private analyzer: AnalyserNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private isCallActive = false;
+  private isSimulationActive = false; // Added missing property
   private cleanupInitiated = false;
   private onTranscriptionUpdate: ((message: TranscriptionMessage) => void) | null = null;
 
@@ -58,6 +59,17 @@ export class TranscriptionService {
 
   constructor() {
     this.handleWebSocketMessage = this.handleWebSocketMessage.bind(this);
+  }
+
+  // Restore stopTranscription (was likely stop() before or I missed it)
+  stopTranscription() {
+    this.isSimulationActive = false;
+    this.cleanup();
+  }
+
+  // Alias for compatibility if needed, or just use stopTranscription
+  stop() {
+    this.stopTranscription();
   }
 
   setTranscriptionCallback(callback: (message: TranscriptionMessage) => void) {
@@ -203,6 +215,113 @@ export class TranscriptionService {
     }
 
     return 'en-US';
+  }
+
+  async simulateAudioStream(audioUrl: string, phoneNumber: string) {
+    console.log('🔄 Starting audio simulation from:', audioUrl);
+    try {
+      this.isSimulationActive = true;
+      const response = await fetch(audioUrl);
+      const arrayBuffer = await response.arrayBuffer();
+
+      // Use AudioContext to decode the file
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+
+      // Setup WebSocket connection
+      await this.getDestinationZone(); // Ensure zone is set
+      const baseUrl = this.destinationZone === 'US'
+        ? 'https://v25dashcallsbackend-production.up.railway.app'
+        : 'https://v25dashcallsbackend-production.up.railway.app'; // Fallback to US/Prod for now as EU url might differ
+
+      const wsUrl = baseUrl.replace('http', 'ws');
+      this.socket = new WebSocket(`${wsUrl}/speech-to-text`);
+
+      this.socket.onopen = () => {
+        console.log('✅ [Simulation] WebSocket connected');
+        // Send initial config
+        const configMessage = {
+          type: 'config',
+          config: {
+            encoding: 'LINEAR16',
+            sampleRateHertz: 16000,
+            languageCode: 'en-US',
+            alternativeLanguageCodes: ['fr-FR', 'ar-MA', 'ar-SA'],
+            enableAutomaticPunctuation: true,
+            audioChannelCount: 2,
+            enableSpeakerDiarization: true,
+            minSpeakerCount: 2,
+            maxSpeakerCount: 2,
+          }
+        };
+        this.socket?.send(JSON.stringify(configMessage));
+
+        // Start streaming chunks
+        this.streamAudioBuffer(audioBuffer);
+      };
+
+      this.socket.onmessage = this.handleSocketMessage;
+      this.socket.onerror = (error) => console.error('❌ [Simulation] Socket error:', error);
+      this.socket.onclose = () => console.log('🔌 [Simulation] Socket closed');
+
+    } catch (error) {
+      console.error('❌ [Simulation] Error starting simulation:', error);
+      this.isSimulationActive = false;
+    }
+  }
+
+  private streamAudioBuffer(audioBuffer: AudioBuffer) {
+    const rawDataLeft = audioBuffer.getChannelData(0);
+    const rawDataRight = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : rawDataLeft; // Duplicate if mono
+
+    let offset = 0;
+    const bufferSize = 4096; // Chunk size
+    const targetSampleRate = 16000;
+    const ratio = audioBuffer.sampleRate / targetSampleRate;
+
+    console.log(`🎙️ [Simulation] Original Rate: ${audioBuffer.sampleRate}, Target: ${targetSampleRate}, Ratio: ${ratio}`);
+
+    const interval = setInterval(() => {
+      if (!this.isSimulationActive || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        clearInterval(interval);
+        return;
+      }
+
+      const chunkLength = Math.floor(bufferSize * ratio);
+      if (offset + chunkLength >= rawDataLeft.length) {
+        console.log('✅ [Simulation] Audio finished');
+        this.stopTranscription();
+        clearInterval(interval);
+        return;
+      }
+
+      // Downsample and Interleave (Stereo)
+      const outputSamples = bufferSize;
+      const pcmData = new Int16Array(outputSamples * 2); // Stereo
+
+      for (let i = 0; i < outputSamples; i++) {
+        const inputIndex = offset + Math.floor(i * ratio);
+
+        // Left Channel
+        const sampleL = Math.max(-1, Math.min(1, rawDataLeft[inputIndex] || 0));
+        pcmData[i * 2] = sampleL < 0 ? sampleL * 0x8000 : sampleL * 0x7FFF;
+
+        // Right Channel
+        const sampleR = Math.max(-1, Math.min(1, rawDataRight[inputIndex] || 0));
+        pcmData[i * 2 + 1] = sampleR < 0 ? sampleR * 0x8000 : sampleR * 0x7FFF;
+      }
+
+      this.ws.send(pcmData.buffer); // Send raw bytes
+      offset += chunkLength;
+
+    }, (bufferSize / 16000) * 1000); // Send at approx real-time speed (e.g. every ~256ms for 4096 samples)
+  }
+
+  // Helper to ensure zone is ready
+  async getDestinationZone() {
+    // Logic from initializeTranscription
+    if (this.destinationZone) return;
+    // ... default fetch logic if needed, or just rely on setDestinationZone being called externally
   }
 
   async initializeTranscription(remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) {
