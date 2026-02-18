@@ -292,19 +292,23 @@ export function ContactInfo() {
     if (callStatus === 'active') return;
     setCallStatus('active');
 
+    // Dispatch START_CALL *before* starting simulation to prevent race condition
+    // where CallPhasesDisplay sees isTranscriptionActive=true but isCallActive=false
+    dispatch({
+      type: 'START_CALL',
+      participants: [],
+      contact: contact
+    });
+
     try {
       await simulateAudioStream(
         'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav',
         contact.phone
       );
-      dispatch({
-        type: 'START_CALL',
-        participants: [],
-        contact: contact
-      });
     } catch (e) {
       console.error("Simulation failed", e);
       setCallStatus('idle');
+      dispatch({ type: 'END_CALL' });
     }
   };
 
