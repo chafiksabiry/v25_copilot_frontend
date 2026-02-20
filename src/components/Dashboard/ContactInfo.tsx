@@ -35,12 +35,14 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
 
+  const [testPhoneNumber, setTestPhoneNumber] = useState('+212637446431');
+
   // Store original contact data to prevent it from being overwritten
   const [originalContact] = useState({
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+212637446431',
+    phone: testPhoneNumber,
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -86,8 +88,8 @@ export function ContactInfo() {
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
   });
 
-  // Use original contact data instead of state.callState.contact
-  const contact = originalContact;
+  // Update contact phone when testPhoneNumber changes
+  const contact = { ...originalContact, phone: testPhoneNumber };
 
   // Debug: Log contact data whenever it changes
   /*  console.log("Contact data:", contact);
@@ -100,7 +102,7 @@ export function ContactInfo() {
      console.log("Call status at start:", callStatus); */
 
     // Ensure we have valid contact data
-    const phoneNumber = contact?.phone || '+212637446431'; // Fallback to default
+    const phoneNumber = testPhoneNumber;
     console.log("Using phone number:", phoneNumber);
 
     if (!phoneNumber) {
@@ -450,10 +452,22 @@ export function ContactInfo() {
             </div>
             {/* Colonne centre */}
             <div className="flex flex-col items-start gap-2">
-              <div className="flex items-center gap-2 text-slate-200">
-                <Phone className="w-5 h-5 text-blue-400" />
-                <span className="font-medium text-sm">{contact.phone}</span>
-                <button className="ml-1 text-slate-400 hover:text-blue-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+              <div className="flex items-center gap-2 text-slate-200 w-full">
+                <Phone className="w-5 h-5 text-blue-400 shrink-0" />
+                <input
+                  type="text"
+                  value={testPhoneNumber}
+                  onChange={(e) => setTestPhoneNumber(e.target.value)}
+                  className="bg-[#1b253a] text-white font-medium text-sm px-2 py-1 rounded border border-slate-600 focus:border-blue-400 outline-none w-full"
+                  placeholder="Phone number"
+                />
+                <button
+                  className="ml-1 text-slate-400 hover:text-blue-400 shrink-0"
+                  title="Copy"
+                  onClick={() => navigator.clipboard.writeText(testPhoneNumber)}
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                </button>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
