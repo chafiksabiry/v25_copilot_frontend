@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
 import { useAgent } from '../contexts/AgentContext';
 import { Participant, TranscriptEntry, Recommendation } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { processAiAnalysis } from '../services/aiAnalysisBridge';
 
 export function useRealTimeFeatures() {
   const { state, dispatch } = useAgent();
 
   // Start a call with participants
   const startCall = (participants: Participant[]) => {
-    dispatch({ 
-      type: 'START_CALL', 
+    dispatch({
+      type: 'START_CALL',
       participants,
       contact: participants.find(p => p.role === 'customer') as any
     });
@@ -21,10 +21,10 @@ export function useRealTimeFeatures() {
 
     // Start audio level simulation
     startAudioLevelSimulation();
-    
+
     // Start transcript simulation
     startTranscriptSimulation();
-    
+
     // Start metrics updates
     startMetricsSimulation();
   };
@@ -36,8 +36,8 @@ export function useRealTimeFeatures() {
 
   // Update call phase
   const updateCallPhase = (phase: any) => {
-    dispatch({ 
-      type: 'UPDATE_CALL_STATE', 
+    dispatch({
+      type: 'UPDATE_CALL_STATE',
       callState: { currentPhase: phase }
     });
   };
@@ -54,7 +54,7 @@ export function useRealTimeFeatures() {
         clearInterval(interval);
         return;
       }
-      
+
       const level = Math.random() * 100;
       dispatch({ type: 'UPDATE_AUDIO_LEVEL', level });
     }, 500);
@@ -89,6 +89,10 @@ export function useRealTimeFeatures() {
       };
 
       dispatch({ type: 'ADD_TRANSCRIPT_ENTRY', entry });
+
+      // Trigger AI analysis on simulated transcripts to match real call behavior
+      processAiAnalysis(sample.text, dispatch);
+
       index++;
     }, 3000);
   };

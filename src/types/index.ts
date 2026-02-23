@@ -63,14 +63,20 @@ export interface TranscriptEntry {
 }
 
 export interface PersonalityProfile {
-  type: 'D' | 'I' | 'S' | 'C';
-  dominance: number;
-  influence: number;
-  steadiness: number;
-  conscientiousness: number;
+  primaryType: 'D' | 'I' | 'S' | 'C';
+  secondaryType: 'D' | 'I' | 'S' | 'C' | null;
   confidence: number;
-  description: string;
+  personalityIndicators: string[];
   recommendations: string[];
+  approachStrategy: string;
+  potentialObjections: string[];
+  objectionHandling: string[];
+  closingTechniques: string[];
+  communicationStyle: string;
+  emotionalTriggers: string[];
+  riskFactors: string[];
+  successIndicators: string[];
+  timestamp: string;
 }
 
 export interface Recommendation {

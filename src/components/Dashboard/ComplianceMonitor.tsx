@@ -1,31 +1,18 @@
-import React from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Shield, AlertTriangle, CheckCircle, X, Clock } from 'lucide-react';
 
 export function ComplianceMonitor() {
   const { state } = useAgent();
 
-  // Mock compliance alerts (in real app, this would come from state)
-  const mockAlerts = [
-    {
-      id: '1',
-      type: 'missing_disclosure' as const,
-      severity: 'warning' as const,
-      message: 'Risk disclosure not yet provided',
-      suggestion: 'Include standard risk disclaimer before proceeding with product details',
-      timestamp: new Date(Date.now() - 300000) // 5 minutes ago
-    },
-    {
-      id: '2',
-      type: 'sensitive_term' as const,
-      severity: 'error' as const,
-      message: 'Guarantee language detected',
-      suggestion: 'Avoid using terms like "guaranteed returns" - use "projected" or "estimated" instead',
-      timestamp: new Date(Date.now() - 120000) // 2 minutes ago
-    }
-  ];
-
-  const alerts = state.callState.isActive ? mockAlerts : [];
+  // Use real warnings and recommendations from state
+  const alerts = state.smartWarnings.map(w => ({
+    id: w.id,
+    type: w.type as any,
+    severity: w.severity as any,
+    message: w.message,
+    suggestion: w.suggestedActions.join(', '),
+    timestamp: w.detectedAt
+  }));
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -62,7 +49,7 @@ export function ComplianceMonitor() {
     const diff = Date.now() - timestamp.getTime();
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
-    
+
     if (minutes > 0) {
       return `${minutes}m ago`;
     }

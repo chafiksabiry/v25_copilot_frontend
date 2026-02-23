@@ -50,9 +50,11 @@ export class TranscriptionService {
   private analyzer: AnalyserNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private isCallActive = false;
-  private isSimulationActive = false; // Added missing property
+  private isSimulationActive = false;
+  private isSimulationPaused = false;
+  private simulationProgress = 0;
   private cleanupInitiated = false;
-  private onTranscriptionUpdate: ((message: TranscriptionMessage) => void) | null = null;
+  private onTranscriptionUpdate: ((message: TranscriptionMessage | any) => void) | null = null;
 
   private configSent = false; // Flag pour s'assurer que la configuration est envoyée avant l'audio
   private destinationZone: string | null = null; // Zone de destination du gig
@@ -70,6 +72,20 @@ export class TranscriptionService {
   // Alias for compatibility if needed, or just use stopTranscription
   stop() {
     this.stopTranscription();
+  }
+
+  pauseSimulation() {
+    this.isSimulationPaused = true;
+    console.log('⏸️ Simulation paused');
+  }
+
+  resumeSimulation() {
+    this.isSimulationPaused = false;
+    console.log('▶️ Simulation resumed');
+  }
+
+  getSimulationProgress() {
+    return this.simulationProgress;
   }
 
   setTranscriptionCallback(callback: (message: TranscriptionMessage) => void) {
@@ -287,12 +303,23 @@ export class TranscriptionService {
         return;
       }
 
+      if (this.isSimulationPaused) {
+        return;
+      }
+
       const chunkLength = Math.floor(bufferSize * ratio);
       if (offset + chunkLength >= rawDataLeft.length) {
         console.log('✅ [Simulation] Audio finished');
-        // this.stopTranscription(); // Keep socket open for results
+        this.simulationProgress = 100;
+        this.reportSimulationUpdate();
         clearInterval(interval);
         return;
+      }
+
+      // Update progress
+      this.simulationProgress = Math.floor((offset / rawDataLeft.length) * 100);
+      if (offset % (bufferSize * 10) === 0) {
+        this.reportSimulationUpdate();
       }
 
       // Downsample and Interleave (Stereo)
@@ -314,7 +341,18 @@ export class TranscriptionService {
       this.ws.send(pcmData.buffer); // Send raw bytes
       offset += chunkLength;
 
-    }, (bufferSize / 16000) * 1000); // Send at approx real-time speed (e.g. every ~256ms for 4096 samples)
+    }, (bufferSize / 16000) * 1000); // Send at approx real-time speed
+  }
+
+  private reportSimulationUpdate() {
+    if (this.onTranscriptionUpdate) {
+      this.onTranscriptionUpdate({
+        type: 'simulation_update',
+        progress: this.simulationProgress,
+        isPaused: this.isSimulationPaused,
+        timestamp: Date.now()
+      } as any);
+    }
   }
 
   // Helper to ensure zone is ready

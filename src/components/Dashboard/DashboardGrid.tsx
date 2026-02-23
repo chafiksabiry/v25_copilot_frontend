@@ -11,6 +11,7 @@ import RecommendationsDetails from './RecommendationsDetails';
 import { RealTimeCoaching } from './RealTimeCoaching';
 import { LiveTranscript } from './LiveTranscript';
 import { useAgent } from '../../contexts/AgentContext';
+import SmartWarningSystem from './SmartWarningSystem';
 
 // Placeholders stylés pour les widgets vides
 /*
@@ -61,13 +62,27 @@ const DashboardGrid: React.FC = () => {
           title="DISC Profile"
           value={
             <div className="w-full flex flex-col items-center">
-              <div className="flex gap-2 justify-center mb-2">
-                <span className="bg-red-500 text-white rounded px-2 py-1 font-bold">D</span>
-                <span className="bg-yellow-400 text-white rounded px-2 py-1 font-bold">I</span>
-                <span className="bg-green-500 text-white rounded px-2 py-1 font-bold">S</span>
-                <span className="bg-blue-500 text-white rounded px-2 py-1 font-bold">C</span>
-              </div>
-              <div className="text-slate-400 text-sm text-center w-full">Start call to analyze</div>
+              {state.personalityProfile ? (
+                <div className="flex flex-col items-center">
+                  <div className="flex gap-2 justify-center mb-2">
+                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'D' ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-500/50'}`}>D</span>
+                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'I' ? 'bg-yellow-400 text-white' : 'bg-yellow-400/20 text-yellow-400/50'}`}>I</span>
+                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'S' ? 'bg-green-500 text-white' : 'bg-green-500/20 text-green-500/50'}`}>S</span>
+                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'C' ? 'bg-blue-500 text-white' : 'bg-blue-500/20 text-blue-500/50'}`}>C</span>
+                  </div>
+                  <div className="text-white font-bold text-center capitalize">{state.personalityProfile.primaryType} Profile Detected</div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2 justify-center mb-2">
+                    <span className="bg-red-500/20 text-red-500/50 rounded px-2 py-1 font-bold">D</span>
+                    <span className="bg-yellow-400/20 text-yellow-400/50 rounded px-2 py-1 font-bold">I</span>
+                    <span className="bg-green-500/20 text-green-500/50 rounded px-2 py-1 font-bold">S</span>
+                    <span className="bg-blue-500/20 text-blue-500/50 rounded px-2 py-1 font-bold">C</span>
+                  </div>
+                  <div className="text-slate-400 text-sm text-center w-full">Start call to analyze</div>
+                </>
+              )}
             </div>
           }
           expandable
@@ -194,19 +209,6 @@ const DashboardGrid: React.FC = () => {
               callDuration={state.callState.isActive ? Math.floor((Date.now() - (state.callState.startTime?.getTime() || Date.now())) / 60000) : 0}
               onPersonalityDetected={(profile) => {
                 console.log('Personality detected:', profile);
-                // Adapter le profil pour le contexte
-                const adaptedProfile = {
-                  type: profile.primaryType,
-                  dominance: profile.primaryType === 'D' ? profile.confidence : 0,
-                  influence: profile.primaryType === 'I' ? profile.confidence : 0,
-                  steadiness: profile.primaryType === 'S' ? profile.confidence : 0,
-                  conscientiousness: profile.primaryType === 'C' ? profile.confidence : 0,
-                  confidence: profile.confidence,
-                  description: profile.communicationStyle,
-                  recommendations: profile.recommendations
-                };
-                dispatch({ type: 'UPDATE_PERSONALITY_PROFILE', profile: adaptedProfile });
-
                 // Notification pour informer l'utilisateur
                 if (profile.confidence >= 70) {
                   // Scroll automatique vers le DISC si confiance élevée
@@ -300,6 +302,9 @@ const DashboardGrid: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Overlays */}
+      <SmartWarningSystem />
     </div>
   );
 };

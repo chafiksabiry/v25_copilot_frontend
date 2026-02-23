@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
-import { useRealTimeFeatures } from '../../hooks/useRealTimeFeatures';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import {
-  User, Phone, Mail, Building, MapPin, Clock,
-  Star, Tag, Calendar, MessageSquare, Video,
-  PhoneCall, Linkedin, Twitter, Globe, Edit, ChevronDown, ChevronUp
+  Phone, Mail, Building, Star, Calendar, MessageSquare, Video, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -23,19 +19,39 @@ export function ContactInfo() {
     startTranscription,
     stopTranscription,
     simulateAudioStream,
+    pauseSimulation,
+    resumeSimulation,
+    isSimulationPaused,
+    simulationProgress,
     isActive: isTranscriptionActive
   } = useTranscription();
 
-  const { state, dispatch } = useAgent();
+  const { dispatch } = useAgent();
   const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
-  const [activeDevice, setActiveDevice] = useState<Device | null>(null);
-  const [callStatus, setCallStatus] = useState<string>('idle'); // 'idle', 'initiating', 'active', 'ended', 'error'
+  const [, setActiveDevice] = useState<Device | null>(null);
+  const [callStatus, setCallStatus] = useState<string>('idle');
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [, setMediaStream] = useState<MediaStream | null>(null);
 
   const [testPhoneNumber, setTestPhoneNumber] = useState('+212637446431');
+  const [selectedAudio, setSelectedAudio] = useState('https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav');
+
+  const audioLibrary = [
+    {
+      name: 'Standard Pitch',
+      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav'
+    },
+    {
+      name: 'Objection Handling',
+      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1734015697/mve65i02qshf7j1gscat.wav'
+    },
+    {
+      name: 'Closing Session',
+      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav' // Fallback to same for now
+    }
+  ];
 
   // Store original contact data to prevent it from being overwritten
   const [originalContact] = useState({
@@ -304,7 +320,7 @@ export function ContactInfo() {
 
     try {
       await simulateAudioStream(
-        'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav',
+        selectedAudio,
         contact.phone
       );
     } catch (e) {
@@ -318,29 +334,6 @@ export function ContactInfo() {
     initiateTwilioCall();
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'new': return 'bg-blue-600/20 text-blue-300';
-      case 'qualified': return 'bg-green-600/20 text-green-300';
-      case 'contacted': return 'bg-yellow-600/20 text-yellow-300';
-      case 'interested': return 'bg-purple-600/20 text-purple-300';
-      case 'negotiating': return 'bg-orange-600/20 text-orange-300';
-      case 'closed': return 'bg-emerald-600/20 text-emerald-300';
-      case 'lost': return 'bg-red-600/20 text-red-300';
-      default: return 'bg-slate-600/20 text-slate-300';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'text-red-400';
-      case 'high': return 'text-orange-400';
-      case 'medium': return 'text-yellow-400';
-      case 'low': return 'text-green-400';
-      default: return 'text-slate-400';
-    }
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       month: 'short',
@@ -348,16 +341,6 @@ export function ContactInfo() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getContactMethodIcon = (method: string) => {
-    switch (method) {
-      case 'phone': return <Phone className="w-4 h-4" />;
-      case 'email': return <Mail className="w-4 h-4" />;
-      case 'video': return <Video className="w-4 h-4" />;
-      case 'text': return <MessageSquare className="w-4 h-4" />;
-      default: return <Phone className="w-4 h-4" />;
-    }
   };
 
   return (
@@ -412,6 +395,40 @@ export function ContactInfo() {
                 <Phone className="w-5 h-5 mr-2" />
                 Simulate
               </button>
+            </div>
+          )}
+
+          {isTranscriptionActive && (
+            <div className="w-full max-w-md mt-4 px-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-slate-400 font-medium">Simulation Progress</span>
+                <span className="text-xs text-blue-400 font-bold">{simulationProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden mb-3">
+                <div
+                  className="bg-blue-500 h-full transition-all duration-500 ease-out"
+                  style={{ width: `${simulationProgress}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-center space-x-4">
+                {isSimulationPaused ? (
+                  <button
+                    onClick={resumeSimulation}
+                    className="p-2 bg-slate-700 hover:bg-slate-600 text-blue-400 rounded-full transition-colors"
+                    title="Resume"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                  </button>
+                ) : (
+                  <button
+                    onClick={pauseSimulation}
+                    className="p-2 bg-slate-700 hover:bg-slate-600 text-yellow-400 rounded-full transition-colors"
+                    title="Pause"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                  </button>
+                )}
+              </div>
             </div>
           )}
           <div className="flex items-center space-x-6 mt-3">
@@ -477,6 +494,19 @@ export function ContactInfo() {
               <div className="flex items-center gap-2 text-slate-200">
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-sm">EST Timezone</span>
+              </div>
+
+              <div className="mt-2 w-full">
+                <label className="text-xs font-semibold text-slate-400 mb-1 block uppercase">Audio Library</label>
+                <select
+                  value={selectedAudio}
+                  onChange={(e) => setSelectedAudio(e.target.value)}
+                  className="w-full bg-[#1b253a] text-slate-200 text-sm p-2 rounded border border-slate-600 outline-none focus:border-blue-400"
+                >
+                  {audioLibrary.map((audio, idx) => (
+                    <option key={idx} value={audio.url}>{audio.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
             {/* Colonne droite */}

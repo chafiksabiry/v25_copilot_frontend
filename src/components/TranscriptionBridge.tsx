@@ -3,26 +3,33 @@ import { useAgent } from '../contexts/AgentContext';
 import { useTranscription } from '../contexts/TranscriptionContext';
 import { TranscriptionMessage } from '../services/transcriptionService';
 import { v4 as uuidv4 } from 'uuid';
+import { processAiAnalysis } from '../services/aiAnalysisBridge';
 
 export const TranscriptionBridge: React.FC = () => {
     const { dispatch } = useAgent();
     const { addTranscriptionCallback, removeTranscriptionCallback, isActive } = useTranscription();
 
     useEffect(() => {
-        const handleTranscriptionUpdate = (message: TranscriptionMessage) => {
+        const handleTranscriptionUpdate = async (message: TranscriptionMessage) => {
             // Handle Transcripts
             if (message.type === 'final' || message.type === 'transcript') {
+                const transcriptId = uuidv4();
                 dispatch({
                     type: 'ADD_TRANSCRIPT_ENTRY',
                     entry: {
-                        id: uuidv4(),
+                        id: transcriptId,
                         participantId: message.speaker === 'agent' ? 'agent-1' : 'customer-1',
                         text: message.text,
                         timestamp: new Date(message.timestamp),
                         confidence: message.confidence || 1.0,
-                        sentiment: 'neutral' // Default, assuming analysis might update this later or separate service
+                        sentiment: 'neutral'
                     }
                 });
+
+                // Trigger AI analysis on final transcripts
+                if (message.type === 'final') {
+                    processAiAnalysis(message.text, dispatch);
+                }
             }
 
             // Handle AI Analysis (Phase changes, etc)

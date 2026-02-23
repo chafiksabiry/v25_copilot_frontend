@@ -13,6 +13,10 @@ interface TranscriptionContextState {
   startTranscription: (remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) => Promise<void>;
   stopTranscription: () => Promise<void>;
   simulateAudioStream: (audioUrl: string, phoneNumber: string) => Promise<void>;
+  pauseSimulation: () => void;
+  resumeSimulation: () => void;
+  isSimulationPaused: boolean;
+  simulationProgress: number;
   clearTranscripts: () => void;
   addTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
   removeTranscriptionCallback: (callback: (message: TranscriptionMessage) => void) => void;
@@ -37,7 +41,9 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
     error: null as string | null,
     currentPhase: 'Intro / Hook',
     analysisConfidence: 0,
-    nextStepSuggestion: ''
+    nextStepSuggestion: '',
+    isSimulationPaused: false,
+    simulationProgress: 0
   });
 
   // Référence pour stocker les callbacks externes
@@ -91,6 +97,12 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
               ...prev,
               transcripts: [...prev.transcripts, message],
               currentInterimText: ''
+            };
+          } else if ((message as any).type === 'simulation_update') {
+            return {
+              ...prev,
+              simulationProgress: (message as any).progress,
+              isSimulationPaused: (message as any).isPaused
             };
           }
           return prev;
@@ -173,6 +185,12 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
               transcripts: [...prev.transcripts, message],
               currentInterimText: ''
             };
+          } else if ((message as any).type === 'simulation_update') {
+            return {
+              ...prev,
+              simulationProgress: (message as any).progress,
+              isSimulationPaused: (message as any).isPaused
+            };
           }
           return prev;
         });
@@ -198,11 +216,24 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
   }, [transcriptionService]);
 
 
+  const pauseSimulation = useCallback(() => {
+    transcriptionService.pauseSimulation();
+    setState(prev => ({ ...prev, isSimulationPaused: true }));
+  }, [transcriptionService]);
+
+  const resumeSimulation = useCallback(() => {
+    transcriptionService.resumeSimulation();
+    setState(prev => ({ ...prev, isSimulationPaused: false }));
+  }, [transcriptionService]);
+
+
   const contextValue: TranscriptionContextState = {
     ...state,
     startTranscription,
     stopTranscription,
     simulateAudioStream,
+    pauseSimulation,
+    resumeSimulation,
     clearTranscripts,
     addTranscriptionCallback,
     removeTranscriptionCallback
