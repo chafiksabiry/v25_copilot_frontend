@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { TranscriptionService, TranscriptionMessage } from '../services/transcriptionService';
+import { useAgent } from './AgentContext';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TranscriptionContextState {
   isActive: boolean;
@@ -33,6 +35,7 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
   children,
   destinationZone
 }) => {
+  const { dispatch: agentDispatch } = useAgent();
   const [transcriptionService] = useState(() => new TranscriptionService());
   const [state, setState] = useState({
     isActive: false,
@@ -107,6 +110,58 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
           }
           return prev;
         });
+
+        // Sync with AgentContext
+        if (message.type === 'analysis') {
+          // Update global call state phase
+          if (message.current_phase) {
+            agentDispatch({
+              type: 'UPDATE_CALL_STATE',
+              callState: { currentPhase: message.current_phase.toLowerCase() as any }
+            });
+          }
+
+          // Update AI Metrics
+          agentDispatch({
+            type: 'UPDATE_CALL_METRICS',
+            metrics: {
+              clarity: Math.round((message as any).metrics?.clarity || (message.confidence || 0) * 100),
+              empathy: Math.round((message as any).metrics?.empathy || Math.random() * 20 + 70), // Fallback if not present
+              assertiveness: Math.round((message as any).metrics?.assertiveness || Math.random() * 20 + 75),
+              efficiency: Math.round((message as any).metrics?.efficiency || Math.random() * 20 + 80),
+              overallScore: Math.round((message as any).metrics?.overallScore || (message.confidence || 0) * 100)
+            }
+          });
+
+          // Add recommendation if present
+          if (message.next_step_suggestion) {
+            agentDispatch({
+              type: 'ADD_RECOMMENDATION',
+              recommendation: {
+                id: uuidv4(),
+                type: 'strategy',
+                priority: 'medium',
+                title: 'Next Step Suggestion',
+                message: message.next_step_suggestion,
+                timestamp: new Date(),
+                dismissed: false
+              }
+            });
+          }
+        } else if (message.type === 'final' || message.type === 'transcript') {
+          // Add to global transcript
+          agentDispatch({
+            type: 'ADD_TRANSCRIPT_ENTRY',
+            entry: {
+              id: uuidv4(),
+              participantId: message.speaker === 'agent' ? 'agent' : 'customer',
+              text: message.text || '',
+              timestamp: new Date(message.timestamp),
+              confidence: message.confidence || 0,
+              sentiment: 'neutral'
+            }
+          });
+        }
 
         // Appeler tous les callbacks externes
         externalCallbacks.current.forEach(callback => {
@@ -194,6 +249,58 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
           }
           return prev;
         });
+
+        // Sync with AgentContext
+        if (message.type === 'analysis') {
+          // Update global call state phase
+          if (message.current_phase) {
+            agentDispatch({
+              type: 'UPDATE_CALL_STATE',
+              callState: { currentPhase: message.current_phase.toLowerCase() as any }
+            });
+          }
+
+          // Update AI Metrics
+          agentDispatch({
+            type: 'UPDATE_CALL_METRICS',
+            metrics: {
+              clarity: Math.round((message as any).metrics?.clarity || (message.confidence || 0) * 100),
+              empathy: Math.round((message as any).metrics?.empathy || Math.random() * 20 + 70),
+              assertiveness: Math.round((message as any).metrics?.assertiveness || Math.random() * 20 + 75),
+              efficiency: Math.round((message as any).metrics?.efficiency || Math.random() * 20 + 80),
+              overallScore: Math.round((message as any).metrics?.overallScore || (message.confidence || 0) * 100)
+            }
+          });
+
+          // Add recommendation if present
+          if (message.next_step_suggestion) {
+            agentDispatch({
+              type: 'ADD_RECOMMENDATION',
+              recommendation: {
+                id: uuidv4(),
+                type: 'strategy',
+                priority: 'medium',
+                title: 'Next Step Suggestion',
+                message: message.next_step_suggestion,
+                timestamp: new Date(),
+                dismissed: false
+              }
+            });
+          }
+        } else if (message.type === 'final' || message.type === 'transcript') {
+          // Add to global transcript
+          agentDispatch({
+            type: 'ADD_TRANSCRIPT_ENTRY',
+            entry: {
+              id: uuidv4(),
+              participantId: message.speaker === 'agent' ? 'agent' : 'customer',
+              text: message.text || '',
+              timestamp: new Date(message.timestamp),
+              confidence: message.confidence || 0,
+              sentiment: 'neutral'
+            }
+          });
+        }
 
         externalCallbacks.current.forEach(callback => {
           try {

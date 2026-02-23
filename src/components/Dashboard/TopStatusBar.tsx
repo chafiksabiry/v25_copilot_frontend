@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX } from 'lucide-react';
 import StatusCard from './StatusCard';
-import CallControlsPanel from './CallControlsPanel';
 import { useAgent } from '../../contexts/AgentContext';
+import { useTranscription } from '../../contexts/TranscriptionContext';
 
 const TopStatusBar: React.FC = () => {
   const { state } = useAgent();
+  const {
+    currentPhase: aiCurrentPhase,
+    analysisConfidence,
+    isActive: isTranscriptionActive,
+    simulationProgress
+  } = useTranscription();
+
   const [callExpanded, setCallExpanded] = useState(false);
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -58,21 +65,16 @@ const TopStatusBar: React.FC = () => {
           </div>
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<BarChart2 size={20} className="text-green-400" />}
-              title="Metrics"
-              value={<span className="text-red-400 font-extrabold">0%</span>}
-              subtitle={<span>Overall Score</span>}
-              status="danger"
-              expandable
-              expanded={metricsExpanded}
-              onToggle={() => setMetricsExpanded(e => !e)}
-            />
-          </div>
+          <StatusCard
+            icon={<BarChart2 size={20} className="text-green-400" />}
+            title="Metrics"
+            value={<span className={`${state.callMetrics.overallScore < 50 ? 'text-red-400' : 'text-green-400'} font-extrabold`}>{Math.round(state.callMetrics.overallScore)}%</span>}
+            subtitle={<span>Overall Score</span>}
+            status={state.callMetrics.overallScore < 50 ? "danger" : state.callMetrics.overallScore < 80 ? "warning" : "success"}
+            expandable
+            expanded={metricsExpanded}
+            onToggle={() => setMetricsExpanded(e => !e)}
+          />
         </div>
         <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
@@ -90,20 +92,18 @@ const TopStatusBar: React.FC = () => {
           </div>
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Shield size={20} className="text-cyan-400" />}
-              title="Warnings"
-              value={<span className="text-green-400 font-semibold">All Clear</span>}
-              status="success"
-              expandable
-              expanded={warningsExpanded}
-              onToggle={() => setWarningsExpanded(e => !e)}
-            />
-          </div>
+          <StatusCard
+            icon={<Shield size={20} className={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "text-red-400" : "text-cyan-400"} />}
+            title="Warnings"
+            value={state.smartWarnings.filter(w => !w.resolved).length > 0
+              ? <span className="text-red-400 font-semibold">{state.smartWarnings.filter(w => !w.resolved).length} Active</span>
+              : <span className="text-green-400 font-semibold">All Clear</span>
+            }
+            status={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "danger" : "success"}
+            expandable
+            expanded={warningsExpanded}
+            onToggle={() => setWarningsExpanded(e => !e)}
+          />
         </div>
         <div className="relative w-full h-full">
           <div className="absolute inset-0 z-10 pointer-events-none">
@@ -120,47 +120,37 @@ const TopStatusBar: React.FC = () => {
           </div>
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Volume2 size={20} className="text-blue-400" />}
-              title="Audio"
-              value={
-                <div className="w-full">
-                  <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
-                    <div className="bg-blue-400 h-3 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                  <span className="block mt-2 text-blue-400 text-sm text-left">0%</span>
+          <StatusCard
+            icon={<Volume2 size={20} className="text-blue-400" />}
+            title="Audio"
+            value={
+              <div className="w-full">
+                <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
+                  <div className="bg-blue-400 h-3 rounded-full transition-all duration-300" style={{ width: `${simulationProgress}%` }}></div>
                 </div>
-              }
-            />
-          </div>
+                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(simulationProgress)}%</span>
+              </div>
+            }
+          />
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Activity size={20} className="text-violet-400" />}
-              title="AI Status"
-              value={<span className="text-slate-400 font-semibold">Paused</span>}
-            />
-          </div>
+          <StatusCard
+            icon={<Activity size={20} className={isTranscriptionActive ? "text-green-400" : "text-violet-400"} />}
+            title="AI Status"
+            value={isTranscriptionActive
+              ? <div className="flex flex-col">
+                <span className="text-green-400 font-semibold">Active ({Math.round(analysisConfidence * 100)}%)</span>
+              </div>
+              : <span className="text-slate-400 font-semibold">Idle</span>
+            }
+          />
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<TrendingUp size={20} className="text-yellow-400" />}
-              title="Phase"
-              value={<span className="text-slate-400 font-semibold whitespace-nowrap">No active phase</span>}
-            />
-          </div>
+          <StatusCard
+            icon={<TrendingUp size={20} className="text-yellow-400" />}
+            title="Phase"
+            value={<span className="text-yellow-400 font-semibold whitespace-nowrap">{aiCurrentPhase || 'No active phase'}</span>}
+          />
         </div>
       </div>
       {callExpanded && (
@@ -235,9 +225,9 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-pink-400 text-xl mr-2">🎯</span>
                 <span className="font-bold text-white text-lg">Clarity</span>
               </div>
-              <span className="text-red-400 font-bold text-2xl mb-2">0%</span>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.clarity < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.clarity)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-pink-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                <div className="bg-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.clarity}%` }}></div>
               </div>
             </div>
             {/* Empathy */}
@@ -246,9 +236,9 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-pink-400 text-xl mr-2">❤️</span>
                 <span className="font-bold text-white text-lg">Empathy</span>
               </div>
-              <span className="text-red-400 font-bold text-2xl mb-2">0%</span>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.empathy < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.empathy)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-pink-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                <div className="bg-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.empathy}%` }}></div>
               </div>
             </div>
             {/* Assertiveness */}
@@ -257,9 +247,9 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-yellow-400 text-xl mr-2">💪</span>
                 <span className="font-bold text-white text-lg">Assertiveness</span>
               </div>
-              <span className="text-red-400 font-bold text-2xl mb-2">0%</span>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.assertiveness < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.assertiveness)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-yellow-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                <div className="bg-yellow-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.assertiveness}%` }}></div>
               </div>
             </div>
             {/* Efficiency */}
@@ -268,9 +258,9 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-yellow-400 text-xl mr-2">⚡</span>
                 <span className="font-bold text-white text-lg">Efficiency</span>
               </div>
-              <span className="text-red-400 font-bold text-2xl mb-2">0%</span>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.efficiency < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.efficiency)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-yellow-400 h-2 rounded-full" style={{ width: '0%' }}></div>
+                <div className="bg-yellow-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.efficiency}%` }}></div>
               </div>
             </div>
           </div>
@@ -288,9 +278,23 @@ const TopStatusBar: React.FC = () => {
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" /></svg>
             </button>
           </div>
-          <div className="flex flex-col items-center justify-center py-12">
-            <Shield size={64} className="text-green-500 mb-6" />
-            <span className="text-green-400 text-xl font-semibold">All systems normal</span>
+          <div className="flex flex-col gap-4 w-full">
+            {state.smartWarnings.filter(w => !w.resolved).length > 0 ? (
+              state.smartWarnings.filter(w => !w.resolved).map((warning, index) => (
+                <div key={index} className="bg-[#26314a] rounded-lg p-4 border-l-4 border-red-500">
+                  <div className="flex justify-between items-start">
+                    <div className="font-bold text-white">{warning.title}</div>
+                    <span className="text-[10px] text-slate-400">{warning.detectedAt.toLocaleTimeString()}</span>
+                  </div>
+                  <div className="text-sm text-slate-200 mt-1">{warning.message}</div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Shield size={64} className="text-green-500 mb-6" />
+                <span className="text-green-400 text-xl font-semibold">All systems normal</span>
+              </div>
+            )}
           </div>
         </div>
       )}

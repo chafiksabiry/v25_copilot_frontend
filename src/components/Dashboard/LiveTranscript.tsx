@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { TranscriptionMessage } from '../../services/transcriptionService';
 import { MessageSquare, User } from 'lucide-react';
 
 export const LiveTranscript: React.FC = () => {
@@ -53,7 +54,7 @@ export const LiveTranscript: React.FC = () => {
                 ref={scrollRef}
                 className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0f172a]"
             >
-                {transcripts.map((entry, idx) => (
+                {transcripts.map((entry: TranscriptionMessage, idx: number) => (
                     <div key={idx} className="flex flex-col space-y-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">

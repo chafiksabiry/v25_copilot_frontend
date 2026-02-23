@@ -113,7 +113,7 @@ export interface CallState {
   isRecording: boolean;
   startTime?: Date;
   participants: Participant[];
-  currentPhase: 'greeting' | 'discovery' | 'presentation' | 'objection' | 'closing' | 'follow-up';
+  currentPhase: string;
   contact?: Lead;
 }
 
