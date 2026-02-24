@@ -234,7 +234,7 @@ export class TranscriptionService {
   }
 
   async simulateAudioStream(audioUrl: string, phoneNumber: string) {
-    console.log('🔄 Starting audio simulation from:', audioUrl);
+    console.log(`🔄 Starting audio simulation for ${phoneNumber} from:`, audioUrl);
     try {
       this.isSimulationActive = true;
       const response = await fetch(audioUrl);
@@ -589,7 +589,7 @@ export class TranscriptionService {
       // Handle Transcripts (New Format)
       if (data.type === 'interim' || data.type === 'final') {
         const transcript = data.transcript || '';
-        console.log(`🗣️ [TranscriptionService] Processed ${data.type}: "${transcript}"`);
+        console.log(`🗣️ [TranscriptionService] Processed ${data.type} (Speaker: ${data.speaker}): "${transcript}"`);
         if (transcript.trim() && this.onTranscriptionUpdate) {
           this.onTranscriptionUpdate({
             type: data.type,

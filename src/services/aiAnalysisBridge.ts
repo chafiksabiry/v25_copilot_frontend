@@ -7,12 +7,12 @@ import { AgentAction } from '../contexts/AgentContext';
  * Shared logic to process a transcription text through AI services (DISC & Recommendations)
  * and dispatch results to the global AgentContext.
  */
-export const processAiAnalysis = async (text: string, dispatch: (action: AgentAction) => void) => {
+export const processAiAnalysis = async (text: string, dispatch: (action: AgentAction) => void, context: any[] = []) => {
     if (!text || text.trim().length < 5) return;
 
     try {
         // 1. Get AI Assistance (Recommendations & Warnings)
-        const assistance = await getAIAssistance(text);
+        const assistance = await getAIAssistance(text, context);
         if (assistance.success && assistance.suggestion) {
             const isAutomated = assistance.suggestion.includes('[AUTOMATED]');
             const isWarning = isAutomated ||

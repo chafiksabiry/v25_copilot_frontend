@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAgent } from '../contexts/AgentContext';
 import { useTranscription } from '../contexts/TranscriptionContext';
 import { TranscriptionMessage } from '../services/transcriptionService';
@@ -6,8 +6,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { processAiAnalysis } from '../services/aiAnalysisBridge';
 
 export const TranscriptionBridge: React.FC = () => {
-    const { dispatch } = useAgent();
+    const { state, dispatch } = useAgent();
     const { addTranscriptionCallback, removeTranscriptionCallback, isActive } = useTranscription();
+
+    // Store latest transcripts in a ref to avoid recreating the effect/callback on every message
+    const transcriptsRef = useRef(state.transcript);
+    useEffect(() => {
+        transcriptsRef.current = state.transcript;
+    }, [state.transcript]);
 
     useEffect(() => {
         const handleTranscriptionUpdate = async (message: TranscriptionMessage) => {
@@ -26,31 +32,35 @@ export const TranscriptionBridge: React.FC = () => {
                     }
                 });
 
-                // Trigger AI analysis on final transcripts
+                // Trigger AI analysis on final transcripts with context from Ref
                 if (message.type === 'final') {
-                    processAiAnalysis(message.text, dispatch);
+                    processAiAnalysis(message.text, dispatch, transcriptsRef.current);
                 }
             }
 
-            // Handle AI Analysis (Phase changes, etc)
+            // Handle AI Analysis (Phase changes, metrics, etc)
             if (message.type === 'analysis') {
                 if (message.current_phase) {
-                    // Map backend phase strings to frontend CallPhase type
-                    let mappedPhase = 'greeting'; // Default
+                    // Map backend phase strings to frontend DashboardGrid phases
+                    let mappedPhase = state.callState.currentPhase; // Default to current
                     const phaseLower = message.current_phase.toLowerCase();
 
-                    if (phaseLower.includes('intro') || phaseLower.includes('hook') || phaseLower.includes('greeting')) {
-                        mappedPhase = 'greeting';
+                    if (phaseLower.includes('intro') || phaseLower.includes('hook') || phaseLower.includes('greeting') || phaseLower.includes('sbam')) {
+                        mappedPhase = 'sbam';
+                    } else if (phaseLower.includes('legal') || phaseLower.includes('compliance')) {
+                        mappedPhase = 'legal';
                     } else if (phaseLower.includes('discovery') || phaseLower.includes('need')) {
                         mappedPhase = 'discovery';
                     } else if (phaseLower.includes('value') || phaseLower.includes('presentation') || phaseLower.includes('pitch')) {
-                        mappedPhase = 'presentation';
+                        mappedPhase = 'value';
                     } else if (phaseLower.includes('objection')) {
-                        mappedPhase = 'objection';
+                        mappedPhase = 'objections';
                     } else if (phaseLower.includes('closing') || phaseLower.includes('confirmation')) {
                         mappedPhase = 'closing';
                     } else if (phaseLower.includes('post') || phaseLower.includes('follow')) {
-                        mappedPhase = 'follow-up';
+                        mappedPhase = 'postcall';
+                    } else if (phaseLower.includes('context') || phaseLower.includes('prep')) {
+                        mappedPhase = 'context';
                     }
 
                     dispatch({
@@ -61,14 +71,34 @@ export const TranscriptionBridge: React.FC = () => {
                     });
                 }
 
-                // TODO: Handle next_step_suggestion, strengths, improvements if AgentContext supports them
-                // AgentContext has callStructureGuidance, maybe map there?
+                // Update AI Metrics if present
+                if ((message as any).metrics) {
+                    dispatch({
+                        type: 'UPDATE_CALL_METRICS',
+                        metrics: (message as any).metrics
+                    });
+                }
+
+                // Handle direct suggestions (if any)
+                if (message.next_step_suggestion) {
+                    dispatch({
+                        type: 'ADD_RECOMMENDATION',
+                        recommendation: {
+                            id: uuidv4(),
+                            type: 'strategy',
+                            priority: 'medium',
+                            title: 'Next Step Suggestion',
+                            message: message.next_step_suggestion,
+                            timestamp: new Date()
+                        }
+                    });
+                }
             }
         };
 
         addTranscriptionCallback(handleTranscriptionUpdate);
         return () => removeTranscriptionCallback(handleTranscriptionUpdate);
-    }, [addTranscriptionCallback, removeTranscriptionCallback, dispatch]);
+    }, [addTranscriptionCallback, removeTranscriptionCallback, dispatch, state.callState.currentPhase]);
 
     // Handle Active State Sync (Optional, if AgentContext needs to know about Simulation status)
     useEffect(() => {
