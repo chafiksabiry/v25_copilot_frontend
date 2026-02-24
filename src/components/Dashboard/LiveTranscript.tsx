@@ -62,7 +62,7 @@ export const LiveTranscript: React.FC = () => {
                                     <User className="w-3 h-3 text-white" />
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    {entry.type === 'final' ? 'Participant' : 'Agent'}
+                                    {entry.speaker === 'agent' ? 'Agent' : 'Customer'}
                                 </span>
                             </div>
                             <span className="text-[10px] text-slate-500 font-mono">

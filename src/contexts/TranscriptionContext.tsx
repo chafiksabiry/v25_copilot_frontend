@@ -84,9 +84,11 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
       }
 
       transcriptionService.setTranscriptionCallback((message: TranscriptionMessage) => {
+        console.log('🔄 [TranscriptionContext] Callback received message type:', message.type);
         // Mettre à jour l'état interne
         setState(prev => {
           if (message.type === 'analysis') {
+            console.log('📊 [TranscriptionContext] Updating analysis state');
             return {
               ...prev,
               currentPhase: message.current_phase || prev.currentPhase,
@@ -96,6 +98,7 @@ export const TranscriptionProvider: React.FC<TranscriptionProviderProps> = ({
           } else if (message.type === 'interim') {
             return { ...prev, currentInterimText: message.text };
           } else if (message.type === 'final' || message.type === 'transcript') {
+            console.log('📝 [TranscriptionContext] Adding final transcript to state:', message.text);
             return {
               ...prev,
               transcripts: [...prev.transcripts, message],

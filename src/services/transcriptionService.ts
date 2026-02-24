@@ -589,12 +589,14 @@ export class TranscriptionService {
       // Handle Transcripts (New Format)
       if (data.type === 'interim' || data.type === 'final') {
         const transcript = data.transcript || '';
+        console.log(`🗣️ [TranscriptionService] Processed ${data.type}: "${transcript}"`);
         if (transcript.trim() && this.onTranscriptionUpdate) {
           this.onTranscriptionUpdate({
             type: data.type,
             text: transcript,
             confidence: data.confidence || 0,
-            timestamp: data.timestamp || Date.now()
+            timestamp: data.timestamp || Date.now(),
+            speaker: data.speaker
           });
         }
         return;
