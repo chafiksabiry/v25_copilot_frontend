@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
+import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
   Phone, Mail, Building, Star, Calendar, MessageSquare, Video, ChevronDown, ChevronUp
 } from 'lucide-react';
@@ -15,6 +16,7 @@ interface TokenResponse {
 
 export function ContactInfo() {
   const { storeCall } = useCallStorage();
+  const { profile: agentProfile } = useAgentProfile();
 
   // Utiliser le contexte de transcription global
   const {
@@ -65,32 +67,32 @@ export function ContactInfo() {
   // Map ApiLead to the contact format expected by the component
   const contact = apiLead ? {
     id: apiLead._id,
-    name: apiLead.name || 'Unknown Lead',
+    name: apiLead.name || (apiLead.First_Name || apiLead.Last_Name ? `${apiLead.First_Name || ''} ${apiLead.Last_Name || ''}`.trim() : 'Unknown Lead'),
     email: apiLead.email || apiLead.Email_1 || 'No email',
     phone: apiLead.phone || apiLead.Phone || testPhoneNumber,
-    company: apiLead.companyId || 'Unknown Company',
-    title: apiLead.Activity_Tag || 'Prospect',
-    avatar: '',
-    status: 'qualified' as 'qualified',
-    source: 'CRM' as 'website',
-    priority: 'high' as 'high',
+    company: apiLead.company || apiLead.companyId || 'Unknown Company',
+    title: apiLead.title || apiLead.Activity_Tag || 'Prospect',
+    avatar: apiLead.avatar || '',
+    status: (apiLead.status || 'qualified') as 'qualified',
+    source: (apiLead.source || 'CRM') as 'website',
+    priority: (apiLead.priority || 'high') as 'high',
     lastContact: apiLead.Last_Activity_Time ? new Date(apiLead.Last_Activity_Time) : new Date(),
-    nextFollowUp: new Date(Date.now() + 86400000),
-    notes: apiLead.Stage || 'No notes available',
+    nextFollowUp: apiLead.nextFollowUp ? new Date(apiLead.nextFollowUp) : new Date(Date.now() + 86400000),
+    notes: apiLead.notes || apiLead.Stage || 'No notes available',
     tags: [apiLead.Pipeline || 'Standard'],
-    value: 0,
-    assignedAgent: 'Agent',
-    timezone: 'UTC',
-    preferredContactMethod: 'phone' as 'phone',
-    socialProfiles: { linkedin: '', twitter: '' },
-    leadScore: 50,
-    interests: [],
-    painPoints: [],
-    budget: { min: 0, max: 0, currency: 'USD' },
-    timeline: '',
-    decisionMakers: [],
-    competitors: [],
-    previousInteractions: []
+    value: apiLead.value || 0,
+    assignedAgent: apiLead.assignedTo?.personalInfo?.name || agentProfile?.personalInfo?.name || 'Agent',
+    timezone: apiLead.timezone || 'UTC',
+    preferredContactMethod: (apiLead.preferredContactMethod || 'phone') as 'phone',
+    socialProfiles: apiLead.socialProfiles || { linkedin: '', twitter: '' },
+    leadScore: apiLead.leadScore || 50,
+    interests: apiLead.interests || [],
+    painPoints: apiLead.painPoints || [],
+    budget: apiLead.budget || { min: 0, max: 0, currency: 'USD' },
+    timeline: apiLead.timeline || '',
+    decisionMakers: apiLead.decisionMakers || [],
+    competitors: apiLead.competitors || [],
+    previousInteractions: apiLead.previousInteractions || []
   } : {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
@@ -413,8 +415,8 @@ export function ContactInfo() {
                 </div>
                 <div className="flex items-center space-x-2 text-slate-300 text-sm">
                   <Building className="w-4 h-4" />
-                  <span>{contact.company}</span>
-                  <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />85/100</span>
+                  <span>{contact.company === 'Unknown Company' && apiLead?.companyId ? apiLead.companyId : contact.company}</span>
+                  <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />{contact.leadScore}/100</span>
                 </div>
               </div>
             </>
@@ -517,8 +519,8 @@ export function ContactInfo() {
                 )}
               </div>
               <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
-              <div className="text-slate-300 text-sm">VP of Operations</div>
-              <div className="text-slate-400 text-sm">TechCorp Solutions</div>
+              <div className="text-slate-300 text-sm">{contact.title}</div>
+              <div className="text-slate-400 text-sm">{contact.company}</div>
             </div>
             {/* Colonne centre */}
             <div className="flex flex-col items-start gap-2">
@@ -541,12 +543,12 @@ export function ContactInfo() {
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
-                <span className="font-medium text-sm">sarah.johnson@techcorp.com</span>
-                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy"><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
+                <span className="font-medium text-sm">{contact.email}</span>
+                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy" onClick={() => navigator.clipboard.writeText(contact.email)}><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Calendar className="w-5 h-5 text-purple-400" />
-                <span className="font-medium text-sm">EST Timezone</span>
+                <span className="font-medium text-sm">{contact.timezone} Timezone</span>
               </div>
 
               <div className="mt-2 w-full">
@@ -569,9 +571,9 @@ export function ContactInfo() {
                 <div className="w-[240px]">
                   <span className="block bg-[#25594B] text-green-200 py-2 rounded-full text-lg font-medium text-center">Qualified</span>
                 </div>
-                <div className="mt-2 text-white text-xl font-bold text-center">85/100</div>
+                <div className="mt-2 text-white text-xl font-bold text-center">{contact.leadScore}/100</div>
                 <div className="text-slate-300 text-sm text-center">Lead Score</div>
-                <div className="mt-2 text-green-400 text-lg font-bold text-center">$75 000</div>
+                <div className="mt-2 text-green-400 text-lg font-bold text-center">{contact.value > 0 ? `$${contact.value.toLocaleString()}` : 'N/A'}</div>
                 <div className="text-slate-300 text-sm text-center">Potential Value</div>
               </div>
               {/* Bouton à droite */}

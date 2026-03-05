@@ -1,9 +1,11 @@
 import React from 'react';
 import { useAgent } from '../../contexts/AgentContext';
-import { Phone, PhoneOff, Mic, MicOff, Settings, User, Volume2, VolumeX } from 'lucide-react';
+import { useAgentProfile } from '../../hooks/useAgentProfile';
+import { Settings, User, Volume2, Mic } from 'lucide-react';
 
 export function Header() {
   const { state } = useAgent();
+  const { profile } = useAgentProfile();
 
   const formatDuration = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -16,21 +18,7 @@ export function Header() {
     return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
-  // Get real agent name from localStorage
-  const getAgentName = () => {
-    try {
-      const profileDataString = localStorage.getItem('profileData');
-      if (profileDataString) {
-        const profileData = JSON.parse(profileDataString);
-        return profileData.personalInfo?.name || 'HARX Rep';
-      }
-    } catch (error) {
-      console.error('Error reading profileData from localStorage:', error);
-    }
-    return 'Agent Smith'; // Fallback
-  };
-
-  const agentName = getAgentName();
+  const agentName = profile?.personalInfo?.name || 'Agent';
 
   return (
     <header className="bg-[#151e2e] px-8 py-4 border-b border-[#22304a]">

@@ -5,15 +5,17 @@ import axios from 'axios';
 export interface ApiLead {
   _id: string;
   name?: string;
+  email?: string; // Add lowercase variant
   Email_1?: string;
-  email?: string;
+  phone?: string; // Add lowercase variant
   Phone?: string;
-  phone?: string;
-  companyId?: string;
+  Deal_Name?: string;
   Activity_Tag?: string;
+  companyId?: string;
   Last_Activity_Time?: string;
-  Stage?: string;
   Pipeline?: string;
+  Stage?: string;
+  updatedAt?: string;
   [key: string]: any;
 }
 
@@ -42,27 +44,40 @@ export const useLead = (leadId: string | null): UseLeadResult => {
     setError(null);
 
     try {
-      // Use VITE_DASH_COMPANY_BACKEND consistently with the main app
-      let apiUrl = import.meta.env.VITE_DASH_COMPANY_BACKEND || import.meta.env.VITE_DASH_COMPANY_API_URL;
+      // Try to get token from localStorage
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-      // Fallback if env is missing
+      // Prioritize VITE_API_URL_CALL as it's the standard backend for Copilot
+      let apiUrl = import.meta.env.VITE_API_URL_CALL ||
+        import.meta.env.VITE_DASH_COMPANY_BACKEND ||
+        import.meta.env.VITE_DASH_COMPANY_API_URL;
+
+      // Fallback to production URL if none provided
       if (!apiUrl) {
         apiUrl = 'https://harxv25dashboardfrontend.netlify.app/api';
         console.warn('API URL environment variable is not defined, using production fallback');
       }
 
-      // Normalize URL: ensure it includes /api if pointing to the netlify dashboard
-      if (apiUrl.includes('harxv25dashboardfrontend.netlify.app') && !apiUrl.includes('/api')) {
+      // Normalize Netlify URLs to include /api
+      if (apiUrl.includes('netlify.app') && !apiUrl.includes('/api')) {
         apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
         console.log('Normalized Netlify API URL:', apiUrl);
       }
 
-      const response = await axios.get<LeadApiResponse>(`${apiUrl}/leads/${id}`);
+      console.log(`[useLead] Fetching lead ${id} from ${apiUrl}`);
+
+      const response = await axios.get<LeadApiResponse>(`${apiUrl}/leads/${id}`, { headers });
 
       if (response.data.success) {
         setLead(response.data.data);
       } else {
-        throw new Error('Failed to fetch lead data');
+        setError('Lead not found');
       }
     } catch (err: any) {
       console.error('Error fetching lead:', err);
