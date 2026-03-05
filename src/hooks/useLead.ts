@@ -1,6 +1,27 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ApiLead, LeadApiResponse } from '../types';
+
+// Local interfaces for the API response
+export interface ApiLead {
+  _id: string;
+  name?: string;
+  Email_1?: string;
+  email?: string;
+  Phone?: string;
+  phone?: string;
+  companyId?: string;
+  Activity_Tag?: string;
+  Last_Activity_Time?: string;
+  Stage?: string;
+  Pipeline?: string;
+  [key: string]: any;
+}
+
+export interface LeadApiResponse {
+  success: boolean;
+  data: ApiLead;
+  error?: string;
+}
 
 interface UseLeadResult {
   lead: ApiLead | null;
@@ -21,13 +42,23 @@ export const useLead = (leadId: string | null): UseLeadResult => {
     setError(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_DASH_COMPANY_API_URL;
+      // Use VITE_DASH_COMPANY_BACKEND consistently with the main app
+      let apiUrl = import.meta.env.VITE_DASH_COMPANY_BACKEND || import.meta.env.VITE_DASH_COMPANY_API_URL;
+
+      // Fallback if env is missing
       if (!apiUrl) {
-        throw new Error('VITE_DASH_COMPANY_API_URL environment variable is not defined');
+        apiUrl = 'https://harxv25dashboardfrontend.netlify.app/api';
+        console.warn('API URL environment variable is not defined, using production fallback');
+      }
+
+      // Normalize URL: ensure it includes /api if pointing to the netlify dashboard
+      if (apiUrl.includes('harxv25dashboardfrontend.netlify.app') && !apiUrl.includes('/api')) {
+        apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
+        console.log('Normalized Netlify API URL:', apiUrl);
       }
 
       const response = await axios.get<LeadApiResponse>(`${apiUrl}/leads/${id}`);
-      
+
       if (response.data.success) {
         setLead(response.data.data);
       } else {
