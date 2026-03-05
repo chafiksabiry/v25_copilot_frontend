@@ -28,20 +28,34 @@ export const useAgentProfile = () => {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            // Try to get userId from localStorage or cookie
-            let userId: string | null = null;
-            try {
-                const profileDataString = localStorage.getItem('profileData');
-                if (profileDataString) {
-                    const profileData = JSON.parse(profileDataString);
-                    userId = profileData.userId || profileData._id;
+            // Helper to get cookie by name
+            const getCookie = (name: string): string | null => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+                return null;
+            };
+
+            // Try to get userId from various sources
+            let userId: string | null = getCookie('userId');
+
+            if (!userId) {
+                try {
+                    const profileDataString = localStorage.getItem('profileData');
+                    if (profileDataString) {
+                        const profileData = JSON.parse(profileDataString);
+                        userId = profileData.userId || profileData._id;
+                    }
+                    if (!userId) {
+                        userId = localStorage.getItem('userId');
+                    }
+                } catch (e) {
+                    console.error('Error parsing profileData:', e);
                 }
-            } catch (e) {
-                console.error('Error parsing profileData:', e);
             }
 
             if (!userId) {
-                // Fallback: check if we have a token and can get /me or just use what's in profileData
+                console.warn('[useAgentProfile] No userId found in cookies or localStorage');
                 return;
             }
 

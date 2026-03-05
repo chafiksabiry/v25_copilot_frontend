@@ -19,13 +19,19 @@ export function Header() {
   };
 
   const agentName = profile?.personalInfo?.name || 'Agent';
+  const agentInitials = agentName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <header className="bg-[#151e2e] px-8 py-4 border-b border-[#22304a]">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-lg">{agentName.charAt(0)}</span>
+            <span className="text-white font-bold text-lg">{agentInitials}</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-wide">HARX REPS AI COPILOT</h1>
         </div>
@@ -54,7 +60,14 @@ export function Header() {
           </div>
           <div className="flex items-center space-x-2 text-slate-200 font-medium">
             <User className="w-5 h-5" />
-            <span className="text-base text-gray-400">{agentName}</span>
+            <div className="flex flex-col">
+              <span className="text-base text-gray-200 leading-tight">{agentName}</span>
+              {profile?.professionalSummary?.currentRole && (
+                <span className="text-blue-400 text-[10px] font-bold uppercase tracking-wider">
+                  {profile.professionalSummary.currentRole}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

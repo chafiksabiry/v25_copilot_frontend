@@ -3,9 +3,11 @@ import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activ
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { useAgentProfile } from '../../hooks/useAgentProfile';
 
 const TopStatusBar: React.FC = () => {
   const { state } = useAgent();
+  const { profile: agentProfile } = useAgentProfile();
   const {
     currentPhase: aiCurrentPhase,
     analysisConfidence,
@@ -77,19 +79,23 @@ const TopStatusBar: React.FC = () => {
           />
         </div>
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Brain size={20} className="text-purple-400" />}
-              title="Profile"
-              value={<span className="text-slate-400 font-semibold">Analyzing...</span>}
-              expandable
-              expanded={profileExpanded}
-              onToggle={() => setProfileExpanded(e => !e)}
-            />
-          </div>
+          <StatusCard
+            icon={<Brain size={20} className="text-purple-400" />}
+            title="Rep Profile"
+            value={agentProfile ? (
+              <span className="text-white font-bold leading-tight line-clamp-1">
+                {agentProfile.personalInfo.name}
+              </span>
+            ) : (
+              <span className="text-slate-400 font-semibold tracking-tighter">Analyzing...</span>
+            )}
+            subtitle={agentProfile?.professionalSummary?.currentRole && (
+              <span className="text-purple-300 text-[10px] font-bold uppercase truncate block">{agentProfile.professionalSummary.currentRole}</span>
+            )}
+            expandable
+            expanded={profileExpanded}
+            onToggle={() => setProfileExpanded(e => !e)}
+          />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
@@ -295,6 +301,76 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-green-400 text-xl font-semibold">All systems normal</span>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {profileExpanded && agentProfile && (
+        <div className="bg-[#232f47] rounded-xl mt-4 p-8 w-full max-w-[1800px] mx-auto shadow-2xl border border-purple-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-purple-400/30">
+                {agentProfile.personalInfo.name.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-white leading-tight">{agentProfile.personalInfo.name}</h2>
+                <div className="flex items-center space-x-3 mt-1 text-purple-300 font-medium">
+                  {agentProfile.professionalSummary?.currentRole && (
+                    <span className="bg-purple-900/40 px-3 py-1 rounded-full text-xs uppercase tracking-widest border border-purple-500/30">
+                      {agentProfile.professionalSummary.currentRole}
+                    </span>
+                  )}
+                  <span className="text-slate-400 text-sm">{agentProfile.personalInfo.email}</span>
+                </div>
+              </div>
+            </div>
+            <button
+              className="text-slate-400 hover:text-white transition-colors"
+              onClick={() => setProfileExpanded(false)}
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-8 text-slate-200">
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Professional Summary</h3>
+              <p className="text-sm leading-relaxed text-slate-300">
+                {agentProfile.professionalSummary?.yearsOfExperience ? (
+                  <>Experience: <span className="text-white font-medium">{agentProfile.professionalSummary.yearsOfExperience}</span> in sales and customer engagement.</>
+                ) : "No experience summary provided."}
+              </p>
+            </div>
+
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Contact & Location</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Phone</span>
+                  <span className="text-slate-200 font-mono">{agentProfile.personalInfo.phone || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Location</span>
+                  <span className="text-slate-200">{agentProfile.personalInfo.location || 'Remote'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Status</span>
+                  <span className="text-green-400 flex items-center">
+                    <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                    Connected
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Current Methodology</h3>
+              <div className="flex items-center space-x-2 text-sm text-slate-300">
+                <div className="bg-purple-500/20 p-2 rounded-lg">
+                  <Shield size={20} className="text-purple-400" />
+                </div>
+                <span>REPS Adaptive Coaching Active</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
