@@ -50,9 +50,15 @@ export const useAgentProfile = () => {
                 const token = localStorage.getItem('token');
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-                const apiUrl = import.meta.env.VITE_API_URL_CALL ||
+                let apiUrl = import.meta.env.VITE_API_URL_CALL ||
                     import.meta.env.VITE_DASH_COMPANY_BACKEND ||
                     'https://v25dashcallsbackend.netlify.app/api';
+
+                // Normalize all URLs to include /api if missing (all backend services use /api prefix)
+                if (!apiUrl.includes('/api')) {
+                    apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
+                    console.log('[useAgentProfile] Normalized API URL:', apiUrl);
+                }
 
                 const response = await axios.get<AgentApiResponse>(`${apiUrl}/agents/${userId}`, { headers });
 

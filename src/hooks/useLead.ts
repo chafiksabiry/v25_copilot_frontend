@@ -64,10 +64,10 @@ export const useLead = (leadId: string | null): UseLeadResult => {
         console.warn('API URL environment variable is not defined, using production fallback');
       }
 
-      // Normalize Netlify URLs to include /api
-      if (apiUrl.includes('netlify.app') && !apiUrl.includes('/api')) {
+      // Normalize all URLs to include /api if missing (all backend services use /api prefix)
+      if (!apiUrl.includes('/api')) {
         apiUrl = `${apiUrl.replace(/\/$/, '')}/api`;
-        console.log('Normalized Netlify API URL:', apiUrl);
+        console.log('[useLead] Normalized API URL:', apiUrl);
       }
 
       console.log(`[useLead] Fetching lead ${id} from ${apiUrl}`);
