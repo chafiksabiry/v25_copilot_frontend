@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { useLead } from '../../hooks/useLead';
 import {
   Phone, Mail, Building, Star, Calendar, MessageSquare, Video, ChevronDown, ChevronUp
 } from 'lucide-react';
@@ -36,6 +37,13 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
   const [, setMediaStream] = useState<MediaStream | null>(null);
 
+  // Get leadId from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const leadId = searchParams.get('leadId');
+
+  // Use the hook to fetch lead data
+  const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
+
   const [testPhoneNumber, setTestPhoneNumber] = useState('+212637446431');
   const [selectedAudio, setSelectedAudio] = useState('https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav');
 
@@ -54,8 +62,36 @@ export function ContactInfo() {
     }
   ];
 
-  // Store original contact data to prevent it from being overwritten
-  const [originalContact] = useState({
+  // Map ApiLead to the contact format expected by the component
+  const contact = apiLead ? {
+    id: apiLead._id,
+    name: apiLead.name || 'Unknown Lead',
+    email: apiLead.email || apiLead.Email_1 || 'No email',
+    phone: apiLead.phone || apiLead.Phone || testPhoneNumber,
+    company: apiLead.companyId || 'Unknown Company',
+    title: apiLead.Activity_Tag || 'Prospect',
+    avatar: '',
+    status: 'qualified' as 'qualified',
+    source: 'CRM' as 'website',
+    priority: 'high' as 'high',
+    lastContact: apiLead.Last_Activity_Time ? new Date(apiLead.Last_Activity_Time) : new Date(),
+    nextFollowUp: new Date(Date.now() + 86400000),
+    notes: apiLead.Stage || 'No notes available',
+    tags: [apiLead.Pipeline || 'Standard'],
+    value: 0,
+    assignedAgent: 'Agent',
+    timezone: 'UTC',
+    preferredContactMethod: 'phone' as 'phone',
+    socialProfiles: { linkedin: '', twitter: '' },
+    leadScore: 50,
+    interests: [],
+    painPoints: [],
+    budget: { min: 0, max: 0, currency: 'USD' },
+    timeline: '',
+    decisionMakers: [],
+    competitors: [],
+    previousInteractions: []
+  } : {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
@@ -103,10 +139,14 @@ export function ContactInfo() {
         notes: 'Budget confirmed, timeline established'
       }
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
-  });
+  };
 
-  // Update contact phone when testPhoneNumber changes
-  const contact = { ...originalContact, phone: testPhoneNumber };
+  // Update testPhoneNumber if contact phone changes from API
+  useEffect(() => {
+    if (apiLead && (apiLead.phone || apiLead.Phone)) {
+      setTestPhoneNumber(apiLead.phone || apiLead.Phone);
+    }
+  }, [apiLead]);
 
   // Debug: Log contact data whenever it changes
   /*  console.log("Contact data:", contact);
@@ -348,25 +388,37 @@ export function ContactInfo() {
     <>
       <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
         {/* Avatar + Infos */}
+        {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
-            {contact.avatar ? (
-              <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
-            ) : (
-              contact.name.split(' ').map(n => n[0]).join('')
-            )}
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="text-lg font-bold text-white">{contact.name}</span>
-              <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
+          {leadLoading ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="text-slate-300 text-sm">Loading lead...</span>
             </div>
-            <div className="flex items-center space-x-2 text-slate-300 text-sm">
-              <Building className="w-4 h-4" />
-              <span>{contact.company}</span>
-              <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />85/100</span>
-            </div>
-          </div>
+          ) : leadError ? (
+            <div className="text-red-400 text-sm">Error: {leadError}</div>
+          ) : (
+            <>
+              <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
+                {contact.avatar ? (
+                  <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
+                ) : (
+                  contact.name.split(' ').map(n => n[0]).join('')
+                )}
+              </div>
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-lg font-bold text-white">{contact.name}</span>
+                  <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
+                </div>
+                <div className="flex items-center space-x-2 text-slate-300 text-sm">
+                  <Building className="w-4 h-4" />
+                  <span>{contact.company}</span>
+                  <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />85/100</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
         {/* Bouton Start Call + Tabs */}
         <div className="flex-1 flex flex-col items-center">

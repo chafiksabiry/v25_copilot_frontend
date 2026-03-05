@@ -9,34 +9,50 @@ export function Header() {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) {
       return `${hours}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
     }
     return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
+  // Get real agent name from localStorage
+  const getAgentName = () => {
+    try {
+      const profileDataString = localStorage.getItem('profileData');
+      if (profileDataString) {
+        const profileData = JSON.parse(profileDataString);
+        return profileData.personalInfo?.name || 'HARX Rep';
+      }
+    } catch (error) {
+      console.error('Error reading profileData from localStorage:', error);
+    }
+    return 'Agent Smith'; // Fallback
+  };
+
+  const agentName = getAgentName();
+
   return (
     <header className="bg-[#151e2e] px-8 py-4 border-b border-[#22304a]">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-lg">H</span>
-            </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-wide">HARX REPS AI COPILOT</h1>
+            <span className="text-white font-bold text-lg">{agentName.charAt(0)}</span>
           </div>
-          
-          {state.callState.isActive && (
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="flex items-center space-x-1 text-green-400">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>LIVE</span>
-              </div>
-              <div className="text-slate-300">
-                {state.callState.startTime && formatDuration(Date.now() - state.callState.startTime.getTime())}
-              </div>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide">HARX REPS AI COPILOT</h1>
+        </div>
+
+        {state.callState.isActive && (
+          <div className="flex items-center space-x-3 text-sm">
+            <div className="flex items-center space-x-1 text-green-400">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>LIVE</span>
             </div>
-          )}
+            <div className="text-slate-300">
+              {state.callState.startTime && formatDuration(Date.now() - state.callState.startTime.getTime())}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center space-x-4">
           <div className="p-2">
@@ -50,7 +66,7 @@ export function Header() {
           </div>
           <div className="flex items-center space-x-2 text-slate-200 font-medium">
             <User className="w-5 h-5" />
-            <span className="text-base text-gray-400">Agent Smith</span>
+            <span className="text-base text-gray-400">{agentName}</span>
           </div>
         </div>
       </div>
