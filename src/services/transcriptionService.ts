@@ -416,9 +416,9 @@ export class TranscriptionService {
             alternativeLanguageCodes: alternativeLanguages,
             enableAutomaticPunctuation: true,
             audioChannelCount: 2, // Enable stereo
-            enableSpeakerDiarization: true,
-            minSpeakerCount: 2,
-            maxSpeakerCount: 2,
+            enableSpeakerDiarization: false, // Using separate recognition per channel instead
+            // minSpeakerCount: 2,
+            // maxSpeakerCount: 2,
           },
           interimResults: true
         };
@@ -527,7 +527,8 @@ export class TranscriptionService {
               this.ws!.send(event.data);
               packetCount++;
               if (packetCount % 50 === 0) {
-                console.log(`📤 [TranscriptionService] Sent ${packetCount} audio packets (last size: ${event.data.byteLength} bytes)`);
+                // console.log(`🧭 [CallPhases] Current active phase: "${aiCurrentPhase}" | Found at index: ${currentPhaseIndex}`);
+                // console.log(`📤 [TranscriptionService] Sent ${packetCount} audio packets (last size: ${event.data.byteLength} bytes)`);
               }
             }
           };

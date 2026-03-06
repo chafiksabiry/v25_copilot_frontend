@@ -132,7 +132,7 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             aiCurrentPhase.toLowerCase().includes(p.name.toLowerCase())
           );
 
-          console.log(`🧭 [CallPhases] Current active phase: "${aiCurrentPhase}" | Found at index: ${currentPhaseIndex}`);
+          // console.log(`🧭 [CallPhases] Current active phase: "${aiCurrentPhase}" | Found at index: ${currentPhaseIndex}`);
 
           return phases.map((phase, index) => {
             const isActive = index === currentPhaseIndex;
