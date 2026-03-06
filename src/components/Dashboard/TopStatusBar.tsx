@@ -211,7 +211,7 @@ const TopStatusBar: React.FC = () => {
           <StatusCard
             icon={<TrendingUp size={20} className="text-yellow-400" />}
             title="Phase"
-            value={<span className="text-yellow-400 font-semibold whitespace-nowrap">{aiCurrentPhase || 'No active phase'}</span>}
+            value={<span className="text-yellow-400 font-semibold whitespace-nowrap">{state.callState.currentPhase || aiCurrentPhase || 'No active phase'}</span>}
           />
         </div>
       </div>

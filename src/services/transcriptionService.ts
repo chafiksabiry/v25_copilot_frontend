@@ -214,7 +214,7 @@ export class TranscriptionService {
       return 'fr-FR';
     }
 
-    // Maroc (+212, 00212)
+    // Maroc (+212, 00212) - Prioritize FR for better STT coverage if not explicitly ar-MA
     else if (cleanPhone.startsWith('+212') || cleanPhone.startsWith('00212')) {
       return 'ar-MA';
     }
