@@ -396,7 +396,6 @@ export class TranscriptionService {
 
       // Create stereo merger bound to THIS context
       const currentMerger = currentAudioContext.createChannelMerger(2);
-      this.merger = currentMerger;
 
       // Connect sources to merger channels
       if (this.localSource) {
@@ -430,6 +429,7 @@ export class TranscriptionService {
         const alternativeLanguages = commonLanguages.filter(lang => lang !== detectedLanguage);
 
         const config = {
+          type: 'config',
           config: {
             encoding: 'LINEAR16',
             sampleRateHertz: 16000,
@@ -437,7 +437,7 @@ export class TranscriptionService {
             alternativeLanguageCodes: alternativeLanguages,
             enableAutomaticPunctuation: true,
             audioChannelCount: 2, // Enable stereo
-            enableSpeakerDiarization: false, // Using separate recognition per channel instead
+            enableSeparateRecognitionPerChannel: true, // Using separate recognition per channel instead
             // minSpeakerCount: 2,
             // maxSpeakerCount: 2,
           },
