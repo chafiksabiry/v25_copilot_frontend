@@ -7,7 +7,7 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Building, Star, Calendar, ChevronDown, ChevronUp
+  Phone, Mail, Calendar, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -117,6 +117,15 @@ export function ContactInfo() {
         notes: 'Budget confirmed, timeline established'
       }
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
+  };
+
+  const maskPhone = (phone: string) => {
+    if (!phone) return '';
+    const cleanPhone = phone.replace(/\s+/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return `${cleanPhone.substring(0, 3)}...`;
+    }
+    return `${cleanPhone.substring(0, 2)}...`;
   };
 
 
@@ -356,10 +365,9 @@ export function ContactInfo() {
                   <span className="text-lg font-bold text-white">{contact.name}</span>
                   <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
                 </div>
-                <div className="flex items-center space-x-2 text-slate-300 text-sm">
-                  <Building className="w-4 h-4" />
-                  <span>{contact.company === 'Unknown Company' && apiLead?.companyId ? apiLead.companyId : contact.company}</span>
-                  <span className="text-yellow-400 flex items-center ml-2"><Star className="w-4 h-4 mr-1" />{contact.leadScore}/100</span>
+                <div className="flex items-center space-x-2 text-blue-400 text-sm font-medium">
+                  <Mail className="w-4 h-4" />
+                  <span>{contact.email}</span>
                 </div>
               </div>
             </>
@@ -386,6 +394,10 @@ export function ContactInfo() {
               {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
             </button>
           )}
+
+          <div className="text-blue-400 text-sm font-bold mt-2 tracking-wider">
+            {maskPhone(contact.phone)}
+          </div>
 
           <div className="flex items-center space-x-6 mt-3">
             <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
@@ -421,13 +433,13 @@ export function ContactInfo() {
               </div>
               <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
               <div className="text-slate-300 text-sm">{contact.title}</div>
-              <div className="text-slate-400 text-sm">{contact.company}</div>
+              {/* <div className="text-slate-400 text-sm">{contact.company}</div> */}
             </div>
             {/* Colonne centre */}
             <div className="flex flex-col items-start gap-2">
               <div className="flex items-center gap-2 text-slate-200 w-full">
                 <Phone className="w-5 h-5 text-blue-400 shrink-0" />
-                <span className="font-medium text-sm">{contact.phone}</span>
+                <span className="font-medium text-sm">{maskPhone(contact.phone)}</span>
                 <button
                   className="ml-1 text-slate-400 hover:text-blue-400 shrink-0"
                   title="Copy"
@@ -436,11 +448,11 @@ export function ContactInfo() {
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-slate-200">
+              {/* <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-5 h-5 text-green-400" />
                 <span className="font-medium text-sm">{contact.email}</span>
                 <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy" onClick={() => navigator.clipboard.writeText(contact.email)}><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
-              </div>
+              </div> */}
               <div className="flex items-center gap-2 text-slate-200">
                 <Calendar className="w-5 h-5 text-purple-400" />
                 <span className="font-medium text-sm">{contact.timezone} Timezone</span>
