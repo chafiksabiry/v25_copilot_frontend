@@ -58,6 +58,9 @@ export class TranscriptionService {
 
   private configSent = false; // Flag pour s'assurer que la configuration est envoyée avant l'audio
   private destinationZone: string | null = null; // Zone de destination du gig
+  private isInitializing = false;
+  private localSource: MediaStreamAudioSourceNode | null = null;
+  private remoteSource: MediaStreamAudioSourceNode | null = null;
   private static workletRegistered = false; // Static flag to prevent redundant registration
 
   constructor() {
@@ -364,7 +367,14 @@ export class TranscriptionService {
   }
 
   async initializeTranscription(remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) {
+    if (this.isInitializing) {
+      console.log('⏳ [TranscriptionService] Already initializing, waiting...');
+      return;
+    }
+
     try {
+      this.isInitializing = true;
+
       // 0. Ensure previous context is cleaned up
       if (this.audioContext || this.ws) {
         console.log('🔄 [TranscriptionService] Re-initializing, cleaning up previous session...');
@@ -373,40 +383,43 @@ export class TranscriptionService {
       }
 
       this.isCallActive = true;
+      this.configSent = false;
 
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const currentAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = currentAudioContext;
 
-      // Create sources
-      const remoteSource = this.audioContext.createMediaStreamSource(remoteStream);
-      let localSource: MediaStreamAudioSourceNode | null = null;
-
+      // Create sources bound to THIS context
+      this.remoteSource = currentAudioContext.createMediaStreamSource(remoteStream);
       if (localStream) {
-        localSource = this.audioContext.createMediaStreamSource(localStream);
+        this.localSource = currentAudioContext.createMediaStreamSource(localStream);
       }
 
-      // Create stereo merger
-      const merger = this.audioContext.createChannelMerger(2);
+      // Create stereo merger bound to THIS context
+      const currentMerger = currentAudioContext.createChannelMerger(2);
+      this.merger = currentMerger;
 
       // Connect sources to merger channels
-      // Channel 0: Local (Agent) - Priority for "Me"
-      // Channel 1: Remote (Customer)
-      if (localSource) {
-        localSource.connect(merger, 0, 0);
+      if (this.localSource) {
+        this.localSource.connect(currentMerger, 0, 0);
       }
-      remoteSource.connect(merger, 0, 1);
+      this.remoteSource.connect(currentMerger, 0, 1);
 
-      this.analyzer = this.audioContext.createAnalyser();
-      this.analyzer.fftSize = 2048;
+      const currentAnalyzer = currentAudioContext.createAnalyser();
+      currentAnalyzer.fftSize = 2048;
+      this.analyzer = currentAnalyzer;
 
       // Connect merger to analyzer (mixed visualization)
-      merger.connect(this.analyzer);
+      currentMerger.connect(currentAnalyzer);
 
       const wsUrl = import.meta.env.VITE_WS_URL || `${import.meta.env.VITE_API_URL_CALL.replace('http', 'ws')}/speech-to-text`;
-      this.ws = new WebSocket(wsUrl);
+      const currentWs = new WebSocket(wsUrl);
+      this.ws = currentWs;
 
-      this.ws.onopen = async () => {
-        if (!this.isCallActive) {
-          this.ws?.close(1000, "Call already ended");
+      currentWs.onopen = async () => {
+        // CRITICAL: Check if this is still the active WebSocket/Context
+        if (this.ws !== currentWs || !this.isCallActive || (currentAudioContext.state as any) === 'closed') {
+          console.warn('⚠️ [TranscriptionService] WebSocket opened for an old or cancelled session, closing.');
+          currentWs.close();
           return;
         }
 
@@ -447,7 +460,7 @@ export class TranscriptionService {
 
           try {
             if (!TranscriptionService.workletRegistered) {
-              await this.audioContext!.audioWorklet.addModule(workletUrl);
+              await currentAudioContext.audioWorklet.addModule(workletUrl);
               TranscriptionService.workletRegistered = true;
             }
           } catch (urlError) {
@@ -527,24 +540,27 @@ export class TranscriptionService {
             const blob = new Blob([workletCode], { type: 'application/javascript' });
             const blobUrl = URL.createObjectURL(blob);
             if (!TranscriptionService.workletRegistered) {
-              await this.audioContext!.audioWorklet.addModule(blobUrl);
+              await currentAudioContext.audioWorklet.addModule(blobUrl);
               TranscriptionService.workletRegistered = true;
             }
             console.log('✅ Audio worklet loaded successfully via Blob fallback');
           }
 
-          this.audioProcessor = new AudioWorkletNode(this.audioContext!, 'audio-processor', {
+          if (this.ws !== currentWs || currentAudioContext.state === 'closed') return;
+
+          const currentProcessor = new AudioWorkletNode(currentAudioContext, 'audio-processor', {
             processorOptions: {
-              sampleRate: this.audioContext!.sampleRate
+              sampleRate: currentAudioContext.sampleRate
             },
             numberOfInputs: 1,
             numberOfOutputs: 1,
-            outputChannelCount: [2] // Ensure worklet handles 2 channels
+            outputChannelCount: [2]
           });
+          this.audioProcessor = currentProcessor;
 
           // Connect the STEREO MERGER to the processor
-          merger.connect(this.audioProcessor);
-          this.audioProcessor.connect(this.audioContext!.destination);
+          currentMerger.connect(currentProcessor);
+          currentProcessor.connect(currentAudioContext.destination);
 
           let packetCount = 0;
           this.audioProcessor.port.onmessage = (event) => {
@@ -574,6 +590,8 @@ export class TranscriptionService {
 
     } catch (error: any) {
       console.error('❌ Error initializing transcription:', error);
+    } finally {
+      this.isInitializing = false;
     }
   }
 
