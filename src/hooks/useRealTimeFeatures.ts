@@ -19,8 +19,8 @@ export function useRealTimeFeatures() {
       dispatch({ type: 'TOGGLE_AI_LISTENING' });
     }, 1000);
 
-    // Start audio level simulation
-    startAudioLevelSimulation();
+    // Start audio level simulation (Disabled in favor of real visualization)
+    // startAudioLevelSimulation();
 
     // Start transcript simulation
     startTranscriptSimulation();
@@ -47,6 +47,7 @@ export function useRealTimeFeatures() {
     dispatch({ type: 'DISMISS_RECOMMENDATION', id });
   };
 
+  /* 
   // Simulate audio levels during call
   const startAudioLevelSimulation = () => {
     const interval = setInterval(() => {
@@ -59,6 +60,7 @@ export function useRealTimeFeatures() {
       dispatch({ type: 'UPDATE_AUDIO_LEVEL', level });
     }, 500);
   };
+  */
 
   // Simulate transcript entries
   const startTranscriptSimulation = () => {

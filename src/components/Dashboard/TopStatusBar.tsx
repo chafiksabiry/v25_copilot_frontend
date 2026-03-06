@@ -5,9 +5,13 @@ import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import { TwilioCallService } from '../../services/twilioCallService';
+import { useAudioVisualizer } from '../../hooks/useAudioVisualizer';
 
 const TopStatusBar: React.FC = () => {
   const { state, dispatch } = useAgent();
+
+  // Use real-time audio visualizer if stream is available
+  useAudioVisualizer(state.mediaStream);
   const { profile: agentProfile } = useAgentProfile();
   const {
     currentPhase: aiCurrentPhase,
@@ -267,8 +271,8 @@ const TopStatusBar: React.FC = () => {
                     <button
                       onClick={handleToggleRecording}
                       className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${state.callState.isRecording
-                          ? 'bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-900/50'
-                          : 'bg-green-900/30 text-green-500 border border-green-500/50 hover:bg-green-900/50'
+                        ? 'bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-900/50'
+                        : 'bg-green-900/30 text-green-500 border border-green-500/50 hover:bg-green-900/50'
                         }`}
                     >
                       {state.callState.isRecording ? 'STOP' : 'START'}
