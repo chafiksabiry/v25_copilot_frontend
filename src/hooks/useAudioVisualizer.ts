@@ -48,10 +48,14 @@ export function useAudioVisualizer(stream: MediaStream | null) {
                 }
 
                 const average = sum / bufferLength;
-                const normalizedLevel = average / 255; // Normalize to 0-1
+                const normalizedLevel = average / 255; // Base 0-1
 
-                // Use a threshold to clear low-level noise
-                const finalLevel = normalizedLevel > 0.01 ? normalizedLevel : 0;
+                // Apply a boost and logarithmic feel for better visualization
+                // Small sounds will be more visible, loud sounds won't overflow
+                const sensitivity = 2.5;
+                const boostedLevel = Math.pow(normalizedLevel, 0.7) * sensitivity;
+
+                const finalLevel = Math.min(1, boostedLevel > 0.02 ? boostedLevel : 0);
 
                 dispatch({ type: 'UPDATE_AUDIO_LEVEL', level: finalLevel });
 
