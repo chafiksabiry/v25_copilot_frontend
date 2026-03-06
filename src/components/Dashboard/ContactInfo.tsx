@@ -122,9 +122,9 @@ export function ContactInfo() {
     if (!phone) return '';
     const cleanPhone = phone.replace(/\s+/g, '');
     if (cleanPhone.startsWith('+')) {
-      return `${cleanPhone.substring(0, 3)}...`;
+      return `${cleanPhone.substring(0, 5)}...`;
     }
-    return `+${cleanPhone.substring(0, 2)}...`;
+    return `+${cleanPhone.substring(0, 4)}...`;
   };
 
 
