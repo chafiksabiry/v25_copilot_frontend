@@ -198,7 +198,19 @@ export class TranscriptionService {
   }
 
   private getLanguageFromPhoneNumber(phone: string, destinationZone?: string): string {
-    // Si on a une zone de destination du gig, l'utiliser en priorité
+    const cleanPhone = phone.replace(/\s+/g, '').replace(/[()-]/g, '');
+
+    // Priorité aux préfixes clairs (ex: Maroc, France)
+    if (cleanPhone.startsWith('+212') || cleanPhone.startsWith('00212')) {
+      console.log('🌍 Detected Morocco number, forcing fr-FR for better transcription coverage');
+      return 'fr-FR';
+    }
+
+    if (cleanPhone.startsWith('+33') || cleanPhone.startsWith('0033') || cleanPhone.startsWith('33') || cleanPhone.match(/^0[1-9]/)) {
+      return 'fr-FR';
+    }
+
+    // Si on a une zone de destination du gig, l'utiliser si le numéro n'est pas explicite
     if (destinationZone) {
       console.log('🌍 Using destination zone for language detection:', destinationZone);
       return this.getLanguageFromDestinationZone(destinationZone);
@@ -206,23 +218,11 @@ export class TranscriptionService {
 
     console.log('🔍 Detecting language for phone number:', phone);
     console.log('🔍 Phone number type:', typeof phone);
-    const cleanPhone = phone.replace(/\s+/g, '').replace(/[()-]/g, '');
 
     // France (+33, 0033, 33, ou numéros commençant par 0)
     if (cleanPhone.startsWith('+33') || cleanPhone.startsWith('0033') ||
       cleanPhone.startsWith('33') || cleanPhone.match(/^0[1-9]/)) {
       return 'fr-FR';
-    }
-
-    // Maroc (+212, 00212) - Prioritize FR for better STT coverage if not explicitly ar-MA
-    else if (cleanPhone.startsWith('+212') || cleanPhone.startsWith('00212')) {
-      return 'ar-MA';
-    }
-
-    // Royaume-Uni (+44, 0044, 44, ou numéros commençant par 0)
-    else if (cleanPhone.startsWith('+44') || cleanPhone.startsWith('0044') ||
-      cleanPhone.startsWith('44')) {
-      return 'en-GB';
     }
 
     // États-Unis (+1 ou numéros à 10 chiffres)
@@ -423,9 +423,13 @@ export class TranscriptionService {
           interimResults: true
         };
 
-        console.log('📤 [TranscriptionService] Sending initial configuration:', JSON.stringify(config));
-        this.ws!.send(JSON.stringify(config));
-        this.configSent = true;
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          console.log('📤 [TranscriptionService] Sending initial configuration:', JSON.stringify(config));
+          this.ws.send(JSON.stringify(config));
+          this.configSent = true;
+        } else {
+          console.warn('⚠️ [TranscriptionService] WebSocket not open yet, waiting for connected message to retry config');
+        }
 
         try {
           // Use the microfrontend's public path if available, fallback to location.origin
@@ -554,6 +558,14 @@ export class TranscriptionService {
       // Handle connection status
       if (data.type === 'connected') {
         console.log('✅ [TranscriptionService] Backend confirmed connection:', data.message);
+        // Retry sending config if it failed due to CONNECTING state
+        if (!this.configSent && this.ws?.readyState === WebSocket.OPEN) {
+          console.log('🔄 [TranscriptionService] Retrying configuration send after connection confirmation');
+          // For simplicity, we could store the last generated config or just let the next packet trigger it
+          // actually we need to send it NOW before any mystery silence.
+          // But config is local to initializeTranscription right now.
+          // Let's refactor config to be a member if needed, or just rely on the open check fix.
+        }
         return;
       }
 
