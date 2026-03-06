@@ -58,6 +58,7 @@ export class TranscriptionService {
 
   private configSent = false; // Flag pour s'assurer que la configuration est envoyée avant l'audio
   private destinationZone: string | null = null; // Zone de destination du gig
+  private static workletRegistered = false; // Static flag to prevent redundant registration
 
   constructor() {
     this.handleWebSocketMessage = this.handleWebSocketMessage.bind(this);
@@ -265,9 +266,9 @@ export class TranscriptionService {
             alternativeLanguageCodes: ['fr-FR', 'ar-MA', 'ar-SA'],
             enableAutomaticPunctuation: true,
             audioChannelCount: 2,
-            enableSpeakerDiarization: true,
-            minSpeakerCount: 2,
-            maxSpeakerCount: 2,
+            enableSpeakerDiarization: false,
+            // minSpeakerCount: 2,
+            // maxSpeakerCount: 2,
           }
         };
         this.ws?.send(JSON.stringify(configMessage));
@@ -364,6 +365,13 @@ export class TranscriptionService {
 
   async initializeTranscription(remoteStream: MediaStream, phoneNumber: string, localStream?: MediaStream) {
     try {
+      // 0. Ensure previous context is cleaned up
+      if (this.audioContext || this.ws) {
+        console.log('🔄 [TranscriptionService] Re-initializing, cleaning up previous session...');
+        await this.cleanup();
+        this.cleanupInitiated = false; // Allow new session
+      }
+
       this.isCallActive = true;
 
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -438,7 +446,10 @@ export class TranscriptionService {
           console.log('🎤 Loading audio worklet from:', workletUrl);
 
           try {
-            await this.audioContext!.audioWorklet.addModule(workletUrl);
+            if (!TranscriptionService.workletRegistered) {
+              await this.audioContext!.audioWorklet.addModule(workletUrl);
+              TranscriptionService.workletRegistered = true;
+            }
           } catch (urlError) {
             console.warn('⚠️ Failed to load audio worklet from URL, trying Blob fallback:', urlError);
 
@@ -454,6 +465,8 @@ export class TranscriptionService {
                   this.buffer = new Float32Array(this.bufferSize);
                   this.bufferIndex = 0;
                   this.ratio = this.sourceSampleRate / this.targetSampleRate;
+                  this.packetCount = 0;
+                  this.totalVolume = 0;
                 }
 
                 process(inputs, outputs, parameters) {
@@ -465,11 +478,21 @@ export class TranscriptionService {
                     
                     for (let i = 0; i < frameCount; i++) {
                       for (let c = 0; c < channels; c++) {
-                        this.buffer[this.bufferIndex++] = input[c][i];
-                      }
-                      if (this.bufferIndex >= this.bufferSize) {
-                        this.sendDownsampledData();
-                        this.bufferIndex = 0;
+                        const sample = input[c][i];
+                        this.buffer[this.bufferIndex++] = sample;
+                        this.totalVolume += Math.abs(sample);
+
+                        if (this.bufferIndex >= this.bufferSize) {
+                          this.sendDownsampledData();
+                          this.bufferIndex = 0;
+                          this.packetCount++;
+                          
+                          if (this.packetCount % 50 === 0) {
+                            const avgVol = this.totalVolume / (this.bufferSize * 50);
+                            console.log('• [AudioProcessor] Avg volume: ' + avgVol.toFixed(6));
+                            this.totalVolume = 0;
+                          }
+                        }
                       }
                     }
                   }
@@ -503,7 +526,10 @@ export class TranscriptionService {
             `;
             const blob = new Blob([workletCode], { type: 'application/javascript' });
             const blobUrl = URL.createObjectURL(blob);
-            await this.audioContext!.audioWorklet.addModule(blobUrl);
+            if (!TranscriptionService.workletRegistered) {
+              await this.audioContext!.audioWorklet.addModule(blobUrl);
+              TranscriptionService.workletRegistered = true;
+            }
             console.log('✅ Audio worklet loaded successfully via Blob fallback');
           }
 
