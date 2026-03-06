@@ -4,9 +4,10 @@ import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
+import { TwilioCallService } from '../../services/twilioCallService';
 
 const TopStatusBar: React.FC = () => {
-  const { state } = useAgent();
+  const { state, dispatch } = useAgent();
   const { profile: agentProfile } = useAgentProfile();
   const {
     currentPhase: aiCurrentPhase,
@@ -39,6 +40,28 @@ const TopStatusBar: React.FC = () => {
     // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
   };
 
+  const handleToggleRecording = async () => {
+    const { sid, isRecording } = state.callState;
+    const userId = "6807abfc2c1ca099fe2b13c5"; // Using hardcoded agent ID for now
+
+    if (!sid) {
+      console.error('No active call SID found for recording toggle');
+      return;
+    }
+
+    try {
+      if (isRecording) {
+        await TwilioCallService.stopRecording(sid, userId);
+        dispatch({ type: 'UPDATE_CALL_STATE', callState: { isRecording: false } });
+      } else {
+        await TwilioCallService.startRecording(sid, userId);
+        dispatch({ type: 'UPDATE_CALL_STATE', callState: { isRecording: true } });
+      }
+    } catch (error) {
+      console.error('Failed to toggle recording:', error);
+    }
+  };
+
   return (
     <div className="w-full max-w-[1800px] mx-auto px-2 py-2 overflow-x-auto">
       <div className="grid grid-cols-9 gap-2 h-[120px]">
@@ -54,8 +77,22 @@ const TopStatusBar: React.FC = () => {
           onToggle={() => setCallExpanded(e => !e)}
         />
         <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
+          <div className="absolute inset-x-0 bottom-[-10px] z-20 flex justify-center">
+            {state.callState.isActive && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleRecording();
+                }}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all shadow-lg ${state.callState.isRecording
+                  ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                  }`}
+              >
+                <Mic size={10} fill={state.callState.isRecording ? "white" : "none"} />
+                <span>{state.callState.isRecording ? 'STOP REC' : 'START REC'}</span>
+              </button>
+            )}
           </div>
           <StatusCard
             icon={<CheckSquare size={20} className="text-slate-200" />}
@@ -219,11 +256,24 @@ const TopStatusBar: React.FC = () => {
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Recording Status</div>
               <div className="bg-[#1b253a] rounded-lg p-4 flex flex-col space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${state.callState.isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`}></div>
-                  <span className="text-slate-200">
-                    {state.callState.isRecording ? 'Recording Live' : 'Recording Stopped'}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${state.callState.isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`}></div>
+                    <span className="text-slate-200">
+                      {state.callState.isRecording ? 'Recording Live' : 'Recording Stopped'}
+                    </span>
+                  </div>
+                  {state.callState.isActive && (
+                    <button
+                      onClick={handleToggleRecording}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${state.callState.isRecording
+                          ? 'bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-900/50'
+                          : 'bg-green-900/30 text-green-500 border border-green-500/50 hover:bg-green-900/50'
+                        }`}
+                    >
+                      {state.callState.isRecording ? 'STOP' : 'START'}
+                    </button>
+                  )}
                 </div>
                 {state.callState.recordingUrl && (
                   <button

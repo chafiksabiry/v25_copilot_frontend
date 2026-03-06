@@ -116,6 +116,7 @@ export interface CallState {
   currentPhase: string;
   contact?: Lead;
   recordingUrl?: string | null;
+  sid?: string;
 }
 
 export interface ComplianceAlert {

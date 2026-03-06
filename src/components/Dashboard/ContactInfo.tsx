@@ -218,7 +218,8 @@ export function ContactInfo() {
         dispatch({
           type: 'START_CALL',
           participants: [], // tu peux mettre la vraie liste si tu l'as
-          contact: contact
+          contact: contact,
+          sid: Sid
         });
 
         // Start transcription when call is accepted

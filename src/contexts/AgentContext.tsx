@@ -48,7 +48,7 @@ export interface AgentState {
 
 // Define action types
 export type AgentAction =
-  | { type: 'START_CALL'; participants: Participant[]; contact?: Lead }
+  | { type: 'START_CALL'; participants: Participant[]; contact?: Lead; sid?: string }
   | { type: 'END_CALL' }
   | { type: 'SET_RECORDING_URL'; url: string }
   | { type: 'UPDATE_CALL_STATE'; callState: Partial<CallState> }
@@ -132,7 +132,8 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
           isRecording: true,
           startTime: new Date(),
           participants: action.participants,
-          contact: action.contact
+          contact: action.contact,
+          sid: action.sid
         },
         transcript: [],
         recommendations: []

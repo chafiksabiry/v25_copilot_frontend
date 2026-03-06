@@ -50,4 +50,30 @@ export class TwilioCallService {
       throw error;
     }
   }
+
+  static async startRecording(callSid: string, userId: string): Promise<any> {
+    try {
+      const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/recording/start`, {
+        callSid,
+        userId
+      });
+      return result.data;
+    } catch (error) {
+      console.error('❌ Error starting recording:', error);
+      throw error;
+    }
+  }
+
+  static async stopRecording(callSid: string, userId: string): Promise<any> {
+    try {
+      const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/recording/stop`, {
+        callSid,
+        userId
+      });
+      return result.data;
+    } catch (error) {
+      console.error('❌ Error stopping recording:', error);
+      throw error;
+    }
+  }
 }
