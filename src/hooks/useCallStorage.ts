@@ -3,7 +3,7 @@ import { useAgent } from '../contexts/AgentContext';
 import { TwilioCallService } from '../services/twilioCallService';
 
 export const useCallStorage = () => {
-  const { dispatch } = useAgent();
+  const { state, dispatch } = useAgent();
   const storeCall = useCallback(async (callSid: string, leadId: string) => {
     const agentId = "6807abfc2c1ca099fe2b13c5"; // Hardcoded agent ID for now
 
@@ -17,7 +17,8 @@ export const useCallStorage = () => {
         callSid,
         agentId,
         leadId,
-        userId: agentId
+        userId: agentId,
+        isRecording: state.callState.isRecording
       });
 
       if (callData && callData.recording_url_cloudinary) {
@@ -26,7 +27,7 @@ export const useCallStorage = () => {
     } catch (error) {
       console.error('Failed to store call in database:', error);
     }
-  }, []);
+  }, [state.callState.isRecording]);
 
   return { storeCall };
 }; 

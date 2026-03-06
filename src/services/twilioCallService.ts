@@ -5,6 +5,7 @@ export interface CallStorageData {
   agentId: string;
   leadId: string;
   userId: string;
+  isRecording: boolean;
 }
 
 export class TwilioCallService {
@@ -12,8 +13,10 @@ export class TwilioCallService {
     try {
       console.log('🔄 Starting call storage process...');
 
-      // Step 1: Wait for Twilio to process the recording (5s)
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Step 1: Wait for Twilio to process the recording (5s) - ONLY if recording
+      if (data.isRecording) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
 
       // Step 2: Get call details from Twilio
       const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/call-details`, {
@@ -23,9 +26,9 @@ export class TwilioCallService {
       const call = (result.data as any).data;
       console.log("📞 Call details retrieved from Twilio");
 
-      // Step 3: Fetch recording from Cloudinary if available
+      // Step 3: Fetch recording from Cloudinary if available (ONLY if isRecording is true)
       let cloudinaryRecord = { data: { url: null } };
-      if (call && call.recordingUrl) {
+      if (data.isRecording && call && call.recordingUrl) {
         cloudinaryRecord = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/fetch-recording`, {
           recordingUrl: call.recordingUrl,
           userId: data.userId

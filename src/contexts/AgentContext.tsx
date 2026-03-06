@@ -129,7 +129,7 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
         callState: {
           ...state.callState,
           isActive: true,
-          isRecording: true,
+          isRecording: false,
           startTime: new Date(),
           participants: action.participants,
           contact: action.contact,
