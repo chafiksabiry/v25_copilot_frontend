@@ -12,7 +12,10 @@ export class TwilioCallService {
     try {
       console.log('🔄 Starting call storage process...');
 
-      // Step 1: Get call details from Twilio
+      // Step 1: Wait for Twilio to process the recording (5s)
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Step 2: Get call details from Twilio
       const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/call-details`, {
         callSid: data.callSid,
         userId: data.userId
@@ -20,12 +23,9 @@ export class TwilioCallService {
       const call = (result.data as any).data;
       console.log("📞 Call details retrieved from Twilio");
 
-      // Step 2: Wait a bit for recording to be available
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       // Step 3: Fetch recording from Cloudinary if available
       let cloudinaryRecord = { data: { url: null } };
-      if (call.recordingUrl) {
+      if (call && call.recordingUrl) {
         cloudinaryRecord = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/fetch-recording`, {
           recordingUrl: call.recordingUrl,
           userId: data.userId
@@ -50,4 +50,4 @@ export class TwilioCallService {
       throw error;
     }
   }
-} 
+}
