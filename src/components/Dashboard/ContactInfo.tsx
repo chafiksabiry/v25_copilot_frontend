@@ -7,7 +7,7 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Calendar, ChevronDown, ChevronUp
+  Phone, Mail, Calendar
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -25,7 +25,6 @@ export function ContactInfo() {
   } = useTranscription();
 
   const { dispatch } = useAgent();
-  const [expanded, setExpanded] = useState(true);
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const [, setActiveDevice] = useState<Device | null>(null);
@@ -325,18 +324,7 @@ export function ContactInfo() {
   };
 
 
-  const handleCallNow = () => {
-    initiateTwilioCall();
-  };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <>
@@ -410,92 +398,7 @@ export function ContactInfo() {
           <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
           <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
         </div>
-        {/* Toggle à droite */}
-        <button
-          className="ml-4 bg-[#232f47] hover:bg-[#26314a] rounded-lg p-2 text-slate-300 transition-colors"
-          onClick={() => setExpanded(e => !e)}
-          aria-label="Toggle contact details"
-        >
-          {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
-        </button>
       </div>
-      {expanded && (
-        <div className="w-full mt-2 max-w-[1800px] mx-auto mb-8">
-          <div className="bg-[#232f47] rounded-xl p-4 grid grid-cols-3 gap-4 items-center">
-            {/* Colonne gauche */}
-            <div className="flex flex-col items-start">
-              <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-xl font-bold mb-2">
-                {contact.avatar ? (
-                  <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
-                ) : (
-                  contact.name.split(' ').map(n => n[0]).join('')
-                )}
-              </div>
-              <div className="text-lg font-bold text-white mb-1">{contact.name}</div>
-              <div className="text-slate-300 text-sm">{contact.title}</div>
-              {/* <div className="text-slate-400 text-sm">{contact.company}</div> */}
-            </div>
-            {/* Colonne centre */}
-            <div className="flex flex-col items-start gap-2">
-              <div className="flex items-center gap-2 text-slate-200 w-full">
-                <Phone className="w-5 h-5 text-blue-400 shrink-0" />
-                <span className="font-medium text-sm">{maskPhone(contact.phone)}</span>
-                <button
-                  className="ml-1 text-slate-400 hover:text-blue-400 shrink-0"
-                  title="Copy"
-                  onClick={() => navigator.clipboard.writeText(contact.phone)}
-                >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                </button>
-              </div>
-              {/* <div className="flex items-center gap-2 text-slate-200">
-                <Mail className="w-5 h-5 text-green-400" />
-                <span className="font-medium text-sm">{contact.email}</span>
-                <button className="ml-1 text-slate-400 hover:text-green-400" title="Copy" onClick={() => navigator.clipboard.writeText(contact.email)}><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
-              </div> */}
-              <div className="flex items-center gap-2 text-slate-200">
-                <Calendar className="w-5 h-5 text-purple-400" />
-                <span className="font-medium text-sm">{contact.timezone} Timezone</span>
-              </div>
-
-            </div>
-            {/* Colonne droite */}
-            <div className="flex flex-row items-center justify-between w-full">
-              {/* Bloc gauche : badge + score + valeur */}
-              <div className="flex flex-col items-center flex-1">
-                <div className="w-[240px]">
-                  <span className="block bg-[#25594B] text-green-200 py-2 rounded-full text-lg font-medium text-center">Qualified</span>
-                </div>
-                <div className="mt-2 text-white text-xl font-bold text-center">{contact.leadScore}/100</div>
-                <div className="text-slate-300 text-sm text-center">Lead Score</div>
-                <div className="mt-2 text-green-400 text-lg font-bold text-center">{contact.value > 0 ? `$${contact.value.toLocaleString()}` : 'N/A'}</div>
-                <div className="text-slate-300 text-sm text-center">Potential Value</div>
-              </div>
-              {/* Bouton à droite */}
-              {callStatus === 'active' ? (
-                <button
-                  onClick={endCall}
-                  className="ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md bg-red-500 hover:bg-red-600 text-white"
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  End Call
-                </button>
-              ) : (
-                <button
-                  onClick={handleCallNow}
-                  disabled={isCallLoading || callStatus === 'initiating'}
-                  className={`ml-8 flex items-center font-semibold text-lg px-10 py-3 rounded-lg transition shadow-md
-                    ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-                >
-                  <Phone className="w-5 h-5 mr-2" />
-                  {isCallLoading || callStatus === 'initiating' ? 'Initiating...' : 'Call Now'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-      }
     </>
   );
 }
