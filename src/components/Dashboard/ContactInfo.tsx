@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
@@ -7,7 +7,7 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Building, Star, Calendar, MessageSquare, Video, ChevronDown, ChevronUp
+  Phone, Mail, Building, Star, Calendar, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -21,13 +21,7 @@ export function ContactInfo() {
   // Utiliser le contexte de transcription global
   const {
     startTranscription,
-    stopTranscription,
-    simulateAudioStream,
-    pauseSimulation,
-    resumeSimulation,
-    isSimulationPaused,
-    simulationProgress,
-    isActive: isTranscriptionActive
+    stopTranscription
   } = useTranscription();
 
   const { dispatch } = useAgent();
@@ -37,7 +31,6 @@ export function ContactInfo() {
   const [, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
   const [currentCallSid, setCurrentCallSid] = useState<string>('');
-  const [, setMediaStream] = useState<MediaStream | null>(null);
 
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -46,30 +39,13 @@ export function ContactInfo() {
   // Use the hook to fetch lead data
   const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
 
-  const [testPhoneNumber, setTestPhoneNumber] = useState('+212637446431');
-  const [selectedAudio, setSelectedAudio] = useState('https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav');
-
-  const audioLibrary = [
-    {
-      name: 'Standard Pitch',
-      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav'
-    },
-    {
-      name: 'Objection Handling',
-      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1734015697/mve65i02qshf7j1gscat.wav'
-    },
-    {
-      name: 'Closing Session',
-      url: 'https://res.cloudinary.com/dyqg8x26j/video/upload/v1771240739/call-recordings/ekqc3vmsr5h2qmlyjqow.wav' // Fallback to same for now
-    }
-  ];
 
   // Map ApiLead to the contact format expected by the component
   const contact = apiLead ? {
     id: apiLead._id,
     name: apiLead.name || (apiLead.First_Name || apiLead.Last_Name ? `${apiLead.First_Name || ''} ${apiLead.Last_Name || ''}`.trim() : 'Unknown Lead'),
     email: apiLead.email || apiLead.Email_1 || 'No email',
-    phone: apiLead.phone || apiLead.Phone || testPhoneNumber,
+    phone: apiLead.phone || apiLead.Phone || '+212637446431',
     company: apiLead.company || apiLead.companyId || 'Unknown Company',
     title: apiLead.title || apiLead.Activity_Tag || 'Prospect',
     avatar: apiLead.avatar || '',
@@ -97,7 +73,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: testPhoneNumber,
+    phone: '+212637446431',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -143,12 +119,6 @@ export function ContactInfo() {
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
   };
 
-  // Update testPhoneNumber if contact phone changes from API
-  useEffect(() => {
-    if (apiLead && (apiLead.phone || apiLead.Phone)) {
-      setTestPhoneNumber(apiLead.phone || apiLead.Phone);
-    }
-  }, [apiLead]);
 
   // Debug: Log contact data whenever it changes
   /*  console.log("Contact data:", contact);
@@ -161,8 +131,7 @@ export function ContactInfo() {
      console.log("Call status at start:", callStatus); */
 
     // Ensure we have valid contact data
-    const phoneNumber = testPhoneNumber;
-    console.log("Using phone number:", phoneNumber);
+    const phoneNumber = contact.phone;
 
     if (!phoneNumber) {
       console.error('No phone number available');
@@ -249,7 +218,6 @@ export function ContactInfo() {
           try {
             const stream = conn.getRemoteStream();
             if (stream) {
-              setMediaStream(stream);
               dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
 
               // Log de debug pour la transcription
@@ -281,7 +249,6 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
-        setMediaStream(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
         // Stop transcription
@@ -327,7 +294,6 @@ export function ContactInfo() {
     setActiveConnection(null);
     setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
-    setMediaStream(null);
     dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
     // Stop transcription
@@ -349,29 +315,6 @@ export function ContactInfo() {
     initiateTwilioCall();
   };
 
-  const handleSimulateCall = async () => {
-    if (callStatus === 'active') return;
-    setCallStatus('active');
-
-    // Dispatch START_CALL *before* starting simulation to prevent race condition
-    // where CallPhasesDisplay sees isTranscriptionActive=true but isCallActive=false
-    dispatch({
-      type: 'START_CALL',
-      participants: [],
-      contact: contact
-    });
-
-    try {
-      await simulateAudioStream(
-        selectedAudio,
-        contact.phone
-      );
-    } catch (e) {
-      console.error("Simulation failed", e);
-      setCallStatus('idle');
-      dispatch({ type: 'END_CALL' });
-    }
-  };
 
   const handleCallNow = () => {
     initiateTwilioCall();
@@ -433,59 +376,17 @@ export function ContactInfo() {
               End Call
             </button>
           ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={handleStartCall}
-                disabled={isCallLoading || callStatus === 'initiating'}
-                className={`w-40 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
+            <button
+              onClick={handleStartCall}
+              disabled={isCallLoading || callStatus === 'initiating'}
+              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
                   ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
-              </button>
-              <button
-                onClick={handleSimulateCall}
-                className="w-40 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                Simulate
-              </button>
-            </div>
+            >
+              <Phone className="w-5 h-5 mr-2" />
+              {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
+            </button>
           )}
 
-          {isTranscriptionActive && (
-            <div className="w-full max-w-md mt-4 px-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-slate-400 font-medium">Simulation Progress</span>
-                <span className="text-xs text-blue-400 font-bold">{simulationProgress}%</span>
-              </div>
-              <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden mb-3">
-                <div
-                  className="bg-blue-500 h-full transition-all duration-500 ease-out"
-                  style={{ width: `${simulationProgress}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-center space-x-4">
-                {isSimulationPaused ? (
-                  <button
-                    onClick={resumeSimulation}
-                    className="p-2 bg-slate-700 hover:bg-slate-600 text-blue-400 rounded-full transition-colors"
-                    title="Resume"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                  </button>
-                ) : (
-                  <button
-                    onClick={pauseSimulation}
-                    className="p-2 bg-slate-700 hover:bg-slate-600 text-yellow-400 rounded-full transition-colors"
-                    title="Pause"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
           <div className="flex items-center space-x-6 mt-3">
             <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
             <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
@@ -526,17 +427,11 @@ export function ContactInfo() {
             <div className="flex flex-col items-start gap-2">
               <div className="flex items-center gap-2 text-slate-200 w-full">
                 <Phone className="w-5 h-5 text-blue-400 shrink-0" />
-                <input
-                  type="text"
-                  value={testPhoneNumber}
-                  onChange={(e) => setTestPhoneNumber(e.target.value)}
-                  className="bg-[#1b253a] text-white font-medium text-sm px-2 py-1 rounded border border-slate-600 focus:border-blue-400 outline-none w-full"
-                  placeholder="Phone number"
-                />
+                <span className="font-medium text-sm">{contact.phone}</span>
                 <button
                   className="ml-1 text-slate-400 hover:text-blue-400 shrink-0"
                   title="Copy"
-                  onClick={() => navigator.clipboard.writeText(testPhoneNumber)}
+                  onClick={() => navigator.clipboard.writeText(contact.phone)}
                 >
                   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                 </button>
@@ -551,18 +446,6 @@ export function ContactInfo() {
                 <span className="font-medium text-sm">{contact.timezone} Timezone</span>
               </div>
 
-              <div className="mt-2 w-full">
-                <label className="text-xs font-semibold text-slate-400 mb-1 block uppercase">Audio Library</label>
-                <select
-                  value={selectedAudio}
-                  onChange={(e) => setSelectedAudio(e.target.value)}
-                  className="w-full bg-[#1b253a] text-slate-200 text-sm p-2 rounded border border-slate-600 outline-none focus:border-blue-400"
-                >
-                  {audioLibrary.map((audio, idx) => (
-                    <option key={idx} value={audio.url}>{audio.name}</option>
-                  ))}
-                </select>
-              </div>
             </div>
             {/* Colonne droite */}
             <div className="flex flex-row items-center justify-between w-full">

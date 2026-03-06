@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PhoneOff, CheckSquare, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX } from 'lucide-react';
+import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Play, Headphones } from 'lucide-react';
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
@@ -11,8 +11,7 @@ const TopStatusBar: React.FC = () => {
   const {
     currentPhase: aiCurrentPhase,
     analysisConfidence,
-    isActive: isTranscriptionActive,
-    simulationProgress
+    isActive: isTranscriptionActive
   } = useTranscription();
 
   const [callExpanded, setCallExpanded] = useState(false);
@@ -58,13 +57,26 @@ const TopStatusBar: React.FC = () => {
           <div className="absolute inset-0 z-10 pointer-events-none">
             <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
           </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<CheckSquare size={20} className="text-slate-200" />}
-              title="Recording"
-              value={<span className="bg-[#22304a] px-3 py-1 rounded-full text-xs font-semibold text-slate-200">STOPPED</span>}
-            />
-          </div>
+          <StatusCard
+            icon={<CheckSquare size={20} className="text-slate-200" />}
+            title="Recording"
+            value={state.callState.isRecording ? (
+              <span className="bg-red-500 px-3 py-1 rounded-full text-xs font-semibold text-white animate-pulse">RECORDING</span>
+            ) : state.callState.recordingUrl ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(state.callState.recordingUrl!, '_blank');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full text-xs font-semibold text-white flex items-center space-x-1 transition-colors"
+              >
+                <Headphones size={12} />
+                <span>LISTEN</span>
+              </button>
+            ) : (
+              <span className="bg-[#22304a] px-3 py-1 rounded-full text-xs font-semibold text-slate-200">STOPPED</span>
+            )}
+          />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
@@ -128,13 +140,16 @@ const TopStatusBar: React.FC = () => {
         <div className="relative w-full h-full">
           <StatusCard
             icon={<Volume2 size={20} className="text-blue-400" />}
-            title="Audio"
+            title="Audio Level"
             value={
               <div className="w-full">
                 <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
-                  <div className="bg-blue-400 h-3 rounded-full transition-all duration-300" style={{ width: `${simulationProgress}%` }}></div>
+                  <div
+                    className="bg-blue-400 h-3 rounded-full transition-all duration-100"
+                    style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
+                  ></div>
                 </div>
-                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(simulationProgress)}%</span>
+                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
               </div>
             }
           />
@@ -201,12 +216,24 @@ const TopStatusBar: React.FC = () => {
                 <span className="text-slate-400 font-semibold">Inactive</span>
               )}
             </div>
-            {/* Recording Status */}
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Recording Status</div>
-              <div className="bg-[#1b253a] rounded-lg p-4 flex items-center space-x-2">
-                <input type="checkbox" checked={false} readOnly className="accent-blue-500" />
-                <span className="text-slate-200">Recording Stopped</span>
+              <div className="bg-[#1b253a] rounded-lg p-4 flex flex-col space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${state.callState.isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`}></div>
+                  <span className="text-slate-200">
+                    {state.callState.isRecording ? 'Recording Live' : 'Recording Stopped'}
+                  </span>
+                </div>
+                {state.callState.recordingUrl && (
+                  <button
+                    onClick={() => window.open(state.callState.recordingUrl!, '_blank')}
+                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full justify-center"
+                  >
+                    <Play size={16} fill="white" />
+                    <span className="font-semibold text-sm">Play Recording</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
