@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
@@ -24,12 +24,18 @@ export function ContactInfo() {
     stopTranscription
   } = useTranscription();
 
-  const { dispatch } = useAgent();
+  const { dispatch, state } = useAgent();
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
   const [, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
-  const [currentCallSid, setCurrentCallSid] = useState<string>('');
+  const [currentCallSid, setCurrentCallSid] = useState<string | null>(null);
+  const isRecordingRef = useRef(false);
+
+  // Synchronize ref with global state
+  useEffect(() => {
+    isRecordingRef.current = state.callState.isRecording;
+  }, [state.callState.isRecording]);
 
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -265,7 +271,7 @@ export function ContactInfo() {
 
         // Store call in database when it disconnects
         if (currentCallSid && contact.id) {
-          await storeCall(currentCallSid, contact.id);
+          await storeCall(currentCallSid, contact.id, isRecordingRef.current);
         }
 
         // Ajout : dispatch END_CALL pour mettre à jour le context global

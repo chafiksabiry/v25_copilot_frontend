@@ -4,13 +4,8 @@ import { TwilioCallService } from '../services/twilioCallService';
 
 export const useCallStorage = () => {
   const { state, dispatch } = useAgent();
-  const storeCall = useCallback(async (callSid: string, leadId: string) => {
+  const storeCall = useCallback(async (callSid: string, leadId: string, isRecordingOverride?: boolean) => {
     const agentId = "6807abfc2c1ca099fe2b13c5"; // Hardcoded agent ID for now
-
-    if (!callSid || !leadId) {
-      console.warn('Missing callSid or leadId for call storage');
-      return;
-    }
 
     try {
       const callData = await TwilioCallService.storeCallInDB({
@@ -18,7 +13,7 @@ export const useCallStorage = () => {
         agentId,
         leadId,
         userId: agentId,
-        isRecording: state.callState.isRecording
+        isRecording: isRecordingOverride !== undefined ? isRecordingOverride : state.callState.isRecording
       });
 
       if (callData && callData.recording_url_cloudinary) {
