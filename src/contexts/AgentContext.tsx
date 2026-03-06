@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { 
-  Participant, 
-  Lead, 
-  TranscriptEntry, 
-  PersonalityProfile, 
-  Recommendation, 
-  CallMetrics, 
-  CallState, 
-  CallStructureGuidance, 
+import {
+  Participant,
+  Lead,
+  TranscriptEntry,
+  PersonalityProfile,
+  Recommendation,
+  CallMetrics,
+  CallState,
+  CallStructureGuidance,
   TransactionIntelligence,
   SmartWarning,
   WarningSystemState
@@ -17,30 +17,30 @@ import {
 export interface AgentState {
   // Call state
   callState: CallState;
-  
+
   // Audio and recording
   isAIListening: boolean;
   audioLevel: number;
   mediaStream: MediaStream | null;
-  
+
   // Transcript and conversation
   transcript: TranscriptEntry[];
-  
+
   // Personality and insights
   personalityProfile?: PersonalityProfile;
-  
+
   // Recommendations and guidance
   recommendations: Recommendation[];
-  
+
   // Call metrics and performance
   callMetrics: CallMetrics;
-  
+
   // Call structure and methodology guidance
   callStructureGuidance: CallStructureGuidance;
-  
+
   // Transaction intelligence
   transactionIntelligence: TransactionIntelligence;
-  
+
   // Smart warning system
   smartWarnings: SmartWarning[];
   warningSystem: WarningSystemState;
@@ -50,6 +50,7 @@ export interface AgentState {
 export type AgentAction =
   | { type: 'START_CALL'; participants: Participant[]; contact?: Lead }
   | { type: 'END_CALL' }
+  | { type: 'SET_RECORDING_URL'; url: string }
   | { type: 'UPDATE_CALL_STATE'; callState: Partial<CallState> }
   | { type: 'TOGGLE_AI_LISTENING' }
   | { type: 'UPDATE_AUDIO_LEVEL'; level: number }
@@ -72,7 +73,8 @@ const initialState: AgentState = {
     isActive: false,
     isRecording: false,
     participants: [],
-    currentPhase: 'greeting'
+    currentPhase: 'greeting',
+    recordingUrl: null
   },
   isAIListening: false,
   audioLevel: 0,
@@ -151,6 +153,15 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
         audioLevel: 0
       };
 
+    case 'SET_RECORDING_URL':
+      return {
+        ...state,
+        callState: {
+          ...state.callState,
+          recordingUrl: action.url
+        }
+      };
+
     case 'UPDATE_CALL_STATE':
       return {
         ...state,
@@ -184,7 +195,7 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
         transcript: [...state.transcript, action.entry],
         callMetrics: {
           ...state.callMetrics,
-          duration: state.callState.startTime ? 
+          duration: state.callState.startTime ?
             Date.now() - state.callState.startTime.getTime() : 0
         }
       };
@@ -259,7 +270,7 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
       return {
         ...state,
         smartWarnings: state.smartWarnings.map(warning =>
-          warning.id === action.warningId 
+          warning.id === action.warningId
             ? { ...warning, resolved: true, resolvedAt: new Date() }
             : warning
         ),

@@ -115,6 +115,7 @@ export interface CallState {
   participants: Participant[];
   currentPhase: string;
   contact?: Lead;
+  recordingUrl?: string | null;
 }
 
 export interface ComplianceAlert {
