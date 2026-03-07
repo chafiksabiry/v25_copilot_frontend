@@ -50,7 +50,7 @@ export function ContactInfo() {
     id: apiLead._id,
     name: apiLead.name || (apiLead.First_Name || apiLead.Last_Name ? `${apiLead.First_Name || ''} ${apiLead.Last_Name || ''}`.trim() : 'Unknown Lead'),
     email: apiLead.email || apiLead.Email_1 || 'No email',
-    phone: apiLead.phone || apiLead.Phone || '+212637446431',
+    phone: apiLead.phone || apiLead.Phone || '',
     company: apiLead.company || apiLead.companyId || 'Unknown Company',
     title: apiLead.title || apiLead.Activity_Tag || 'Prospect',
     avatar: apiLead.avatar || '',
@@ -78,7 +78,7 @@ export function ContactInfo() {
     id: '65d7f6a9e8f3e4a5c6d1e456',
     name: 'Sarah Johnson',
     email: 'sarah.johnson@techcorp.com',
-    phone: '+212637446431',
+    phone: '',
     company: 'TechCorp Solutions',
     title: 'VP of Operations',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -187,6 +187,7 @@ export function ContactInfo() {
       const conn = await newDevice.connect({
         params: {
           To: phoneNumber,
+          LeadId: contact.id, // Pass LeadId for dynamic Caller ID resolution
           MediaStream: true,
         },
         rtcConfiguration: {
