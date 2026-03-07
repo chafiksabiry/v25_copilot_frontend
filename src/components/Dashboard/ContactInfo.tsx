@@ -7,8 +7,9 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Calendar
+  Phone, Mail, Calendar, Briefcase
 } from 'lucide-react';
+import { useGig } from '../../hooks/useGig';
 
 interface TokenResponse {
   token: string;
@@ -43,6 +44,9 @@ export function ContactInfo() {
 
   // Use the hook to fetch lead data
   const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
+
+  // Use hook to fetch gig details
+  const { gig } = useGig(apiLead?.gigId || null);
 
 
   // Map ApiLead to the contact format expected by the component
@@ -360,6 +364,12 @@ export function ContactInfo() {
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="text-lg font-bold text-white">{contact.name}</span>
                   <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
+                  {gig && (
+                    <span className="bg-blue-900/40 text-blue-300 text-[10px] px-2 py-0.5 rounded-full border border-blue-700/50 flex items-center">
+                      <Briefcase className="w-3 h-3 mr-1" />
+                      {gig.title}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2 text-blue-400 text-sm font-medium">
                   <Mail className="w-4 h-4" />
