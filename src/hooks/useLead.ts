@@ -15,6 +15,13 @@ export interface ApiLead {
   Last_Activity_Time?: string;
   Pipeline?: string;
   Stage?: string;
+  gigId?: {
+    _id: string;
+    title: string;
+    description?: string;
+    category?: string;
+    status?: string;
+  };
   updatedAt?: string;
   [key: string]: any;
 }

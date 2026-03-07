@@ -9,7 +9,6 @@ import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
   Phone, Mail, Calendar, Briefcase
 } from 'lucide-react';
-import { useGig } from '../../hooks/useGig';
 
 interface TokenResponse {
   token: string;
@@ -45,8 +44,8 @@ export function ContactInfo() {
   // Use the hook to fetch lead data
   const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
 
-  // Use hook to fetch gig details
-  const { gig } = useGig(apiLead?.gigId || null);
+  // Populated gig data from lead
+  const gig = apiLead?.gigId;
 
 
   // Map ApiLead to the contact format expected by the component
