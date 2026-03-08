@@ -164,20 +164,14 @@ const TopStatusBar: React.FC = () => {
             onToggle={() => setWarningsExpanded(e => !e)}
           />
         </div>
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Target size={20} className="text-cyan-400" />}
-              title="Transaction"
-              value={<span className="text-red-400 font-extrabold">0%</span>}
-              subtitle={<span>Success Rate</span>}
-              status="danger"
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<Target size={20} className="text-cyan-400" />}
+          title="Transaction"
+          value={<span className="text-red-400 font-extrabold">0%</span>}
+          subtitle={<span>Success Rate</span>}
+          status="danger"
+          disabled
+        />
         <div className="relative w-full h-full">
           <StatusCard
             icon={<Volume2 size={20} className="text-blue-400" />}

@@ -37,7 +37,7 @@ const repsPhases = [
 ];
 
 const DashboardGrid: React.FC = () => {
-  const { state, dispatch } = useAgent();
+  const { state } = useAgent();
   const [discExpanded, setDiscExpanded] = useState(false);
   const transactionExpanded = false;
   const callStructureExpanded = false;
@@ -89,114 +89,69 @@ const DashboardGrid: React.FC = () => {
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
         />
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Radar className="text-cyan-400" />}
-              title="Transaction Progress"
-              value={
-                <div className="flex flex-col w-full">
-                  <span className="text-red-400 font-bold text-2xl mb-1">0%</span>
-                  <span className="text-slate-300 text-sm mb-1">Success Probability</span>
-                  <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
-                    <div className="h-2 rounded-full bg-cyan-400" style={{ width: '0%' }} />
-                  </div>
-                  <span className="text-slate-400 text-sm">0% to goal</span>
-                </div>
-              }
-              expandable
-              expanded={false}
-              onToggle={() => { }}
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<Radar className="text-cyan-400" />}
+          title="Transaction Progress"
+          value={
+            <div className="flex flex-col w-full">
+              <span className="text-slate-500 font-bold text-2xl mb-1">0%</span>
+              <span className="text-slate-500 text-sm mb-1">Success Probability</span>
+              <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
+                <div className="h-2 rounded-full bg-slate-600" style={{ width: '0%' }} />
+              </div>
+              <span className="text-slate-500 text-sm">0% to goal</span>
+            </div>
+          }
+          disabled
+        />
 
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<MapPin className="text-cyan-400" />}
-              title="Call Structure"
-              value={
-                <div className="flex flex-col items-center justify-center w-full mt-2">
-                  <MapPin className="w-10 h-10 text-slate-500 mb-5" />
-                  <span className="text-slate-400 text-base text-center">No active methodology</span>
-                </div>
-              }
-              expandable
-              expanded={false}
-              onToggle={() => { }}
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<MapPin className="text-cyan-400" />}
+          title="Call Structure"
+          value={
+            <div className="flex flex-col items-center justify-center w-full mt-2">
+              <MapPin className="w-10 h-10 text-slate-500 mb-5" />
+              <span className="text-slate-500 text-base text-center">No active methodology</span>
+            </div>
+          }
+          disabled
+        />
 
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<GraduationCap className="text-blue-400" />}
-              title="Coaching"
-              value={
-                <div className="flex flex-col items-center justify-center w-full mt-2">
-                  <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
-                  <span className="text-slate-400 text-base text-center">Start call for coaching</span>
-                </div>
-              }
-              expandable
-              expanded={false}
-              onToggle={() => { }}
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<GraduationCap className="text-blue-400" />}
+          title="Coaching"
+          value={
+            <div className="flex flex-col items-center justify-center w-full mt-2">
+              <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
+              <span className="text-slate-500 text-base text-center">Start call for coaching</span>
+            </div>
+          }
+          disabled
+        />
 
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Target className="text-cyan-400" />}
-              title="Targeting"
-              value={
-                <div className="flex flex-col items-center justify-center w-full mt-2">
-                  <Target className="w-10 h-10 text-slate-500 mb-5" />
-                  <span className="text-slate-400 text-base text-center">No transaction goal set</span>
-                </div>
-              }
-              expandable
-              expanded={false}
-              onToggle={() => { }}
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<Target className="text-cyan-400" />}
+          title="Targeting"
+          value={
+            <div className="flex flex-col items-center justify-center w-full mt-2">
+              <Target className="w-10 h-10 text-slate-500 mb-5" />
+              <span className="text-slate-500 text-base text-center">No transaction goal set</span>
+            </div>
+          }
+          disabled
+        />
 
-        <div className="relative w-full h-full">
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="bg-[#232f47]/50 absolute inset-0 rounded-xl" />
-          </div>
-          <div className="pointer-events-none w-full h-full">
-            <StatusCard
-              icon={<Lightbulb className="text-yellow-400" />}
-              title="Recommendations"
-              value={
-                <div className="flex flex-col items-center justify-center w-full mt-2">
-                  <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
-                  <span className="text-slate-400 text-base text-center">No recommendations yet</span>
-                </div>
-              }
-              expandable
-              expanded={false}
-              onToggle={() => { }}
-            />
-          </div>
-        </div>
+        <StatusCard
+          icon={<Lightbulb className="text-yellow-400" />}
+          title="Recommendations"
+          value={
+            <div className="flex flex-col items-center justify-center w-full mt-2">
+              <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
+              <span className="text-slate-500 text-base text-center">No recommendations yet</span>
+            </div>
+          }
+          disabled
+        />
       </div>
       {discExpanded && (
         <>
@@ -261,8 +216,16 @@ const DashboardGrid: React.FC = () => {
       <div className="grid grid-cols-12 gap-6 mt-6 min-h-[450px]">
         {/* Left Column: Phases & Coaching (7 cols) */}
         <div className="col-span-7 flex flex-col space-y-6">
-          <div className="bg-[#232f47] rounded-xl p-8 flex flex-col h-full shadow-xl border border-slate-700/50">
-            <RealTimeCoaching />
+          <div className="relative h-full">
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+                Coming Soon
+              </div>
+            </div>
+            <div className="bg-[#232f47] rounded-xl p-8 flex flex-col h-full shadow-xl border border-slate-700/50 opacity-50 grayscale-[0.5]">
+              <RealTimeCoaching />
+            </div>
           </div>
 
           <div className="bg-[#232f47] rounded-xl p-8 flex flex-col shadow-xl border border-slate-700/50">
@@ -289,15 +252,23 @@ const DashboardGrid: React.FC = () => {
 
       {/* Adaptive Script Prompter Overlay/Section */}
       <div className="grid grid-cols-1 gap-6 mt-6">
-        <div className="bg-[#1b253a] rounded-xl p-8 flex flex-col min-h-[180px] relative border border-slate-800 shadow-inner">
-          <div className="relative z-0 h-full flex flex-col">
-            <div className="flex items-center mb-4 self-start">
-              <Brain className="text-cyan-400 mr-2" />
-              <span className="text-lg font-bold text-white tracking-wide">Adaptive Script Prompter</span>
+        <div className="relative">
+          <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+            <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+            <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+              Coming Soon
             </div>
-            <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-              <FileText className="w-8 h-8 text-slate-500 mb-3" />
-              <div className="text-slate-400 text-sm italic">Script prompter will activate when call starts</div>
+          </div>
+          <div className="bg-[#1b253a] rounded-xl p-8 flex flex-col min-h-[180px] relative border border-slate-800 shadow-inner opacity-50">
+            <div className="relative z-0 h-full flex flex-col">
+              <div className="flex items-center mb-4 self-start">
+                <Brain className="text-cyan-400 mr-2" />
+                <span className="text-lg font-bold text-white tracking-wide">Adaptive Script Prompter</span>
+              </div>
+              <div className="flex flex-col items-center justify-center flex-1 opacity-50">
+                <FileText className="w-8 h-8 text-slate-500 mb-3" />
+                <div className="text-slate-400 text-sm italic">Script prompter will activate when call starts</div>
+              </div>
             </div>
           </div>
         </div>

@@ -400,21 +400,26 @@ export function ContactInfo() {
             </button>
           )}
 
-          <div className="flex items-center space-x-2 text-blue-400 text-sm font-bold mt-2 tracking-wider">
+          <div className="flex items-center space-x-2 text-slate-500 text-sm font-bold mt-2 tracking-wider opacity-60 cursor-not-allowed" title="Coming Soon">
             <Phone className="w-4 h-4" />
             <span>{maskPhone(contact.phone)}</span>
           </div>
 
           <div className="flex items-center space-x-6 mt-3">
             <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
-            <span className="flex items-center text-slate-400 text-sm"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19h16M4 15h16M4 11h16M4 7h16" /></svg>Knowledge</span>
+            <span className="flex items-center text-slate-500 text-sm opacity-50 cursor-not-allowed" title="Coming Soon">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 19h16M4 15h16M4 11h16M4 7h16" />
+              </svg>
+              Knowledge
+            </span>
           </div>
         </div >
         {/* Actions à droite */}
         < div className="flex items-center space-x-3" >
-          <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg"><Mail className="w-5 h-5" /></button>
+          <button className="bg-slate-700 text-slate-400 p-2 rounded-lg cursor-not-allowed opacity-50" title="Coming Soon"><Mail className="w-5 h-5" /></button>
           <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg"><Calendar className="w-5 h-5" /></button>
+          <button className="bg-slate-700 text-slate-400 p-2 rounded-lg cursor-not-allowed opacity-50" title="Coming Soon"><Calendar className="w-5 h-5" /></button>
         </div>
       </div>
     </>
