@@ -88,6 +88,7 @@ const DashboardGrid: React.FC = () => {
           expandable
           expanded={discExpanded}
           onToggle={() => setDiscExpanded(v => !v)}
+          disabled
         />
         <StatusCard
           icon={<Radar className="text-cyan-400" />}
@@ -228,24 +229,40 @@ const DashboardGrid: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#232f47] rounded-xl p-8 flex flex-col shadow-xl border border-slate-700/50">
-            <CallPhasesDisplay
-              phases={repsPhases as any}
-              isCallActive={state.callState.isActive}
-              phoneNumber={state.callState.contact?.phone || "+13024440090"}
-              mediaStream={state.mediaStream}
-              disableAutoScroll={true}
-              onPhaseClick={(phaseId) => {
-                console.log('Phase clicked:', phaseId);
-              }}
-            />
+          <div className="relative">
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+                Coming Soon
+              </div>
+            </div>
+            <div className="bg-[#232f47] rounded-xl p-8 flex flex-col shadow-xl border border-slate-700/50 opacity-50 grayscale-[0.5]">
+              <CallPhasesDisplay
+                phases={repsPhases as any}
+                isCallActive={state.callState.isActive}
+                phoneNumber={state.callState.contact?.phone || "+13024440090"}
+                mediaStream={state.mediaStream}
+                disableAutoScroll={true}
+                onPhaseClick={(phaseId) => {
+                  console.log('Phase clicked:', phaseId);
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Right Column: Live Transcript (5 cols) */}
         <div className="col-span-5 h-full">
-          <div className="bg-[#232f47] rounded-xl p-1 h-full shadow-2xl border border-slate-700/30">
-            <LiveTranscript />
+          <div className="relative h-full">
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+                Coming Soon
+              </div>
+            </div>
+            <div className="bg-[#232f47] rounded-xl p-1 h-full shadow-2xl border border-slate-700/30 opacity-50 grayscale-[0.5]">
+              <LiveTranscript />
+            </div>
           </div>
         </div>
       </div>

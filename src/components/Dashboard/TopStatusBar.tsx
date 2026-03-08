@@ -129,6 +129,7 @@ const TopStatusBar: React.FC = () => {
             expandable
             expanded={metricsExpanded}
             onToggle={() => setMetricsExpanded(e => !e)}
+            disabled
           />
         </div>
         <div className="relative w-full h-full">
@@ -162,6 +163,7 @@ const TopStatusBar: React.FC = () => {
             expandable
             expanded={warningsExpanded}
             onToggle={() => setWarningsExpanded(e => !e)}
+            disabled
           />
         </div>
         <StatusCard
@@ -199,6 +201,7 @@ const TopStatusBar: React.FC = () => {
               </div>
               : <span className="text-slate-400 font-semibold">Idle</span>
             }
+            disabled
           />
         </div>
         <div className="relative w-full h-full">
@@ -206,6 +209,7 @@ const TopStatusBar: React.FC = () => {
             icon={<TrendingUp size={20} className="text-yellow-400" />}
             title="Phase"
             value={<span className="text-yellow-400 font-semibold whitespace-nowrap">{state.callState.currentPhase || aiCurrentPhase || 'No active phase'}</span>}
+            disabled
           />
         </div>
       </div>
