@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut } from 'lucide-react';
@@ -17,11 +16,11 @@ export function Header() {
     document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
     // Redirect to login page
-    window.location.href = '/';
+    window.location.href = '/repdashboard/profile';
   };
 
   const handleGoToDashboard = () => {
-    window.location.href = '/dashboard';
+    window.location.href = '/repdashboard/profile';
   };
 
   const formatDuration = (ms: number) => {
