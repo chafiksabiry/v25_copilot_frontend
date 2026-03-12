@@ -1,16 +1,19 @@
 import axios from 'axios';
 
+export interface PhoneNumberType {
+  phoneNumber: string;
+  provider: 'twilio' | 'telnyx';
+  status: string;
+  features: {
+    voice: boolean;
+    [key: string]: boolean;
+  };
+}
+
 export interface PhoneNumberResponse {
   hasNumber: boolean;
-  number?: {
-    phoneNumber: string;
-    provider: 'twilio' | 'telnyx';
-    status: string;
-    features: {
-      voice: boolean;
-      [key: string]: boolean;
-    };
-  };
+  number?: PhoneNumberType; // for backwards compatibility
+  numbers?: PhoneNumberType[];
   message?: string;
 }
 

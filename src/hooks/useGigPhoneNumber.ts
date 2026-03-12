@@ -20,27 +20,6 @@ export const useGigPhoneNumber = () => {
     setIsLoading(true);
     setError(null);
 
-    // Mock direct pour test, comme demandé
-    const mockResponse: PhoneNumberResponse = {
-      hasNumber: true,
-      number: {
-        phoneNumber: '+33423340775',
-        provider: 'telnyx',
-        status: 'success',
-        features: {
-          voice: true,
-          sms: true
-        }
-      },
-      message: 'Mocked number for test'
-    };
-
-    console.log('✅ Using hardcoded number:', mockResponse);
-    setPhoneNumberData(mockResponse);
-    setIsLoading(false);
-    return mockResponse;
-
-    /* REPLACED FOR TEST
     try {
       const gigId = getGigIdFromCookie();
       console.log('🔍 Checking gig phone number with gigId:', gigId);
@@ -53,6 +32,26 @@ export const useGigPhoneNumber = () => {
       const response = await PhoneNumberService.checkGigPhoneNumber(gigId);
       console.log('✅ Phone number check response:', response);
       
+      // If we have an array of numbers, pick one randomly
+      if (response.hasNumber && response.numbers && response.numbers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * response.numbers.length);
+        const randomNum = response.numbers[randomIndex];
+        console.log(`🎲 Picked random number at index ${randomIndex}:`, randomNum.phoneNumber);
+        
+        // Structure the response so the rest of the app just sees 'number'
+        const structuredResponse: PhoneNumberResponse = {
+          hasNumber: true,
+          number: randomNum,
+          message: response.message
+        };
+        setPhoneNumberData(structuredResponse);
+        return structuredResponse;
+      } else if (response.hasNumber && response.number) {
+        // Fallback if the backend somehow returns the old format
+        setPhoneNumberData(response);
+        return response;
+      }
+      
       setPhoneNumberData(response);
       return response;
     } catch (error) {
@@ -62,7 +61,6 @@ export const useGigPhoneNumber = () => {
     } finally {
       setIsLoading(false);
     }
-    */
   }, [getGigIdFromCookie]);
 
   const configureVoiceFeature = useCallback(async (number: PhoneNumberResponse['number']): Promise<boolean> => {
