@@ -4,7 +4,7 @@ import { GraduationCap } from 'lucide-react';
 const CoachingDetails: React.FC = () => (
   <div className="bg-[#232f47] rounded-xl p-8 w-full min-h-[300px]">
     <div className="text-2xl font-semibold text-white mb-6">Real-Time Coaching</div>
-    <div className="flex items-center text-blue-400 text-lg font-semibold mb-8">
+    <div className="flex items-center text-harx-400 text-lg font-semibold mb-8">
       <GraduationCap className="w-6 h-6 mr-2" />
       DISC-Adaptive Coaching
     </div>

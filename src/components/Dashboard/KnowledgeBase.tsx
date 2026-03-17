@@ -55,7 +55,7 @@ export function KnowledgeBase() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'Compliance': return 'bg-red-600/20 text-red-300';
-      case 'Education': return 'bg-blue-600/20 text-blue-300';
+      case 'Education': return 'bg-harx-600/20 text-harx-300';
       case 'Sales': return 'bg-green-600/20 text-green-300';
       default: return 'bg-slate-600/20 text-slate-300';
     }
@@ -76,7 +76,7 @@ export function KnowledgeBase() {
   return (
     <div className="bg-slate-800 rounded-lg p-6">
       <div className="flex items-center space-x-2 mb-4">
-        <BookOpen className="w-5 h-5 text-indigo-400" />
+        <BookOpen className="w-5 h-5 text-harx-400" />
         <h3 className="text-lg font-semibold text-white">Knowledge Base</h3>
       </div>
 
@@ -88,7 +88,7 @@ export function KnowledgeBase() {
           placeholder="Search knowledge base..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+          className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-transparent text-sm"
         />
       </div>
 
@@ -107,7 +107,7 @@ export function KnowledgeBase() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2 flex-1 min-w-0">
-                  <div className="text-indigo-400">
+                  <div className="text-harx-400">
                     {getTypeIcon(item.type)}
                   </div>
                   <h4 className="text-sm font-medium text-white truncate">{item.title}</h4>
@@ -137,7 +137,7 @@ export function KnowledgeBase() {
                 <div className="flex items-center space-x-2">
                   <div className="w-full bg-slate-600 rounded-full h-1">
                     <div
-                      className="bg-indigo-500 h-1 rounded-full"
+                      className="bg-harx-500 h-1 rounded-full"
                       style={{ width: `${item.relevanceScore}%` }}
                     />
                   </div>

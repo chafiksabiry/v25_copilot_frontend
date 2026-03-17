@@ -64,7 +64,7 @@ export const CompactWorkArea: React.FC<CompactWorkAreaProps> = ({
               onClick={() => setFilter(filterOption)}
               className={`px-3 py-1 rounded text-sm ${
                 filter === filterOption
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-harx-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -83,7 +83,7 @@ export const CompactWorkArea: React.FC<CompactWorkAreaProps> = ({
           filteredItems.map((item) => (
             <div
               key={item.id}
-              className="p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-colors"
+              className="p-3 bg-white rounded-lg border border-gray-200 hover:border-harx-300 cursor-pointer transition-colors"
               onClick={() => onItemClick?.(item.id)}
             >
               <div className="flex items-start justify-between">
@@ -121,3 +121,4 @@ export const CompactWorkArea: React.FC<CompactWorkAreaProps> = ({
     </div>
   );
 };
+

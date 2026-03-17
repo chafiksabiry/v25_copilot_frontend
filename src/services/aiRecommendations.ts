@@ -29,3 +29,4 @@ export const getAIAssistance = async (transcription: string, context?: any[]) =>
         throw error;
     }
 };
+

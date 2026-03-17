@@ -154,7 +154,7 @@ export function AudioDiagnostic() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Audio Devices:</span>
-              <span className="text-blue-400">{audioDevices.length}</span>
+              <span className="text-harx-400">{audioDevices.length}</span>
             </div>
           </div>
         </div>
@@ -174,7 +174,7 @@ export function AudioDiagnostic() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
         <button
           onClick={testAudioPlayback}
-          className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+          className="flex items-center justify-center space-x-2 px-4 py-3 bg-harx-600 hover:bg-harx-700 text-white rounded-lg"
         >
           <Volume2 className="w-4 h-4" />
           <span>Test Son</span>
@@ -182,7 +182,7 @@ export function AudioDiagnostic() {
 
         <button
           onClick={checkTwilioAudioElements}
-          className="flex items-center justify-center space-x-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+          className="flex items-center justify-center space-x-2 px-4 py-3 bg-harx-alt-600 hover:bg-harx-alt-700 text-white rounded-lg"
         >
           <Activity className="w-4 h-4" />
           <span>Check Audio</span>

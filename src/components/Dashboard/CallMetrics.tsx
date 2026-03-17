@@ -71,7 +71,7 @@ export function CallMetrics() {
         {state.callState.isActive && (
           <div className="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
             <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-blue-400" />
+              <Clock className="w-4 h-4 text-harx-400" />
               <span className="text-sm text-slate-300">Duration</span>
             </div>
             <span className="text-white font-mono">

@@ -25,12 +25,12 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-100 text-blue-800' },
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-harx-100 text-harx-800' },
   { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-green-100 text-green-800' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-purple-100 text-purple-800' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-harx-alt-100 text-harx-alt-800' },
   { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-pink-100 text-pink-800' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-100 text-indigo-800' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-harx-alt-100 text-harx-alt-800' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-harx-100 text-harx-800' },
   { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-red-100 text-red-800' },
   { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-100 text-teal-800' },
   { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-gray-100 text-gray-800' }
@@ -58,7 +58,7 @@ const DashboardGrid: React.FC = () => {
     <div className="w-full pb-8">
       <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full h-[180px]">
         <StatusCard
-          icon={<Brain className="text-purple-400" />}
+          icon={<Brain className="text-harx-alt-400" />}
           title="DISC Profile"
           value={
             <div className="w-full flex flex-col items-center">
@@ -68,7 +68,7 @@ const DashboardGrid: React.FC = () => {
                     <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'D' ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-500/50'}`}>D</span>
                     <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'I' ? 'bg-yellow-400 text-white' : 'bg-yellow-400/20 text-yellow-400/50'}`}>I</span>
                     <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'S' ? 'bg-green-500 text-white' : 'bg-green-500/20 text-green-500/50'}`}>S</span>
-                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'C' ? 'bg-blue-500 text-white' : 'bg-blue-500/20 text-blue-500/50'}`}>C</span>
+                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'C' ? 'bg-harx-500 text-white' : 'bg-harx-500/20 text-harx-500/50'}`}>C</span>
                   </div>
                   <div className="text-white font-bold text-center capitalize">{state.personalityProfile.primaryType} Profile Detected</div>
                 </div>
@@ -78,7 +78,7 @@ const DashboardGrid: React.FC = () => {
                     <span className="bg-red-500/20 text-red-500/50 rounded px-2 py-1 font-bold">D</span>
                     <span className="bg-yellow-400/20 text-yellow-400/50 rounded px-2 py-1 font-bold">I</span>
                     <span className="bg-green-500/20 text-green-500/50 rounded px-2 py-1 font-bold">S</span>
-                    <span className="bg-blue-500/20 text-blue-500/50 rounded px-2 py-1 font-bold">C</span>
+                    <span className="bg-harx-500/20 text-harx-500/50 rounded px-2 py-1 font-bold">C</span>
                   </div>
                   <div className="text-slate-400 text-sm text-center w-full">Start call to analyze</div>
                 </>
@@ -119,7 +119,7 @@ const DashboardGrid: React.FC = () => {
         />
 
         <StatusCard
-          icon={<GraduationCap className="text-blue-400" />}
+          icon={<GraduationCap className="text-harx-400" />}
           title="Coaching"
           value={
             <div className="flex flex-col items-center justify-center w-full mt-2">
@@ -206,7 +206,7 @@ const DashboardGrid: React.FC = () => {
       {discExpanded && (
         <button
           onClick={() => discSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
+          className="fixed bottom-6 right-6 bg-harx-alt-500 hover:bg-harx-alt-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-50"
           title="Scroll to DISC Analysis"
         >
           <ArrowUp className="w-5 h-5" />

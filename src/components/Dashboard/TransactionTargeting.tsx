@@ -69,7 +69,7 @@ export function TransactionTargeting() {
                   transactionIntelligence.goal.priority === 'critical' ? 'bg-red-600/20 text-red-300' :
                   transactionIntelligence.goal.priority === 'high' ? 'bg-orange-600/20 text-orange-300' :
                   transactionIntelligence.goal.priority === 'medium' ? 'bg-yellow-600/20 text-yellow-300' :
-                  'bg-blue-600/20 text-blue-300'
+                  'bg-harx-600/20 text-harx-300'
                 }`}>
                   {transactionIntelligence.goal.priority}
                 </span>

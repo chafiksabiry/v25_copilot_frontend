@@ -46,7 +46,7 @@ export function Header() {
     <header className="bg-[#151e2e] px-8 py-4 border-b border-[#22304a]">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
+          <div className="w-10 h-10 bg-harx-600 rounded-full flex items-center justify-center shadow-md">
             <span className="text-white font-bold text-lg">{agentInitials}</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-wide">HARX REPS AI COPILOT</h1>
@@ -58,7 +58,7 @@ export function Header() {
             className="flex items-center space-x-2 bg-[#22304a] hover:bg-[#2d3e5d] text-slate-200 px-4 py-2 rounded-lg transition-all border border-slate-700/50 group"
             title="Dashboard"
           >
-            <LayoutDashboard size={18} className="group-hover:text-blue-400 transition-colors" />
+            <LayoutDashboard size={18} className="group-hover:text-harx-400 transition-colors" />
             <span className="font-semibold text-sm">Dashboard</span>
           </button>
 
@@ -77,15 +77,15 @@ export function Header() {
           <div className="flex items-center space-x-2 border-l border-slate-700 pl-4">
             <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Volume">
               <Volume2 className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
             <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Microphone">
               <Mic className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
             <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Settings">
               <Settings className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
 
             <button
@@ -103,7 +103,7 @@ export function Header() {
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-gray-200 leading-tight">{agentName}</span>
                 {profile?.professionalSummary?.currentRole && (
-                  <span className="text-blue-400 text-[9px] font-bold uppercase tracking-wider">
+                  <span className="text-harx-400 text-[9px] font-bold uppercase tracking-wider">
                     {profile.professionalSummary.currentRole.split(' ').slice(0, 3).join(' ')}
                   </span>
                 )}

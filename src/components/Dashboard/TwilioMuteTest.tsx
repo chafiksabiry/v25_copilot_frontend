@@ -111,7 +111,7 @@ export function TwilioMuteTest() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Twilio SDK Status:</span>
-              <span className="text-blue-400 font-mono text-xs">
+              <span className="text-harx-400 font-mono text-xs">
                 {checkTwilioMuteStatus()}
               </span>
             </div>
@@ -176,8 +176,8 @@ export function TwilioMuteTest() {
       </div>
 
       {/* Instructions */}
-      <div className="mt-6 p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
-        <div className="text-blue-400 text-xs">
+      <div className="mt-6 p-3 bg-harx-900/20 border border-harx-600/30 rounded-lg">
+        <div className="text-harx-400 text-xs">
           <div className="font-medium mb-1">Test Instructions:</div>
           <ol className="space-y-1 list-decimal list-inside">
             <li>Start a call using ContactInfo or CallControls</li>

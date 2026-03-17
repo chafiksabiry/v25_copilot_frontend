@@ -111,3 +111,4 @@ export const TranscriptionBridge: React.FC = () => {
 
     return null; // Logic only component
 };
+

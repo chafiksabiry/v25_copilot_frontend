@@ -12,7 +12,7 @@ export function QuickActions() {
       id: 'send-materials',
       label: 'Send Materials',
       icon: <Send className="w-4 h-4" />,
-      color: 'bg-blue-600 hover:bg-blue-700',
+      color: 'bg-harx-600 hover:bg-harx-700',
       action: () => console.log('Send materials'),
       enabled: state.callState.isActive
     },
@@ -28,7 +28,7 @@ export function QuickActions() {
       id: 'create-summary',
       label: 'Create Summary',
       icon: <FileText className="w-4 h-4" />,
-      color: 'bg-purple-600 hover:bg-purple-700',
+      color: 'bg-harx-alt-600 hover:bg-harx-alt-700',
       action: () => console.log('Create summary'),
       enabled: state.callState.isActive
     },

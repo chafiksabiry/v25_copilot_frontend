@@ -57,7 +57,7 @@ export const MonitoringConsole: React.FC<MonitoringConsoleProps> = ({
   const getConnectionQualityColor = (quality: CallMetric['connectionQuality']) => {
     switch (quality) {
       case 'excellent': return 'text-green-600';
-      case 'good': return 'text-blue-600';
+      case 'good': return 'text-harx-600';
       case 'poor': return 'text-yellow-600';
       case 'disconnected': return 'text-red-600';
       default: return 'text-gray-600';
@@ -83,7 +83,7 @@ export const MonitoringConsole: React.FC<MonitoringConsoleProps> = ({
               onClick={() => setActiveTab('system')}
               className={`px-3 py-1 rounded text-sm ${
                 activeTab === 'system'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-harx-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -93,7 +93,7 @@ export const MonitoringConsole: React.FC<MonitoringConsoleProps> = ({
               onClick={() => setActiveTab('calls')}
               className={`px-3 py-1 rounded text-sm ${
                 activeTab === 'calls'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-harx-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -201,3 +201,4 @@ export const MonitoringConsole: React.FC<MonitoringConsoleProps> = ({
     </div>
   );
 };
+

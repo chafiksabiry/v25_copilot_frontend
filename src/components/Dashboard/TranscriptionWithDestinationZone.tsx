@@ -59,7 +59,7 @@ export const TranscriptionWithDestinationZone: React.FC<TranscriptionWithDestina
       {/* Affichage de la zone de destination */}
       <div className="mb-4 p-3 bg-gray-50 rounded">
         <h4 className="font-medium text-gray-700 mb-2">Zone de Destination</h4>
-        {zoneLoading && <p className="text-blue-600">Chargement de la zone...</p>}
+        {zoneLoading && <p className="text-harx-600">Chargement de la zone...</p>}
         {zoneError && <p className="text-red-600">Erreur: {zoneError}</p>}
         {destinationZone && (
           <div className="flex items-center gap-2">
@@ -114,9 +114,9 @@ export const TranscriptionWithDestinationZone: React.FC<TranscriptionWithDestina
 
       {/* Transcription en cours */}
       {currentInterimText && (
-        <div className="mb-4 p-3 bg-blue-50 rounded">
-          <h4 className="font-medium text-blue-700 mb-2">Transcription en cours...</h4>
-          <p className="text-blue-800 italic">{currentInterimText}</p>
+        <div className="mb-4 p-3 bg-harx-50 rounded">
+          <h4 className="font-medium text-harx-700 mb-2">Transcription en cours...</h4>
+          <p className="text-harx-800 italic">{currentInterimText}</p>
         </div>
       )}
 

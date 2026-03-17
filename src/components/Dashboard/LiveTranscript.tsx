@@ -58,7 +58,7 @@ export const LiveTranscript: React.FC = () => {
                     <div key={idx} className="flex flex-col space-y-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
-                                <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                                <div className="w-5 h-5 rounded-full bg-harx-600 flex items-center justify-center">
                                     <User className="w-3 h-3 text-white" />
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -102,3 +102,4 @@ export const LiveTranscript: React.FC = () => {
 };
 
 export default LiveTranscript;
+

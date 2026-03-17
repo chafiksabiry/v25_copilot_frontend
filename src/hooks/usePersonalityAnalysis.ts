@@ -91,9 +91,9 @@ export const usePersonalityAnalysis = () => {
       C: {
         title: 'Conscientious',
         description: 'Quality & Analysis',
-        color: 'text-blue-400',
-        bgColor: 'bg-blue-400/10',
-        borderColor: 'border-blue-400/30'
+        color: 'text-harx-400',
+        bgColor: 'bg-harx-400/10',
+        borderColor: 'border-harx-400/30'
       }
     };
 

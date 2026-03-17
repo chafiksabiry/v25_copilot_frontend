@@ -34,12 +34,12 @@ export const RealTimeCoaching: React.FC = () => {
                 {/* Current Call Phase */}
                 <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                        <TrendingUp className="w-4 h-4 text-purple-400" />
+                        <TrendingUp className="w-4 h-4 text-harx-alt-400" />
                         <span>Detected Phase</span>
                     </div>
-                    <div className="bg-[#2d3a5a] border border-purple-500/30 rounded-lg p-4 shadow-inner">
+                    <div className="bg-[#2d3a5a] border border-harx-alt-500/30 rounded-lg p-4 shadow-inner">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-full bg-purple-600/20 flex items-center justify-center border border-purple-500/50">
+                            <div className="w-10 h-10 rounded-full bg-harx-alt-600/20 flex items-center justify-center border border-harx-alt-500/50">
                                 <span className="text-xl">🎯</span>
                             </div>
                             <div>
@@ -106,3 +106,4 @@ export const RealTimeCoaching: React.FC = () => {
 };
 
 export default RealTimeCoaching;
+

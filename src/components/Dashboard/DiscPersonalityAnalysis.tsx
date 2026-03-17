@@ -38,11 +38,11 @@ const discTypes = [
     letter: 'C',
     title: 'Conscientious',
     desc: 'Quality & Analysis',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-400/10',
-    borderColor: 'border-blue-400/30',
-    activeBgColor: 'bg-blue-400/20',
-    activeBorderColor: 'border-blue-400/50'
+    color: 'text-harx-400',
+    bgColor: 'bg-harx-400/10',
+    borderColor: 'border-harx-400/30',
+    activeBgColor: 'bg-harx-400/20',
+    activeBorderColor: 'border-harx-400/50'
   },
 ];
 
@@ -124,7 +124,7 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
 
   return (
     <div className="bg-[#232f47] rounded-xl p-8 w-full">
-      <div className="flex items-center justify-between text-purple-400 text-xl font-semibold mb-4">
+      <div className="flex items-center justify-between text-harx-alt-400 text-xl font-semibold mb-4">
         <div className="flex items-center">
           <Brain className="w-6 h-6 mr-2" />
           DISC Personality Analysis
@@ -132,14 +132,14 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
       </div>
 
       <div className="bg-[#232f47] rounded-xl p-6 w-full mb-4 border border-slate-600/40">
-        <div className="flex items-center justify-between text-purple-400 text-lg font-semibold mb-4">
+        <div className="flex items-center justify-between text-harx-alt-400 text-lg font-semibold mb-4">
           <div className="flex items-center">
             <Brain className="w-5 h-5 mr-2" />
             DISC Personality Types
           </div>
           {loading && (
-            <div className="flex items-center text-blue-400 text-sm">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-2"></div>
+            <div className="flex items-center text-harx-400 text-sm">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-harx-400 mr-2"></div>
               Analyzing...
             </div>
           )}
@@ -153,7 +153,7 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
           </div>
           <div className="w-full bg-slate-700 rounded-full h-2">
             <div
-              className="bg-purple-400 h-2 rounded-full transition-all duration-300"
+              className="bg-harx-alt-400 h-2 rounded-full transition-all duration-300"
               style={{ width: `${getAnalysisProgress()}%` }}
             ></div>
           </div>
@@ -232,8 +232,8 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
             )}
           </div>
         ) : (
-          <div className="text-center text-blue-400 text-sm">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mx-auto mb-1"></div>
+          <div className="text-center text-harx-400 text-sm">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-harx-400 mx-auto mb-1"></div>
             Analyzing personality patterns...
             <br />
             <span className="text-xs">Building confidence with more conversation</span>
@@ -244,7 +244,7 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
       {/* Quick Recommendations */}
       {personalityProfile && (
         <div className="bg-[#26314a] rounded-xl p-4 border border-slate-600/40">
-          <div className="text-purple-400 text-sm font-semibold mb-2">
+          <div className="text-harx-alt-400 text-sm font-semibold mb-2">
             Quick Recommendations
           </div>
           <div className="text-slate-300 text-sm">

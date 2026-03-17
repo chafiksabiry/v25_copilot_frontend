@@ -157,7 +157,7 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
                   </span>
                   <span className={`px-2 py-0.5 rounded text-xs ml-2 ${isActive ? 'bg-cyan-900 text-cyan-100 animate-pulse' :
                     isCompleted ? 'bg-green-900/40 text-green-300' :
-                      'bg-[#22304a] text-blue-200'
+                      'bg-[#22304a] text-harx-200'
                     }`}>
                     {isActive ? 'Current' : status}
                   </span>
@@ -192,7 +192,7 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
               <button
                 onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
                 className={`ml-4 px-3 py-1 rounded text-xs font-medium transition-colors ${autoScrollEnabled
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-harx-500 text-white hover:bg-harx-600'
                   : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                   }`}
               >
@@ -249,3 +249,4 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
     </div>
   );
 };
+

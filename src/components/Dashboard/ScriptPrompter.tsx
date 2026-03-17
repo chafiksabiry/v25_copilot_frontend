@@ -38,10 +38,10 @@ export const ScriptPrompter: React.FC<ScriptPrompterProps> = ({
 
   const getTypeColor = (type: ScriptSection['type']) => {
     switch (type) {
-      case 'introduction': return 'bg-blue-100 text-blue-800';
+      case 'introduction': return 'bg-harx-100 text-harx-800';
       case 'main': return 'bg-green-100 text-green-800';
       case 'objection': return 'bg-yellow-100 text-yellow-800';
-      case 'closing': return 'bg-purple-100 text-purple-800';
+      case 'closing': return 'bg-harx-alt-100 text-harx-alt-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -86,7 +86,7 @@ export const ScriptPrompter: React.FC<ScriptPrompterProps> = ({
               key={section.id}
               className={`p-3 rounded-lg border transition-colors ${
                 section.id === currentSection
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-harx-500 bg-harx-50'
                   : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
               }`}
             >
@@ -129,7 +129,7 @@ export const ScriptPrompter: React.FC<ScriptPrompterProps> = ({
                   <div className="flex space-x-2">
                     <button
                       onClick={handleEditSave}
-                      className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                      className="px-3 py-1 text-xs bg-harx-500 text-white rounded hover:bg-harx-600"
                     >
                       Save
                     </button>
@@ -175,3 +175,4 @@ export const ScriptPrompter: React.FC<ScriptPrompterProps> = ({
     </div>
   );
 };
+

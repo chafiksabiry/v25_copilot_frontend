@@ -321,3 +321,4 @@ export class MicrophoneService {
     return btoa(binary);
   }
 }
+

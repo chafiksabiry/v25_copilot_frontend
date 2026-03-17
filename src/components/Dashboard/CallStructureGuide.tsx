@@ -61,12 +61,12 @@ export function CallStructureGuide() {
 
   const getPhaseColor = (phaseId: string) => {
     switch (phaseId) {
-      case 'context-preparation': return 'text-purple-400';
-      case 'sbam-opening': return 'text-blue-400';
+      case 'context-preparation': return 'text-harx-alt-400';
+      case 'sbam-opening': return 'text-harx-400';
       case 'legal-compliance': return 'text-red-400';
       case 'need-discovery': return 'text-green-400';
       case 'value-proposition': return 'text-yellow-400';
-      case 'documents-quote': return 'text-indigo-400';
+      case 'documents-quote': return 'text-harx-400';
       case 'objection-handling': return 'text-orange-400';
       case 'confirmation-closing': return 'text-emerald-400';
       case 'post-call-actions': return 'text-cyan-400';
@@ -170,15 +170,15 @@ export function CallStructureGuide() {
 
           {/* Suggested Phrases */}
           {guidance.currentPhase.suggestedPhrases && guidance.currentPhase.suggestedPhrases.length > 0 && (
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-              <h5 className="text-sm font-medium text-blue-400 mb-2 flex items-center">
+            <div className="bg-harx-500/10 border border-harx-500/30 rounded-lg p-3">
+              <h5 className="text-sm font-medium text-harx-400 mb-2 flex items-center">
                 <Phone className="w-4 h-4 mr-1" />
                 Suggested Phrases
               </h5>
               <div className="space-y-1">
                 {guidance.currentPhase.suggestedPhrases.slice(0, 2).map((phrase, index) => (
-                  <div key={index} className="text-sm text-blue-300 flex items-start space-x-2">
-                    <span className="text-blue-400 mt-1">→</span>
+                  <div key={index} className="text-sm text-harx-300 flex items-start space-x-2">
+                    <span className="text-harx-400 mt-1">→</span>
                     <span className="italic">"{phrase}"</span>
                   </div>
                 ))}

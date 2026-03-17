@@ -83,3 +83,4 @@ export function useAudioVisualizer(stream: MediaStream | null) {
         };
     }, [stream, dispatch]);
 }
+

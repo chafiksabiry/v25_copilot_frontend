@@ -63,3 +63,4 @@ export const SmartWarningSystem: React.FC = () => {
 };
 
 export default SmartWarningSystem;
+

@@ -22,7 +22,7 @@ export function Recommendations() {
       case 'critical': return 'border-red-500 bg-red-500/10';
       case 'high': return 'border-orange-500 bg-orange-500/10';
       case 'medium': return 'border-yellow-500 bg-yellow-500/10';
-      case 'low': return 'border-blue-500 bg-blue-500/10';
+      case 'low': return 'border-harx-500 bg-harx-500/10';
       default: return 'border-slate-500 bg-slate-500/10';
     }
   };
@@ -31,11 +31,11 @@ export function Recommendations() {
     if (priority === 'critical') return 'text-red-400';
     if (priority === 'high') return 'text-orange-400';
     switch (type) {
-      case 'strategy': return 'text-purple-400';
+      case 'strategy': return 'text-harx-alt-400';
       case 'language': return 'text-yellow-400';
       case 'action': return 'text-green-400';
       case 'warning': return 'text-red-400';
-      default: return 'text-blue-400';
+      default: return 'text-harx-400';
     }
   };
 
@@ -53,7 +53,7 @@ export function Recommendations() {
           <h3 className="text-lg font-semibold text-white">AI Recommendations</h3>
         </div>
         {activeRecommendations.length > 0 && (
-          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+          <span className="bg-harx-600 text-white text-xs px-2 py-1 rounded-full">
             {activeRecommendations.length}
           </span>
         )}
@@ -82,7 +82,7 @@ export function Recommendations() {
                     rec.priority === 'critical' ? 'bg-red-600/20 text-red-300' :
                     rec.priority === 'high' ? 'bg-orange-600/20 text-orange-300' :
                     rec.priority === 'medium' ? 'bg-yellow-600/20 text-yellow-300' :
-                    'bg-blue-600/20 text-blue-300'
+                    'bg-harx-600/20 text-harx-300'
                   }`}>
                     {rec.priority}
                   </span>

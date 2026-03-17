@@ -345,14 +345,14 @@ export function ContactInfo() {
         <div className="flex items-center space-x-4">
           {leadLoading ? (
             <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-harx-500"></div>
               <span className="text-slate-300 text-sm">Loading lead...</span>
             </div>
           ) : leadError ? (
             <div className="text-red-400 text-sm">Error: {leadError}</div>
           ) : (
             <>
-              <div className="w-14 h-14 rounded-full bg-blue-700 flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-harx-700 flex items-center justify-center text-white text-2xl font-bold">
                 {contact.avatar ? (
                   <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
                 ) : (
@@ -364,13 +364,13 @@ export function ContactInfo() {
                   <span className="text-lg font-bold text-white">{contact.name}</span>
                   <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
                   {gig && (
-                    <span className="bg-blue-900/40 text-blue-300 text-[10px] px-2 py-0.5 rounded-full border border-blue-700/50 flex items-center">
+                    <span className="bg-harx-900/40 text-harx-300 text-[10px] px-2 py-0.5 rounded-full border border-harx-700/50 flex items-center">
                       <Briefcase className="w-3 h-3 mr-1" />
                       {gig.title}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center space-x-2 text-blue-400 text-sm font-medium">
+                <div className="flex items-center space-x-2 text-harx-400 text-sm font-medium">
                   <Mail className="w-4 h-4" />
                   <span>{contact.email}</span>
                 </div>

@@ -19,7 +19,7 @@ export function ComplianceMonitor() {
       case 'critical': return 'border-red-500 bg-red-500/10 text-red-300';
       case 'error': return 'border-red-400 bg-red-400/10 text-red-300';
       case 'warning': return 'border-yellow-500 bg-yellow-500/10 text-yellow-300';
-      default: return 'border-blue-500 bg-blue-500/10 text-blue-300';
+      default: return 'border-harx-500 bg-harx-500/10 text-harx-300';
     }
   };
 
@@ -31,7 +31,7 @@ export function ComplianceMonitor() {
       case 'warning':
         return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
       default:
-        return <Shield className="w-4 h-4 text-blue-400" />;
+        return <Shield className="w-4 h-4 text-harx-400" />;
     }
   };
 

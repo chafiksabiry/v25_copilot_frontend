@@ -33,7 +33,7 @@ export const CallNotification: React.FC<CallNotificationProps> = ({
       case 'error':
         return 'bg-red-100 border-red-400 text-red-700';
       case 'info':
-        return 'bg-blue-100 border-blue-400 text-blue-700';
+        return 'bg-harx-100 border-harx-400 text-harx-700';
       default:
         return 'bg-gray-100 border-gray-400 text-gray-700';
     }

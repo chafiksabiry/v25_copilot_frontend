@@ -14,3 +14,4 @@ export const getAgentIdFromStorage = (): string => {
   }
   return 'unknown-agent'; // Fallback pour sandbox
 };
+

@@ -109,7 +109,7 @@ const TopStatusBar: React.FC = () => {
                   e.stopPropagation();
                   window.open(state.callState.recordingUrl!, '_blank');
                 }}
-                className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full text-xs font-semibold text-white flex items-center space-x-1 transition-colors"
+                className="bg-harx-600 hover:bg-harx-700 px-3 py-1 rounded-full text-xs font-semibold text-white flex items-center space-x-1 transition-colors"
               >
                 <Headphones size={12} />
                 <span>LISTEN</span>
@@ -134,7 +134,7 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Brain size={20} className="text-purple-400" />}
+            icon={<Brain size={20} className="text-harx-alt-400" />}
             title="Rep Profile"
             value={agentProfile ? (
               <span className="text-white font-bold leading-tight line-clamp-1">
@@ -144,7 +144,7 @@ const TopStatusBar: React.FC = () => {
               <span className="text-slate-400 font-semibold tracking-tighter">Analyzing...</span>
             )}
             subtitle={agentProfile?.professionalSummary?.currentRole && (
-              <span className="text-purple-300 text-[10px] font-bold uppercase truncate block">{agentProfile.professionalSummary.currentRole}</span>
+              <span className="text-harx-alt-300 text-[10px] font-bold uppercase truncate block">{agentProfile.professionalSummary.currentRole}</span>
             )}
             expandable
             expanded={profileExpanded}
@@ -176,17 +176,17 @@ const TopStatusBar: React.FC = () => {
         />
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Volume2 size={20} className="text-blue-400" />}
+            icon={<Volume2 size={20} className="text-harx-400" />}
             title="Audio Level"
             value={
               <div className="w-full">
                 <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
                   <div
-                    className="bg-blue-400 h-3 rounded-full transition-all duration-100"
+                    className="bg-harx-400 h-3 rounded-full transition-all duration-100"
                     style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
                   ></div>
                 </div>
-                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
+                <span className="block mt-2 text-harx-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
               </div>
             }
           />
@@ -280,7 +280,7 @@ const TopStatusBar: React.FC = () => {
                 {state.callState.recordingUrl && (
                   <button
                     onClick={() => window.open(state.callState.recordingUrl!, '_blank')}
-                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full justify-center"
+                    className="flex items-center space-x-2 bg-harx-600 hover:bg-harx-700 text-white px-4 py-2 rounded-lg transition-colors w-full justify-center"
                   >
                     <Play size={16} fill="white" />
                     <span className="font-semibold text-sm">Play Recording</span>
@@ -307,23 +307,23 @@ const TopStatusBar: React.FC = () => {
             {/* Clarity */}
             <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-pink-400 text-xl mr-2">🎯</span>
+                <span className="text-harx-alt-400 text-xl mr-2">🎯</span>
                 <span className="font-bold text-white text-lg">Clarity</span>
               </div>
               <span className={`text-2xl font-bold mb-2 ${state.callMetrics.clarity < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.clarity)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.clarity}%` }}></div>
+                <div className="bg-harx-alt-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.clarity}%` }}></div>
               </div>
             </div>
             {/* Empathy */}
             <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-pink-400 text-xl mr-2">❤️</span>
+                <span className="text-harx-alt-400 text-xl mr-2">❤️</span>
                 <span className="font-bold text-white text-lg">Empathy</span>
               </div>
               <span className={`text-2xl font-bold mb-2 ${state.callMetrics.empathy < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.empathy)}%</span>
               <div className="w-full h-2 bg-[#3a4661] rounded-full">
-                <div className="bg-pink-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.empathy}%` }}></div>
+                <div className="bg-harx-alt-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.empathy}%` }}></div>
               </div>
             </div>
             {/* Assertiveness */}
@@ -384,17 +384,17 @@ const TopStatusBar: React.FC = () => {
         </div>
       )}
       {profileExpanded && agentProfile && (
-        <div className="bg-[#232f47] rounded-xl mt-4 p-8 w-full max-w-[1800px] mx-auto shadow-2xl border border-purple-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="bg-[#232f47] rounded-xl mt-4 p-8 w-full max-w-[1800px] mx-auto shadow-2xl border border-harx-alt-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-purple-400/30">
+              <div className="w-16 h-16 bg-harx-alt-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-harx-alt-400/30">
                 {agentProfile.personalInfo.name.charAt(0)}
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-white leading-tight">{agentProfile.personalInfo.name}</h2>
-                <div className="flex items-center space-x-3 mt-1 text-purple-300 font-medium">
+                <div className="flex items-center space-x-3 mt-1 text-harx-alt-300 font-medium">
                   {agentProfile.professionalSummary?.currentRole && (
-                    <span className="bg-purple-900/40 px-3 py-1 rounded-full text-xs uppercase tracking-widest border border-purple-500/30">
+                    <span className="bg-harx-alt-900/40 px-3 py-1 rounded-full text-xs uppercase tracking-widest border border-harx-alt-500/30">
                       {agentProfile.professionalSummary.currentRole}
                     </span>
                   )}
@@ -412,7 +412,7 @@ const TopStatusBar: React.FC = () => {
 
           <div className="grid grid-cols-3 gap-8 text-slate-200">
             <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
-              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Professional Summary</h3>
+              <h3 className="text-harx-alt-400 font-bold uppercase text-xs mb-4 tracking-tighter">Professional Summary</h3>
               <p className="text-sm leading-relaxed text-slate-300">
                 {agentProfile.professionalSummary?.yearsOfExperience ? (
                   <>Experience: <span className="text-white font-medium">{agentProfile.professionalSummary.yearsOfExperience}</span> in sales and customer engagement.</>
@@ -421,7 +421,7 @@ const TopStatusBar: React.FC = () => {
             </div>
 
             <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
-              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Contact & Location</h3>
+              <h3 className="text-harx-alt-400 font-bold uppercase text-xs mb-4 tracking-tighter">Contact & Location</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Phone</span>
@@ -442,10 +442,10 @@ const TopStatusBar: React.FC = () => {
             </div>
 
             <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
-              <h3 className="text-purple-400 font-bold uppercase text-xs mb-4 tracking-tighter">Current Methodology</h3>
+              <h3 className="text-harx-alt-400 font-bold uppercase text-xs mb-4 tracking-tighter">Current Methodology</h3>
               <div className="flex items-center space-x-2 text-sm text-slate-300">
-                <div className="bg-purple-500/20 p-2 rounded-lg">
-                  <Shield size={20} className="text-purple-400" />
+                <div className="bg-harx-alt-500/20 p-2 rounded-lg">
+                  <Shield size={20} className="text-harx-alt-400" />
                 </div>
                 <span>REPS Adaptive Coaching Active</span>
               </div>
