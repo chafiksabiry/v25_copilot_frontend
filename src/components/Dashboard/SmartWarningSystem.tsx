@@ -18,8 +18,8 @@ export const SmartWarningSystem: React.FC = () => {
             {activeWarnings.map(warning => (
                 <div
                     key={warning.id}
-                    className={`p-4 rounded-lg border-2 shadow-2xl animate-in slide-in-from-right-10 duration-500 bg-[#1e293b] ${warning.severity === 'critical' ? 'border-red-500' :
-                        warning.severity === 'high' ? 'border-orange-500' : 'border-yellow-500'
+                    className={`p-5 rounded-2xl border-2 shadow-2xl animate-in slide-in-from-right-10 duration-500 glass-morphism backdrop-blur-xl ${warning.severity === 'critical' ? 'border-red-500/50 shadow-red-500/10' :
+                        warning.severity === 'high' ? 'border-orange-500/50 shadow-orange-500/10' : 'border-yellow-500/50 shadow-yellow-500/10'
                         }`}
                 >
                     <div className="flex items-start justify-between mb-2">
@@ -41,7 +41,7 @@ export const SmartWarningSystem: React.FC = () => {
                         </button>
                     </div>
 
-                    <p className="text-slate-200 text-sm mb-3">
+                    <p className="text-slate-200 text-sm mb-4 leading-relaxed font-medium px-1">
                         {warning.message}
                     </p>
 
@@ -50,7 +50,7 @@ export const SmartWarningSystem: React.FC = () => {
                             <button
                                 key={idx}
                                 onClick={() => resolveWarning(warning.id)}
-                                className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors border border-slate-600"
+                                className="px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all border border-white/10 active:scale-95 shadow-sm"
                             >
                                 {action}
                             </button>

@@ -7,7 +7,7 @@ export const RealTimeCoaching: React.FC = () => {
 
     if (!isActive && !nextStepSuggestion) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8 text-center bg-[#1b253a]/30 rounded-xl border border-dashed border-slate-700">
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8 text-center glass-card border-dashed border-slate-700/50">
                 <Lightbulb className="w-12 h-12 mb-4 opacity-20" />
                 <p className="text-lg font-medium">AI Coaching</p>
                 <p className="text-sm">Suggestions will appear here during the call</p>
@@ -16,11 +16,11 @@ export const RealTimeCoaching: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#1b253a] rounded-xl border border-slate-700 overflow-hidden shadow-lg transition-all duration-500">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-[#232f47]">
+        <div className="flex flex-col h-full glass-card overflow-hidden shadow-2xl border-harx-500/10 transition-all duration-500">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-harx-500/10 bg-white/5">
                 <div className="flex items-center space-x-2">
-                    <Lightbulb className="w-5 h-5 text-yellow-400" />
-                    <h3 className="text-white font-bold">Real-Time Coaching</h3>
+                    <Lightbulb className="w-5 h-5 text-harx-500" />
+                    <h3 className="text-white font-bold tracking-tight">Real-Time Coaching</h3>
                 </div>
                 {analysisConfidence > 0 && (
                     <div className="flex items-center space-x-2 bg-slate-800/50 px-2 py-1 rounded">
@@ -30,14 +30,14 @@ export const RealTimeCoaching: React.FC = () => {
                 )}
             </div>
 
-            <div className="flex-1 p-5 space-y-6 bg-gradient-to-b from-[#1b253a] to-[#10192e] overflow-y-auto custom-scrollbar">
+            <div className="flex-1 p-5 space-y-6 bg-slate-900/20 overflow-y-auto custom-scrollbar">
                 {/* Current Call Phase */}
                 <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                    <div className="flex items-center space-x-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                         <TrendingUp className="w-4 h-4 text-harx-alt-400" />
                         <span>Detected Phase</span>
                     </div>
-                    <div className="bg-[#2d3a5a] border border-harx-alt-500/30 rounded-lg p-4 shadow-inner">
+                    <div className="bg-harx-alt-500/10 border border-harx-alt-500/20 rounded-2xl p-4 shadow-inner backdrop-blur-sm">
                         <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 rounded-full bg-harx-alt-600/20 flex items-center justify-center border border-harx-alt-500/50">
                                 <span className="text-xl">🎯</span>
@@ -52,13 +52,13 @@ export const RealTimeCoaching: React.FC = () => {
 
                 {/* AI Next Step Suggestion */}
                 <div className="space-y-3">
-                    <div className="flex items-center space-x-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                        <Lightbulb className="w-4 h-4 text-yellow-400" />
+                    <div className="flex items-center space-x-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                        <Lightbulb className="w-4 h-4 text-harx-500" />
                         <span>Next Step Suggestion</span>
                     </div>
-                    <div className={`rounded-xl p-5 border shadow-lg transition-all duration-700 ${nextStepSuggestion
-                            ? 'bg-yellow-900/20 border-yellow-500/40 animate-in zoom-in-95'
-                            : 'bg-slate-800/20 border-slate-700 opacity-60'
+                    <div className={`rounded-2xl p-5 border shadow-xl transition-all duration-700 backdrop-blur-md ${nextStepSuggestion
+                            ? 'bg-harx-500/10 border-harx-500/30 animate-in zoom-in-95'
+                            : 'bg-slate-800/20 border-slate-700/50 opacity-60'
                         }`}>
                         {nextStepSuggestion ? (
                             <div className="space-y-4">
@@ -66,10 +66,10 @@ export const RealTimeCoaching: React.FC = () => {
                                     "{nextStepSuggestion}"
                                 </p>
                                 <div className="flex items-center space-x-3 pt-2">
-                                    <button className="text-[10px] bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-1 px-3 rounded-full transition-all active:scale-95 shadow-lg shadow-yellow-500/20 uppercase tracking-tighter">
+                                    <button className="text-[10px] bg-gradient-harx text-white font-bold py-1.5 px-4 rounded-full transition-all active:scale-95 shadow-lg shadow-harx-500/20 uppercase tracking-wider">
                                         Apply Suggestion
                                     </button>
-                                    <button className="text-[10px] border border-slate-600 text-slate-400 font-bold py-1 px-3 rounded-full hover:bg-slate-700 transition-all uppercase tracking-tighter">
+                                    <button className="text-[10px] border border-slate-600 text-slate-400 font-bold py-1.5 px-4 rounded-full hover:bg-slate-700/50 hover:text-slate-200 transition-all uppercase tracking-wider">
                                         Refine
                                     </button>
                                 </div>

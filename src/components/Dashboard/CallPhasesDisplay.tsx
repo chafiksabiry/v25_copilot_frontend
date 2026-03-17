@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TranscriptionMessage } from '../../services/transcriptionService';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
+import { Phone } from 'lucide-react';
 
 interface CallPhase {
   id: string;
@@ -113,12 +114,12 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
   return (
     <div className="flex flex-col space-y-1 p-2">
-      <div className="flex items-center mb-2">
-        <span className="text-cyan-400 text-2xl mr-2">🧠</span>
-        <h2 className="text-2xl font-bold text-white">REPS Call Phases</h2>
+      <div className="flex items-center mb-4">
+        <span className="text-harx-500 text-2xl mr-2">🧠</span>
+        <h2 className="text-2xl font-black text-white tracking-tight">REPS Call Phases</h2>
         {analysisConfidence > 0 && (
-          <span className="ml-auto text-xs text-cyan-300 font-mono">
-            AI Confidence: {Math.round(analysisConfidence * 100)}%
+          <span className="ml-auto text-[10px] bg-harx-500/10 text-harx-100 font-bold px-2 py-0.5 rounded-full border border-harx-500/20 uppercase tracking-widest">
+            AI Conf: {Math.round(analysisConfidence * 100)}%
           </span>
         )}
       </div>
@@ -140,24 +141,24 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             const status = isActive ? 'in-progress' : (isCompleted ? 'completed' : 'pending');
 
             return (
-              <div key={phase.id} className="relative mb-1">
+              <div key={phase.id} className="relative mb-2">
                 <div
-                  className={`p-2 rounded-md text-sm flex items-center justify-between cursor-pointer transition-all duration-150 shadow-sm
-                  ${isActive ? 'bg-[#4a5578] border-cyan-500 border-2 scale-[1.02]' : 'bg-[#3a4661] opacity-80'}
-                  ${isCompleted ? 'border-green-500/30' : ''}
-                  relative
+                  className={`p-3 rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all duration-300 shadow-sm
+                  ${isActive ? 'bg-harx-500/10 border-harx-500/50 border-2 scale-[1.02] shadow-harx-500/10' : 'bg-slate-900/40 border border-slate-700/50 hover:bg-slate-800/60'}
+                  ${isCompleted ? 'border-emerald-500/30' : ''}
+                  relative backdrop-blur-sm
                 `}
                   onClick={() => onPhaseClick?.(phase.id)}
                 >
-                  <span className={`flex items-center justify-center w-7 h-7 mr-2 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')}`}>
+                  <span className={`flex items-center justify-center w-8 h-8 mr-3 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')} shadow-inner`}>
                     {isCompleted ? '✅' : phase.icon}
                   </span>
-                  <span className={`font-medium truncate max-w-[60%] ${isActive ? 'text-cyan-400' : isCompleted ? 'text-green-400' : 'text-white'}`}>
+                  <span className={`font-bold transition-colors truncate max-w-[60%] ${isActive ? 'text-harx-100' : isCompleted ? 'text-emerald-400' : 'text-slate-300'}`}>
                     {phase.name}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-xs ml-2 ${isActive ? 'bg-cyan-900 text-cyan-100 animate-pulse' :
-                    isCompleted ? 'bg-green-900/40 text-green-300' :
-                      'bg-[#22304a] text-harx-200'
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ml-2 ${isActive ? 'bg-harx-500 text-white animate-pulse' :
+                    isCompleted ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/20' :
+                      'bg-slate-800/80 text-slate-500 border border-slate-700'
                     }`}>
                     {isActive ? 'Current' : status}
                   </span>
@@ -170,12 +171,12 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* AI Suggestion Section */}
       {isCallActive && nextStepSuggestion && (
-        <div className="bg-cyan-900/30 border border-cyan-500/50 rounded-lg p-3 mb-4 animate-in fade-in slide-in-from-top-4 duration-500 transition-all">
-          <div className="flex items-center mb-2">
-            <span className="text-cyan-400 mr-2">💡</span>
-            <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider">AI Next Step Suggestion</h3>
+        <div className="bg-harx-500/10 border border-harx-500/30 rounded-2xl p-4 mb-6 shadow-xl shadow-harx-500/5 animate-in fade-in slide-in-from-top-4 duration-500 transition-all backdrop-blur-md">
+          <div className="flex items-center mb-3">
+            <span className="text-harx-500 mr-2">💡</span>
+            <h3 className="text-xs font-black text-harx-500 uppercase tracking-widest">AI Next Step Suggestion</h3>
           </div>
-          <p className="text-white text-sm leading-relaxed italic">
+          <p className="text-harx-100 text-sm leading-relaxed italic font-medium">
             "{nextStepSuggestion}"
           </p>
         </div>
@@ -183,12 +184,14 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Live Transcription Section */}
       {isCallActive && (
-        <div className="bg-[#3a4661] rounded-lg p-4 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Live Transcription</h3>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-green-200 font-medium">Active</span>
+        <div className="glass-card rounded-2xl p-5 transition-all border-harx-500/10">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-bold text-white tracking-tight">Live Transcription</h3>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Active</span>
+              </div>
               <button
                 onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
                 className={`ml-4 px-3 py-1 rounded text-xs font-medium transition-colors ${autoScrollEnabled
@@ -201,32 +204,32 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             </div>
           </div>
 
-          <div className="bg-[#2a3651] rounded-lg p-4 h-64 overflow-y-auto custom-scrollbar">
+          <div className="bg-slate-900/40 rounded-xl p-4 h-64 overflow-y-auto custom-scrollbar border border-slate-800/50">
             {transcripts.length === 0 && !currentInterimText ? (
-              <div className="text-gray-500 text-center py-8">
-                <div className="text-2xl mb-2 text-slate-400">🎤</div>
-                <p>Waiting for speech...</p>
+              <div className="text-slate-500 text-center py-12 flex flex-col items-center">
+                <div className="text-3xl mb-3 opacity-20">🎤</div>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-40">Waiting for speech...</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {transcripts.map((transcript, index) => (
-                  <div key={index} className="flex flex-col space-y-1 animate-in fade-in duration-300">
-                    <div className="text-[10px] text-cyan-300/60 font-mono flex justify-between">
+                  <div key={index} className="flex flex-col space-y-1.5 animate-in fade-in duration-300">
+                    <div className="text-[9px] text-harx-500 font-black uppercase tracking-widest flex justify-between px-1">
                       <span>Agent</span>
-                      <span>{new Date(transcript.timestamp).toLocaleTimeString()}</span>
+                      <span className="opacity-50 tracking-normal">{new Date(transcript.timestamp).toLocaleTimeString()}</span>
                     </div>
-                    <div className="text-white bg-[#3a4661] rounded-lg px-3 py-2 text-sm shadow-sm border border-slate-500/30">
+                    <div className="text-slate-100 bg-slate-800/40 rounded-2xl rounded-tl-none px-4 py-3 text-sm shadow-sm border border-slate-700/30 backdrop-blur-sm">
                       {transcript.text}
                     </div>
                   </div>
                 ))}
 
                 {currentInterimText && (
-                  <div className="flex flex-col space-y-1 animate-in fade-in duration-200">
-                    <div className="text-[10px] text-yellow-500/70 font-mono animate-pulse">
+                  <div className="flex flex-col space-y-1.5 animate-in fade-in duration-200">
+                    <div className="text-[9px] text-harx-alt-500 font-black uppercase tracking-widest animate-pulse px-1">
                       Processing...
                     </div>
-                    <div className="text-slate-300 bg-[#3a4661]/40 rounded-lg px-3 py-2 text-sm italic border border-slate-600/30">
+                    <div className="text-slate-400 bg-slate-800/20 rounded-2xl rounded-tl-none px-4 py-3 text-sm italic border border-slate-700/20 backdrop-blur-sm">
                       {currentInterimText}
                     </div>
                   </div>
@@ -240,10 +243,12 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Call Not Active Message */}
       {!isCallActive && (
-        <div className="bg-[#3a4661] rounded-lg p-8 text-center border border-dashed border-slate-500/30">
-          <div className="text-4xl mb-4 opacity-50">📞</div>
-          <h3 className="text-lg font-semibold text-white mb-2">No Active Call</h3>
-          <p className="text-slate-300 text-sm">Start a call to see live AI analysis and transcription.</p>
+        <div className="glass-card rounded-2xl p-12 text-center border-dashed border-slate-700/50 flex flex-col items-center justify-center min-h-[300px]">
+          <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-6 shadow-2xl border border-slate-700">
+            <Phone className="w-10 h-10 text-slate-500 opacity-20" />
+          </div>
+          <h3 className="text-xl font-black text-white mb-2 tracking-tight">No Active Call</h3>
+          <p className="text-slate-400 text-sm max-w-xs leading-relaxed">Start a call from the Contact Info panel above to see live AI analysis.</p>
         </div>
       )}
     </div>

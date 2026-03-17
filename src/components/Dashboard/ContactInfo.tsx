@@ -339,7 +339,7 @@ export function ContactInfo() {
 
   return (
     <>
-      <div className="bg-[#1b253a] rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4">
+      <div className="glass-card rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4 border-harx-500/10">
         {/* Avatar + Infos */}
         {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
@@ -352,7 +352,7 @@ export function ContactInfo() {
             <div className="text-red-400 text-sm">Error: {leadError}</div>
           ) : (
             <>
-              <div className="w-14 h-14 rounded-full bg-harx-700 flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-gradient-harx flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-harx-500/20">
                 {contact.avatar ? (
                   <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
                 ) : (
@@ -362,7 +362,7 @@ export function ContactInfo() {
               <div>
                 <div className="flex items-center space-x-2 mb-1">
                   <span className="text-lg font-bold text-white">{contact.name}</span>
-                  <span className="bg-green-700 text-green-200 text-xs px-2 py-0.5 rounded-full font-semibold">qualified</span>
+                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30 uppercase tracking-wider">qualified</span>
                   {gig && (
                     <span className="bg-harx-900/40 text-harx-300 text-[10px] px-2 py-0.5 rounded-full border border-harx-700/50 flex items-center">
                       <Briefcase className="w-3 h-3 mr-1" />
@@ -383,7 +383,7 @@ export function ContactInfo() {
           {callStatus === 'active' ? (
             <button
               onClick={endCall}
-              className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md bg-red-500 hover:bg-red-600 text-white"
+              className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg bg-red-600 hover:bg-red-700 text-white hover:-translate-y-0.5"
             >
               <Phone className="w-5 h-5 mr-2" />
               End Call
@@ -392,8 +392,8 @@ export function ContactInfo() {
             <button
               onClick={handleStartCall}
               disabled={isCallLoading || callStatus === 'initiating'}
-              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-semibold text-lg transition-all duration-200 shadow-md
-                  ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:-translate-y-0.5
+                  ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-gradient-harx text-white shadow-harx-500/20 active:scale-95'}`}
             >
               <Phone className="w-5 h-5 mr-2" />
               {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
@@ -417,9 +417,9 @@ export function ContactInfo() {
         </div >
         {/* Actions à droite */}
         < div className="flex items-center space-x-3" >
-          <button className="bg-slate-700 text-slate-400 p-2 rounded-lg cursor-not-allowed opacity-50" title="Coming Soon"><Mail className="w-5 h-5" /></button>
-          <button className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg"><Phone className="w-5 h-5" /></button>
-          <button className="bg-slate-700 text-slate-400 p-2 rounded-lg cursor-not-allowed opacity-50" title="Coming Soon"><Calendar className="w-5 h-5" /></button>
+          <button className="bg-slate-800 border border-slate-700 text-slate-500 p-2.5 rounded-xl cursor-not-allowed transition-all" title="Coming Soon"><Mail className="w-5 h-5" /></button>
+          <button className="bg-gradient-harx text-white p-2.5 rounded-xl shadow-lg shadow-harx-500/10 hover:-translate-y-0.5 transition-all"><Phone className="w-5 h-5" /></button>
+          <button className="bg-slate-800 border border-slate-700 text-slate-500 p-2.5 rounded-xl cursor-not-allowed transition-all" title="Coming Soon"><Calendar className="w-5 h-5" /></button>
         </div>
       </div>
     </>

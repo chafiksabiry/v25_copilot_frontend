@@ -16,7 +16,7 @@ export const LiveTranscript: React.FC = () => {
 
     if (!isActive && transcripts.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8 text-center bg-[#1b253a]/30 rounded-xl border border-dashed border-slate-700">
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-8 text-center glass-card border-dashed border-slate-700/50">
                 <MessageSquare className="w-12 h-12 mb-4 opacity-20" />
                 <p className="text-lg font-medium">Live Transcript</p>
                 <p className="text-sm">Start a call to see real-time transcription</p>
@@ -25,18 +25,18 @@ export const LiveTranscript: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#1b253a] rounded-xl border border-slate-700 overflow-hidden shadow-lg">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-[#232f47]">
+        <div className="flex flex-col h-full glass-card overflow-hidden shadow-2xl border-harx-500/10">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-harx-500/10 bg-white/5">
                 <div className="flex items-center space-x-2">
-                    <MessageSquare className="w-5 h-5 text-cyan-400" />
-                    <h3 className="text-white font-bold">Live Transcript</h3>
+                    <MessageSquare className="w-5 h-5 text-harx-alt-400" />
+                    <h3 className="text-white font-bold tracking-tight">Live Transcript</h3>
                 </div>
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={() => setAutoScroll(!autoScroll)}
-                        className={`text-xs px-2 py-1 rounded transition-colors ${autoScroll ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-400'}`}
+                        className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full transition-all ${autoScroll ? 'bg-harx-500/20 text-harx-100 border border-harx-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'}`}
                     >
-                        {autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+                        {autoScroll ? 'Scroll ON' : 'Scroll OFF'}
                     </button>
                     {isActive && (
                         <div className="flex items-center space-x-2">
@@ -52,7 +52,7 @@ export const LiveTranscript: React.FC = () => {
 
             <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0f172a]"
+                className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-900/20"
             >
                 {transcripts.map((entry: TranscriptionMessage, idx: number) => (
                     <div key={idx} className="flex flex-col space-y-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -69,7 +69,7 @@ export const LiveTranscript: React.FC = () => {
                                 {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </span>
                         </div>
-                        <div className="bg-[#1e293b] border border-slate-800 rounded-lg px-4 py-3 text-slate-100 text-sm shadow-sm leading-relaxed">
+                        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl rounded-tl-none px-4 py-3 text-slate-200 text-sm shadow-sm leading-relaxed backdrop-blur-sm">
                             {entry.text}
                         </div>
                     </div>
