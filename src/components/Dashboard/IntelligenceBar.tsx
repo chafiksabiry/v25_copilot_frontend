@@ -58,25 +58,28 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+    <div className="glass-card rounded-2xl overflow-hidden relative group">
+      <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/5">
         <div className="flex items-center space-x-3">
-          <h2 className="text-lg font-semibold">AI Intelligence</h2>
-          <span className="bg-harx-100 text-harx-800 text-xs px-2 py-1 rounded-full">
-            {insights.length} insights
+          <div className="w-8 h-8 rounded-xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+            <span className="text-white text-xs font-black">AI</span>
+          </div>
+          <h2 className="text-lg font-black text-white tracking-tight">Intelligence</h2>
+          <span className="bg-harx-500/20 text-harx-400 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-harx-500/20">
+            {insights.length}
           </span>
         </div>
         <div className="flex items-center space-x-2">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as any)}
-            className="text-sm border border-gray-300 rounded px-2 py-1"
+            className="text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-slate-300 focus:ring-1 focus:ring-harx-500 outline-none transition-all"
           >
-            <option value="all">All Types</option>
-            <option value="sentiment">Sentiment</option>
-            <option value="keyword">Keywords</option>
-            <option value="action">Actions</option>
-            <option value="recommendation">Recommendations</option>
+            <option value="all" className="bg-slate-900">All</option>
+            <option value="sentiment" className="bg-slate-900">Sentiment</option>
+            <option value="keyword" className="bg-slate-900">Keywords</option>
+            <option value="action" className="bg-slate-900">Actions</option>
+            <option value="recommendation" className="bg-slate-900">AI Recs</option>
           </select>
           <button
             onClick={() => setExpanded(!expanded)}
@@ -97,9 +100,10 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
             filteredInsights.map((insight) => (
               <div
                 key={insight.id}
-                className={`p-3 rounded-lg border-l-4 ${getPriorityColor(insight.priority)} bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors`}
+                className={`p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all duration-300 relative overflow-hidden group/item ${getPriorityColor(insight.priority)}`}
                 onClick={() => onInsightClick?.(insight.id)}
               >
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(insight.priority).replace('border-', 'bg-')}`}></div>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">
                     <span className="text-lg">{getTypeIcon(insight.type)}</span>

@@ -57,11 +57,14 @@ export function ComplianceMonitor() {
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <Shield className="w-5 h-5 text-emerald-400" />
-          <h3 className="text-lg font-semibold text-white">Compliance Monitor</h3>
+    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-emerald-500/10 rounded-xl">
+            <Shield className="w-5 h-5 text-emerald-400" />
+          </div>
+          <h3 className="text-lg font-black text-white tracking-tight uppercase">Compliance Monitor</h3>
         </div>
         <div className="flex items-center space-x-2">
           {state.callState.isActive ? (
@@ -97,13 +100,13 @@ export function ComplianceMonitor() {
           alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`border rounded-lg p-4 ${getSeverityColor(alert.severity)} transition-all duration-200`}
+              className={`border-l-4 rounded-xl p-4 bg-white/5 border-white/5 hover:bg-white/10 transition-all duration-300 ${getSeverityColor(alert.severity).split(' ')[0]}`}
             >
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   {getSeverityIcon(alert.severity)}
-                  <h4 className="text-sm font-medium">{getTypeLabel(alert.type)}</h4>
-                  <span className="text-xs px-2 py-1 rounded-full bg-slate-700 text-slate-300">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white">{getTypeLabel(alert.type)}</h4>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
                     {alert.severity.toUpperCase()}
                   </span>
                 </div>
@@ -137,19 +140,19 @@ export function ComplianceMonitor() {
 
       {/* Compliance Status Summary */}
       {state.callState.isActive && (
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-slate-700/30 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Disclosures</div>
-              <div className="text-sm font-medium text-yellow-400">2/4</div>
+        <div className="mt-6 pt-6 border-t border-white/5">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Disclosures</div>
+              <div className="text-sm font-black text-yellow-400">2/4</div>
             </div>
-            <div className="bg-slate-700/30 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Script Follow</div>
-              <div className="text-sm font-medium text-green-400">85%</div>
+            <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Script</div>
+              <div className="text-sm font-black text-green-400">85%</div>
             </div>
-            <div className="bg-slate-700/30 rounded-lg p-2">
-              <div className="text-xs text-slate-400">Risk Level</div>
-              <div className="text-sm font-medium text-orange-400">Medium</div>
+            <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Risk</div>
+              <div className="text-sm font-black text-orange-400">Med</div>
             </div>
           </div>
         </div>

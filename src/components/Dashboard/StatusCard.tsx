@@ -16,10 +16,10 @@ interface StatusCardProps {
 }
 
 const statusColors = {
-  success: 'text-green-400',
-  warning: 'text-yellow-400',
-  danger: 'text-red-400',
-  info: 'text-cyan-400',
+  success: 'text-emerald-400',
+  warning: 'text-amber-400',
+  danger: 'text-rose-500',
+  info: 'text-harx-400',
 };
 
 const StatusCard: React.FC<StatusCardProps> = ({
@@ -35,9 +35,11 @@ const StatusCard: React.FC<StatusCardProps> = ({
       </div>
     )}
     <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-2 text-slate-300">
-        <span className="w-5 h-5 flex items-center justify-center text-[20px]">{icon}</span>
-        <span className="font-bold text-[15px]">{title}</span>
+      <div className="flex items-center space-x-3 text-slate-400">
+        <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-[18px] border border-white/5 transition-all group-hover:bg-harx-500/10 group-hover:border-harx-500/20 group-hover:text-harx-400">
+          {icon}
+        </div>
+        <span className="font-black text-[10px] uppercase tracking-[0.2em]">{title}</span>
       </div>
       {expandable && !disabled && (
         <button className="text-slate-400" onClick={onToggle}>
@@ -45,9 +47,9 @@ const StatusCard: React.FC<StatusCardProps> = ({
         </button>
       )}
     </div>
-    <div className={`text-[18px] font-semibold mt-2 ${status ? statusColors[status] : 'text-white'}`}>{value}</div>
+    <div className={`text-[22px] font-black mt-3 leading-none tracking-tight ${status ? statusColors[status] : 'text-white'}`}>{value}</div>
     {subtitle && (
-      <div className="text-xs text-slate-400 mt-1">{subtitle}</div>
+      <div className="text-[10px] font-black text-slate-500 mt-2 uppercase tracking-widest">{subtitle}</div>
     )}
     {children && expanded && !disabled && (
       <div className="mt-2 text-xs text-slate-400">{children}</div>

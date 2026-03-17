@@ -25,15 +25,15 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-harx-100 text-harx-800' },
-  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-green-100 text-green-800' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-harx-alt-100 text-harx-alt-800' },
-  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-yellow-100 text-yellow-800' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-harx-alt-100 text-harx-alt-800' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-harx-100 text-harx-800' },
-  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-red-100 text-red-800' },
-  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-100 text-teal-800' },
-  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-gray-100 text-gray-800' }
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-400' },
+  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-400' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-gradient-to-r from-rose-500/20 to-rose-600/20 text-rose-400' },
+  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-gradient-to-r from-harx-500/20 to-harx-alt-500/20 text-harx-400' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-gradient-to-r from-indigo-500/20 to-indigo-600/20 text-indigo-400' },
+  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 text-orange-400' },
+  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-gradient-to-r from-teal-500/20 to-teal-600/20 text-teal-400' },
+  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-gradient-to-r from-slate-500/20 to-slate-600/20 text-slate-400' }
 ];
 
 const DashboardGrid: React.FC = () => {
@@ -219,24 +219,24 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-7 flex flex-col space-y-6">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
                 Coming Soon
               </div>
             </div>
-            <div className="glass-card rounded-xl p-8 flex flex-col h-full shadow-xl border-harx-500/10 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-xl opacity-30 grayscale-[0.8] hover:grayscale-0 transition-all duration-700">
               <RealTimeCoaching />
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative h-[400px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
                 Coming Soon
               </div>
             </div>
-            <div className="glass-card rounded-xl p-8 flex flex-col shadow-xl border-harx-500/10 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-2xl p-8 flex flex-col shadow-xl opacity-30 grayscale-[0.8]">
               <CallPhasesDisplay
                 phases={repsPhases as any}
                 isCallActive={state.callState.isActive}
@@ -253,14 +253,14 @@ const DashboardGrid: React.FC = () => {
 
         {/* Right Column: Live Transcript (5 cols) */}
         <div className="col-span-5 h-full">
-          <div className="relative h-full">
+          <div className="relative h-full min-h-[500px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
                 Coming Soon
               </div>
             </div>
-            <div className="glass-card rounded-xl p-1 h-full shadow-2xl border-harx-500/10 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-2xl p-2 h-full shadow-2xl opacity-30">
               <LiveTranscript />
             </div>
           </div>
@@ -271,20 +271,22 @@ const DashboardGrid: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 mt-6">
         <div className="relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-            <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
+            <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
               Coming Soon
             </div>
           </div>
-          <div className="glass-card rounded-xl p-8 flex flex-col min-h-[180px] relative border-harx-500/10 shadow-inner opacity-50">
+          <div className="glass-card rounded-2xl p-8 flex flex-col min-h-[220px] relative shadow-inner opacity-30">
             <div className="relative z-0 h-full flex flex-col">
-              <div className="flex items-center mb-4 self-start">
-                <Brain className="text-harx-alt-400 mr-2" />
-                <span className="text-lg font-bold text-white tracking-wide">Adaptive Script Prompter</span>
+              <div className="flex items-center mb-6 self-start group">
+                <div className="p-2 bg-harx-alt-500/10 rounded-xl mr-3 group-hover:bg-harx-alt-500/20 transition-all">
+                  <Brain className="text-harx-alt-400" />
+                </div>
+                <span className="text-lg font-black text-white tracking-widest uppercase">Adaptive Script Prompter</span>
               </div>
               <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-                <FileText className="w-8 h-8 text-harx-500/50 mb-3" />
-                <div className="text-harx-100/50 text-sm italic">Script prompter will activate when call starts</div>
+                <FileText className="w-10 h-10 text-harx-500/30 mb-4" />
+                <div className="text-harx-100/30 text-xs font-black uppercase tracking-[0.2em] italic">Prompter will activate on connection</div>
               </div>
             </div>
           </div>

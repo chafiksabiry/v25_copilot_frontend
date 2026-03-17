@@ -113,14 +113,19 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
   }, [isTranscriptionActive, stopTranscription]);
 
   return (
-    <div className="flex flex-col space-y-1 p-2">
-      <div className="flex items-center mb-4">
-        <span className="text-harx-500 text-2xl mr-2">🧠</span>
-        <h2 className="text-2xl font-black text-white tracking-tight">REPS Call Phases</h2>
+    <div className="flex flex-col space-y-2 p-2 relative">
+      <div className="flex items-center mb-6">
+        <div className="p-2 bg-harx-500/10 rounded-xl mr-3">
+          <span className="text-xl">🧠</span>
+        </div>
+        <h2 className="text-xl font-black text-white tracking-widest uppercase">REPS Call Phases</h2>
         {analysisConfidence > 0 && (
-          <span className="ml-auto text-[10px] bg-harx-500/10 text-harx-100 font-bold px-2 py-0.5 rounded-full border border-harx-500/20 uppercase tracking-widest">
-            AI Conf: {Math.round(analysisConfidence * 100)}%
-          </span>
+          <div className="ml-auto flex items-center bg-white/5 border border-white/10 rounded-full px-3 py-1">
+            <div className="w-1.5 h-1.5 bg-harx-400 rounded-full mr-2 shadow-[0_0_8px_rgba(var(--color-harx-400),0.5)]"></div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              AI Confidence: <span className="text-white">{Math.round(analysisConfidence * 100)}%</span>
+            </span>
+          </div>
         )}
       </div>
 
@@ -141,26 +146,28 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             const status = isActive ? 'in-progress' : (isCompleted ? 'completed' : 'pending');
 
             return (
-              <div key={phase.id} className="relative mb-2">
+              <div key={phase.id} className="relative mb-3 group">
                 <div
-                  className={`p-3 rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all duration-300 shadow-sm
-                  ${isActive ? 'bg-harx-500/10 border-harx-500/50 border-2 scale-[1.02] shadow-harx-500/10' : 'bg-slate-900/40 border border-slate-700/50 hover:bg-slate-800/60'}
-                  ${isCompleted ? 'border-emerald-500/30' : ''}
-                  relative backdrop-blur-sm
+                  className={`p-4 rounded-2xl text-sm flex items-center justify-between cursor-pointer transition-all duration-500 shadow-sm
+                  ${isActive ? 'bg-gradient-harx/20 border-harx-500/50 border-2 scale-[1.02] shadow-xl' : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10'}
+                  ${isCompleted ? 'bg-emerald-500/5' : ''}
+                  relative backdrop-blur-md
                 `}
                   onClick={() => onPhaseClick?.(phase.id)}
                 >
-                  <span className={`flex items-center justify-center w-8 h-8 mr-3 rounded-full text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, '')} shadow-inner`}>
-                    {isCompleted ? '✅' : phase.icon}
-                  </span>
-                  <span className={`font-bold transition-colors truncate max-w-[60%] ${isActive ? 'text-harx-100' : isCompleted ? 'text-emerald-400' : 'text-slate-300'}`}>
-                    {phase.name}
-                  </span>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ml-2 ${isActive ? 'bg-harx-500 text-white animate-pulse' :
-                    isCompleted ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/20' :
-                      'bg-slate-800/80 text-slate-500 border border-slate-700'
+                  <div className="flex items-center flex-1 min-w-0">
+                    <span className={`flex items-center justify-center w-10 h-10 mr-4 rounded-xl text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, 'bg-white/5')} border border-white/5 shadow-inner transition-transform group-hover:scale-110 duration-500`}>
+                      {isCompleted ? <span className="text-emerald-400">✓</span> : phase.icon}
+                    </span>
+                    <span className={`font-black uppercase tracking-widest transition-colors truncate ${isActive ? 'text-white' : isCompleted ? 'text-emerald-400' : 'text-slate-500'}`}>
+                      {phase.name}
+                    </span>
+                  </div>
+                  <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] ml-2 ${isActive ? 'bg-harx-500 text-white animate-pulse' :
+                    isCompleted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      'bg-white/5 text-slate-600 border border-white/5'
                     }`}>
-                    {isActive ? 'Current' : status}
+                    {isActive ? 'Current Phase' : status === 'completed' ? 'Verified' : 'Pending'}
                   </span>
                 </div>
               </div>
@@ -171,12 +178,15 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* AI Suggestion Section */}
       {isCallActive && nextStepSuggestion && (
-        <div className="bg-harx-500/10 border border-harx-500/30 rounded-2xl p-4 mb-6 shadow-xl shadow-harx-500/5 animate-in fade-in slide-in-from-top-4 duration-500 transition-all backdrop-blur-md">
-          <div className="flex items-center mb-3">
-            <span className="text-harx-500 mr-2">💡</span>
-            <h3 className="text-xs font-black text-harx-500 uppercase tracking-widest">AI Next Step Suggestion</h3>
+        <div className="bg-gradient-harx/10 border border-harx-500/30 rounded-2xl p-6 mb-8 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-harx-500/10 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-harx-500/20 transition-all duration-1000"></div>
+          <div className="flex items-center mb-4 relative z-10">
+            <div className="p-1.5 bg-harx-500/20 rounded-lg mr-3">
+              <span className="text-xl">💡</span>
+            </div>
+            <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-[0.3em]">AI Next Step Strategy</h3>
           </div>
-          <p className="text-harx-100 text-sm leading-relaxed italic font-medium">
+          <p className="text-white text-base leading-relaxed font-bold tracking-tight relative z-10 italic">
             "{nextStepSuggestion}"
           </p>
         </div>
@@ -184,52 +194,61 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Live Transcription Section */}
       {isCallActive && (
-        <div className="glass-card rounded-2xl p-5 transition-all border-harx-500/10">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-bold text-white tracking-tight">Live Transcription</h3>
+        <div className="glass-card rounded-2xl p-6 transition-all border border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+          <div className="flex items-center justify-between mb-6 relative z-10">
             <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Active</span>
+              <div className="p-2 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-lg">🎤</span>
+              </div>
+              <h3 className="text-lg font-black text-white tracking-widest uppercase">Live Insights</h3>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
+                <span className="text-[9px] text-emerald-400 font-black uppercase tracking-[0.2em]">Live Stream</span>
               </div>
               <button
                 onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
-                className={`ml-4 px-3 py-1 rounded text-xs font-medium transition-colors ${autoScrollEnabled
-                  ? 'bg-harx-500 text-white hover:bg-harx-600'
-                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                className={`ml-4 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 border ${autoScrollEnabled
+                  ? 'bg-harx-500 text-white border-harx-500 shadow-lg shadow-harx-500/20'
+                  : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10'
                   }`}
               >
-                {autoScrollEnabled ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+                {autoScrollEnabled ? 'Scroll: Auto' : 'Scroll: Manual'}
               </button>
             </div>
           </div>
 
-          <div className="bg-slate-900/40 rounded-xl p-4 h-64 overflow-y-auto custom-scrollbar border border-slate-800/50">
+          <div className="bg-white/5 rounded-2xl p-5 h-72 overflow-y-auto custom-scrollbar border border-white/5 relative z-10">
             {transcripts.length === 0 && !currentInterimText ? (
-              <div className="text-slate-500 text-center py-12 flex flex-col items-center">
-                <div className="text-3xl mb-3 opacity-20">🎤</div>
-                <p className="text-xs font-bold uppercase tracking-widest opacity-40">Waiting for speech...</p>
+              <div className="text-slate-500 text-center py-16 flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 animate-pulse border border-white/5">
+                  <span className="text-3xl opacity-30">🎤</span>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Decrypting Audio Stream...</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {transcripts.map((transcript, index) => (
-                  <div key={index} className="flex flex-col space-y-1.5 animate-in fade-in duration-300">
-                    <div className="text-[9px] text-harx-500 font-black uppercase tracking-widest flex justify-between px-1">
-                      <span>Agent</span>
-                      <span className="opacity-50 tracking-normal">{new Date(transcript.timestamp).toLocaleTimeString()}</span>
+                  <div key={index} className="flex flex-col space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="text-[9px] font-black uppercase tracking-[0.2em] flex justify-between px-2">
+                       <span className="text-harx-400">Agent Intelligence</span>
+                       <span className="text-slate-500">{new Date(transcript.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>
                     </div>
-                    <div className="text-slate-100 bg-slate-800/40 rounded-2xl rounded-tl-none px-4 py-3 text-sm shadow-sm border border-slate-700/30 backdrop-blur-sm">
+                    <div className="text-slate-100 bg-white/5 rounded-2xl rounded-tl-none px-5 py-4 text-sm font-medium tracking-tight shadow-lg border border-white/10 backdrop-blur-xl">
                       {transcript.text}
                     </div>
                   </div>
                 ))}
 
                 {currentInterimText && (
-                  <div className="flex flex-col space-y-1.5 animate-in fade-in duration-200">
-                    <div className="text-[9px] text-harx-alt-500 font-black uppercase tracking-widest animate-pulse px-1">
+                  <div className="flex flex-col space-y-2 animate-in fade-in duration-300">
+                    <div className="text-[9px] text-harx-alt-400 font-black uppercase tracking-[0.2em] animate-pulse px-2 flex items-center">
+                      <div className="w-1.5 h-1.5 bg-harx-alt-400 rounded-full mr-2 animate-bounce"></div>
                       Processing...
                     </div>
-                    <div className="text-slate-400 bg-slate-800/20 rounded-2xl rounded-tl-none px-4 py-3 text-sm italic border border-slate-700/20 backdrop-blur-sm">
+                    <div className="text-slate-400 bg-white/5 rounded-2xl rounded-tl-none px-5 py-4 text-sm italic font-medium tracking-tight border border-white/5 backdrop-blur-md opacity-60">
                       {currentInterimText}
                     </div>
                   </div>
@@ -243,12 +262,15 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Call Not Active Message */}
       {!isCallActive && (
-        <div className="glass-card rounded-2xl p-12 text-center border-dashed border-slate-700/50 flex flex-col items-center justify-center min-h-[300px]">
-          <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-6 shadow-2xl border border-slate-700">
-            <Phone className="w-10 h-10 text-slate-500 opacity-20" />
+        <div className="glass-card rounded-3xl p-16 text-center border border-white/5 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden group">
+          <div className="absolute inset-0 bg-mesh-gradient opacity-10 group-hover:opacity-20 transition-opacity duration-1000"></div>
+          <div className="w-24 h-24 rounded-2xl bg-white/5 flex items-center justify-center mb-8 shadow-2xl border border-white/10 group-hover:bg-harx-500/10 group-hover:border-harx-500/20 transition-all duration-500 relative z-10">
+            <Phone className="w-12 h-12 text-slate-500 opacity-20 group-hover:text-harx-400 group-hover:opacity-100 transition-all duration-500" />
           </div>
-          <h3 className="text-xl font-black text-white mb-2 tracking-tight">No Active Call</h3>
-          <p className="text-slate-400 text-sm max-w-xs leading-relaxed">Start a call from the Contact Info panel above to see live AI analysis.</p>
+          <h3 className="text-2xl font-black text-white mb-4 tracking-tight uppercase relative z-10">System Ready</h3>
+          <p className="text-slate-500 text-sm max-w-xs leading-relaxed font-bold uppercase tracking-widest opacity-60 relative z-10">
+            Awaiting active connection signal for live intelligence analysis.
+          </p>
         </div>
       )}
     </div>

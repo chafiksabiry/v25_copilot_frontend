@@ -74,21 +74,24 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6">
-      <div className="flex items-center space-x-2 mb-4">
-        <BookOpen className="w-5 h-5 text-harx-400" />
-        <h3 className="text-lg font-semibold text-white">Knowledge Base</h3>
+    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="p-2 bg-harx-500/10 rounded-xl">
+          <BookOpen className="w-5 h-5 text-harx-400" />
+        </div>
+        <h3 className="text-lg font-black text-white tracking-tight uppercase">Knowledge Base</h3>
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Search knowledge base..."
+          placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-transparent text-sm"
+          className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-harx-500/50 focus:border-harx-500 transition-all text-xs font-bold uppercase tracking-widest"
         />
       </div>
 
@@ -103,15 +106,15 @@ export function KnowledgeBase() {
           filteredItems.map((item) => (
             <div
               key={item.id}
-              className="bg-slate-700/50 rounded-lg p-3 hover:bg-slate-700 transition-colors cursor-pointer"
+              className="bg-white/5 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-white/10 cursor-pointer group/item"
             >
               <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                  <div className="text-harx-400">
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="p-1.5 bg-harx-500/10 rounded-lg text-harx-400">
                     {getTypeIcon(item.type)}
                   </div>
-                  <h4 className="text-sm font-medium text-white truncate">{item.title}</h4>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getCategoryColor(item.category)}`}>
+                  <h4 className="text-sm font-black text-white truncate group-hover/item:text-harx-400 transition-colors tracking-tight">{item.title}</h4>
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
                     {item.category}
                   </span>
                 </div>
@@ -152,17 +155,13 @@ export function KnowledgeBase() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
+      <div className="mt-6 pt-6 border-t border-white/5">
         <div className="flex flex-wrap gap-2">
-          <button className="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full transition-colors">
-            Risk Disclosures
-          </button>
-          <button className="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full transition-colors">
-            Sales Scripts
-          </button>
-          <button className="text-xs px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-full transition-colors">
-            FAQs
-          </button>
+          {['Risk Disclosures', 'Sales Scripts', 'FAQs'].map(tag => (
+            <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-white/5 hover:bg-harx-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-white/5">
+              {tag}
+            </button>
+          ))}
         </div>
       </div>
     </div>

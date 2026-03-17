@@ -38,10 +38,13 @@ export function CallMetrics() {
   ];
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6">
-      <div className="flex items-center space-x-2 mb-4">
-        <BarChart3 className="w-5 h-5 text-emerald-400" />
-        <h3 className="text-lg font-semibold text-white">Call Metrics</h3>
+    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="p-2 bg-emerald-500/10 rounded-xl">
+          <BarChart3 className="w-5 h-5 text-emerald-400" />
+        </div>
+        <h3 className="text-lg font-black text-white tracking-tight uppercase">Call Metrics</h3>
         {state.callState.isActive && (
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
         )}
@@ -49,19 +52,21 @@ export function CallMetrics() {
 
       <div className="space-y-4">
         {/* Overall Score */}
-        <div className="bg-slate-700/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <Award className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-medium text-white">Overall Score</span>
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/5 group-hover:bg-white/10 transition-colors duration-500">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-1.5 bg-yellow-400/10 rounded-lg">
+                <Award className="w-4 h-4 text-yellow-400" />
+              </div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Global</span>
             </div>
-            <span className={`text-2xl font-bold ${getScoreColor(state.callMetrics.overallScore)}`}>
+            <span className={`text-3xl font-black ${getScoreColor(state.callMetrics.overallScore)}`}>
               {Math.round(state.callMetrics.overallScore)}
             </span>
           </div>
-          <div className="w-full bg-slate-600 rounded-full h-2">
+          <div className="w-full bg-white/10 rounded-full h-2 shadow-inner">
             <div
-              className={`${getScoreBgColor(state.callMetrics.overallScore)} h-2 rounded-full transition-all duration-500`}
+              className={`${getScoreBgColor(state.callMetrics.overallScore)} h-2 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(0,0,0,0.2)]`}
               style={{ width: `${state.callMetrics.overallScore}%` }}
             />
           </div>
@@ -69,31 +74,33 @@ export function CallMetrics() {
 
         {/* Call Duration */}
         {state.callState.isActive && (
-          <div className="flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-harx-400" />
-              <span className="text-sm text-slate-300">Duration</span>
+          <div className="flex items-center justify-between bg-white/5 rounded-2xl p-4 border border-white/5 group-hover:bg-white/10 transition-colors duration-500">
+            <div className="flex items-center space-x-3">
+              <div className="p-1.5 bg-harx-500/10 rounded-lg">
+                <Clock className="w-4 h-4 text-harx-400" />
+              </div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</span>
             </div>
-            <span className="text-white font-mono">
+            <span className="text-white font-mono font-bold tracking-wider">
               {formatDuration(state.callMetrics.duration)}
             </span>
           </div>
         )}
 
         {/* Individual Metrics */}
-        <div className="space-y-3">
+        <div className="space-y-4 pt-2">
           {metrics.map((metric) => (
-            <div key={metric.label} className="space-y-1">
-              <div className="flex justify-between text-sm">
+            <div key={metric.label} className="space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                 <div className="flex items-center space-x-2">
-                  <span>{metric.icon}</span>
-                  <span className="text-slate-300">{metric.label}</span>
+                  <span className="text-sm">{metric.icon}</span>
+                  <span className="text-slate-400">{metric.label}</span>
                 </div>
-                <span className="text-white font-medium">{Math.round(metric.value)}%</span>
+                <span className="text-white">{Math.round(metric.value)}%</span>
               </div>
-              <div className="w-full bg-slate-700 rounded-full h-1.5">
+              <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
                 <div
-                  className={`${getScoreBgColor(metric.value)} h-1.5 rounded-full transition-all duration-500`}
+                  className={`${getScoreBgColor(metric.value)} h-1.5 rounded-full transition-all duration-1000 ease-out`}
                   style={{ width: `${metric.value}%` }}
                 />
               </div>
@@ -103,16 +110,16 @@ export function CallMetrics() {
 
         {/* Performance Trend */}
         {state.callState.isActive && (
-          <div className="bg-slate-700/30 rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-medium text-white">Performance Trend</span>
+          <div className="bg-gradient-harx/10 rounded-2xl p-4 border border-harx-500/10">
+            <div className="flex items-center space-x-2 mb-3">
+              <TrendingUp className="w-4 h-4 text-harx-400" />
+              <span className="text-[10px] font-black text-harx-400 uppercase tracking-widest">Performance Trend</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex-1 h-1 bg-slate-600 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full animate-pulse"></div>
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-harx-500 via-yellow-500 to-green-500 rounded-full animate-pulse"></div>
               </div>
-              <span className="text-xs text-green-400">↗ Improving</span>
+              <span className="text-[10px] font-black text-green-400 uppercase tracking-widest">↗ Improving</span>
             </div>
           </div>
         )}

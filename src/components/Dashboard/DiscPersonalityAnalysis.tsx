@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Brain, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Brain, CheckCircle, Clock, AlertTriangle, Lightbulb } from 'lucide-react';
 import { useAgent } from '../../contexts/AgentContext';
 import { PersonalityProfile } from '../../types';
 
@@ -103,9 +103,9 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
         };
       default:
         return {
-          bgColor: 'bg-[#26314a]',
-          borderColor: 'border-slate-500/30',
-          textColor: 'text-white',
+          bgColor: 'bg-white/2',
+          borderColor: 'border-white/5',
+          textColor: 'text-slate-500',
           showCheck: false
         };
     }
@@ -123,19 +123,28 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
   };
 
   return (
-    <div className="bg-[#232f47] rounded-xl p-8 w-full">
-      <div className="flex items-center justify-between text-harx-alt-400 text-xl font-semibold mb-4">
-        <div className="flex items-center">
-          <Brain className="w-6 h-6 mr-2" />
-          DISC Personality Analysis
+    <div className="glass-card rounded-2xl p-8 w-full relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-harx-alt-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-harx-alt-500/20 transition-all duration-1000"></div>
+      
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-harx-alt-500/10 rounded-2xl border border-harx-alt-500/20">
+            <Brain className="w-6 h-6 text-harx-alt-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-white tracking-widest uppercase">DISC Personality Analysis</h3>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Real-time pattern recognition engine</p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-[#232f47] rounded-xl p-6 w-full mb-4 border border-slate-600/40">
-        <div className="flex items-center justify-between text-harx-alt-400 text-lg font-semibold mb-4">
-          <div className="flex items-center">
-            <Brain className="w-5 h-5 mr-2" />
-            DISC Personality Types
+      <div className="bg-white/5 rounded-2xl p-8 w-full mb-6 border border-white/5 relative z-10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="p-1.5 bg-white/5 rounded-lg">
+               <Brain className="w-5 h-5 text-harx-alt-400" />
+            </div>
+            <h4 className="text-sm font-black text-white tracking-widest uppercase">DISC Profile Matrix</h4>
           </div>
           {loading && (
             <div className="flex items-center text-harx-400 text-sm">
@@ -146,14 +155,14 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
         </div>
 
         {/* Barre de progression de l'analyse */}
-        <div className="mb-4">
-          <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>Analysis Progress</span>
+        <div className="mb-8">
+          <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+            <span>Pattern Confidence</span>
             <span>{getAnalysisProgress()}%</span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2">
+          <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-harx-alt-400 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-harx-alt-500 to-harx-alt-400 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(var(--color-harx-alt-400),0.3)]"
               style={{ width: `${getAnalysisProgress()}%` }}
             ></div>
           </div>
@@ -165,20 +174,20 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
             return (
               <div
                 key={type.letter}
-                className={`${styles.bgColor} ${styles.borderColor} rounded-xl flex flex-col items-center justify-center p-6 border relative transition-all duration-300 ${styles.opacity || ''}`}
+                className={`rounded-2xl flex flex-col items-center justify-center p-6 border transition-all duration-500 group/type ${styles.bgColor} ${styles.borderColor} ${styles.opacity || ''} ${getTypeStatus(type.letter) === 'primary' ? 'scale-105 shadow-2xl z-10' : 'hover:bg-white/5'}`}
               >
                 {styles.showCheck && (
                   <div className={`absolute top-2 right-2 ${styles.textColor}`}>
                     <CheckCircle className="w-5 h-5" />
                   </div>
                 )}
-                <div className={`text-3xl font-bold mb-2 ${styles.textColor}`}>
+                <div className={`text-4xl font-black mb-3 transition-all group-hover/type:scale-110 duration-500 ${styles.textColor}`}>
                   {type.letter}
                 </div>
-                <div className={`text-lg font-bold mb-1 ${styles.textColor}`}>
+                <div className={`text-xs font-black uppercase tracking-widest mb-2 ${styles.textColor}`}>
                   {type.title}
                 </div>
-                <div className="text-slate-400 text-sm text-center">
+                <div className="text-[10px] font-bold text-slate-500 text-center leading-tight uppercase tracking-wider">
                   {type.desc}
                 </div>
                 {personalityProfile && getTypeStatus(type.letter) === 'primary' && (
@@ -191,19 +200,17 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
           })}
         </div>
 
-        <hr className="border-slate-600/40 mb-4" />
-
-        <div className="flex items-center gap-6 justify-center text-sm mb-4">
-          <span className="flex items-center gap-1 text-slate-400">
-            <input type="checkbox" disabled className="accent-slate-400" />
-            Not Identified
+        <div className="flex items-center gap-8 justify-center text-[9px] font-black uppercase tracking-widest mb-6">
+          <span className="flex items-center gap-2 text-slate-600">
+            <div className="w-2 h-2 rounded-full bg-slate-800 border border-slate-700" />
+            Awaiting Signal
           </span>
-          <span className="flex items-center gap-1 text-green-400">
-            <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+          <span className="flex items-center gap-2 text-emerald-400">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
             Identified
           </span>
-          <span className="flex items-center gap-1 text-white">
-            <span className="w-2 h-2 rounded-full bg-white inline-block" />
+          <span className="flex items-center gap-2 text-white">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
             Live Analysis
           </span>
         </div>
@@ -243,20 +250,25 @@ const DiscPersonalityAnalysis: React.FC<DiscPersonalityAnalysisProps> = ({
 
       {/* Quick Recommendations */}
       {personalityProfile && (
-        <div className="bg-[#26314a] rounded-xl p-4 border border-slate-600/40">
-          <div className="text-harx-alt-400 text-sm font-semibold mb-2">
-            Quick Recommendations
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/5 relative group/rec transition-all duration-500 hover:bg-white/10">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-harx-alt-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+          <div className="text-[10px] font-black text-harx-alt-400 uppercase tracking-[0.3em] mb-4 flex items-center">
+            <Lightbulb className="w-3 h-3 mr-2" />
+            Expert Communication Strategy
           </div>
-          <div className="text-slate-300 text-sm">
-            <div className="mb-1">
-              <strong>Approach:</strong> {personalityProfile.approachStrategy}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Approach</div>
+              <div className="text-white text-sm font-bold tracking-tight">{personalityProfile.approachStrategy}</div>
             </div>
-            <div className="mb-1">
-              <strong>Style:</strong> {personalityProfile.communicationStyle}
+            <div className="space-y-1">
+              <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Style</div>
+              <div className="text-white text-sm font-bold tracking-tight">{personalityProfile.communicationStyle}</div>
             </div>
             {personalityProfile.recommendations.length > 0 && (
-              <div>
-                <strong>Key Tip:</strong> {personalityProfile.recommendations[0]}
+              <div className="space-y-1">
+                <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Key Tactic</div>
+                <div className="text-white text-sm font-bold tracking-tight">{personalityProfile.recommendations[0]}</div>
               </div>
             )}
           </div>
