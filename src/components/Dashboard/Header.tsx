@@ -43,7 +43,7 @@ export function Header() {
     .slice(0, 2);
 
   return (
-    <header className="bg-[#151e2e] px-8 py-4 border-b border-[#22304a]">
+    <header className="glass-morphism sticky top-0 z-50 px-8 py-4 border-b border-harx-500/10">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 bg-harx-600 rounded-full flex items-center justify-center shadow-md">
@@ -55,10 +55,10 @@ export function Header() {
         <div className="flex items-center space-x-4">
           <button
             onClick={handleGoToDashboard}
-            className="flex items-center space-x-2 bg-[#22304a] hover:bg-[#2d3e5d] text-slate-200 px-4 py-2 rounded-lg transition-all border border-slate-700/50 group"
+            className="flex items-center space-x-2 bg-harx-500/5 hover:bg-harx-500/10 text-slate-200 px-4 py-2 rounded-lg transition-all border border-harx-500/20 group hover:border-harx-500/40"
             title="Dashboard"
           >
-            <LayoutDashboard size={18} className="group-hover:text-harx-400 transition-colors" />
+            <LayoutDashboard size={18} className="group-hover:text-harx-500 transition-colors" />
             <span className="font-semibold text-sm">Dashboard</span>
           </button>
 
@@ -75,17 +75,17 @@ export function Header() {
           )}
 
           <div className="flex items-center space-x-2 border-l border-slate-700 pl-4">
-            <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Volume">
+            <button className="p-2 hover:bg-harx-500/10 rounded-full transition-colors relative group" title="Volume">
               <Volume2 className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
-            <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Microphone">
+            <button className="p-2 hover:bg-harx-500/10 rounded-full transition-colors relative group" title="Microphone">
               <Mic className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
-            <button className="p-2 hover:bg-slate-800 rounded-full transition-colors relative group" title="Settings">
+            <button className="p-2 hover:bg-harx-500/10 rounded-full transition-colors relative group" title="Settings">
               <Settings className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+              <div className="absolute inset-0 bg-harx-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
 
             <button
@@ -96,14 +96,14 @@ export function Header() {
               <LogOut className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-3 text-slate-200 font-medium ml-2 bg-[#1b253a] px-4 py-2 rounded-xl border border-slate-700/30">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600 shadow-inner">
-                <User size={16} className="text-slate-300" />
+            <div className="flex items-center space-x-3 text-slate-200 font-medium ml-2 glass-card px-4 py-2 rounded-xl border border-harx-500/20">
+              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-harx-500/30 shadow-inner">
+                <User size={16} className="text-harx-500" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-gray-200 leading-tight">{agentName}</span>
                 {profile?.professionalSummary?.currentRole && (
-                  <span className="text-harx-400 text-[9px] font-bold uppercase tracking-wider">
+                  <span className="text-harx-500 text-[9px] font-bold uppercase tracking-wider">
                     {profile.professionalSummary.currentRole.split(' ').slice(0, 3).join(' ')}
                   </span>
                 )}

@@ -25,11 +25,11 @@ const statusColors = {
 const StatusCard: React.FC<StatusCardProps> = ({
   icon, title, value, subtitle, status, expandable, expanded, onToggle, children, disabled, disabledTitle = "Coming Soon"
 }) => (
-  <div className={`relative bg-[#232f47] rounded-xl shadow-lg py-5 px-4 w-full h-full flex flex-col justify-between ${disabled ? 'opacity-50 grayscale-[0.5]' : ''}`}>
+  <div className={`relative glass-card rounded-xl shadow-lg py-5 px-4 w-full h-full flex flex-col justify-between transition-all duration-300 hover:border-harx-500/30 ${disabled ? 'opacity-50 grayscale-[0.5]' : 'harx-glow-hover'}`}>
     {disabled && (
       <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
-        <div className="absolute inset-0 bg-[#1b253a]/40 rounded-xl backdrop-blur-[1px]" />
-        <span className="relative z-20 bg-slate-800/90 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-700 uppercase tracking-widest shadow-xl">
+        <div className="absolute inset-0 bg-harx-500/5 rounded-xl backdrop-blur-[1px]" />
+        <span className="relative z-20 bg-slate-900/90 text-harx-100 text-[10px] font-bold px-2 py-0.5 rounded-full border border-harx-500/20 uppercase tracking-widest shadow-xl">
           {disabledTitle}
         </span>
       </div>

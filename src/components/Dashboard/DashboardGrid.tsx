@@ -219,24 +219,24 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-7 flex flex-col space-y-6">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
                 Coming Soon
               </div>
             </div>
-            <div className="bg-[#232f47] rounded-xl p-8 flex flex-col h-full shadow-xl border border-slate-700/50 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-xl p-8 flex flex-col h-full shadow-xl border-harx-500/10 opacity-50 grayscale-[0.5]">
               <RealTimeCoaching />
             </div>
           </div>
 
           <div className="relative">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
                 Coming Soon
               </div>
             </div>
-            <div className="bg-[#232f47] rounded-xl p-8 flex flex-col shadow-xl border border-slate-700/50 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-xl p-8 flex flex-col shadow-xl border-harx-500/10 opacity-50 grayscale-[0.5]">
               <CallPhasesDisplay
                 phases={repsPhases as any}
                 isCallActive={state.callState.isActive}
@@ -255,12 +255,12 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-5 h-full">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-              <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+              <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
                 Coming Soon
               </div>
             </div>
-            <div className="bg-[#232f47] rounded-xl p-1 h-full shadow-2xl border border-slate-700/30 opacity-50 grayscale-[0.5]">
+            <div className="glass-card rounded-xl p-1 h-full shadow-2xl border-harx-500/10 opacity-50 grayscale-[0.5]">
               <LiveTranscript />
             </div>
           </div>
@@ -271,20 +271,20 @@ const DashboardGrid: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 mt-6">
         <div className="relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="bg-[#1b253a]/60 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
-            <div className="relative z-20 bg-slate-800/80 text-slate-400 text-xs font-bold px-3 py-1 rounded-full border border-slate-700 shadow-xl uppercase tracking-widest">
+            <div className="bg-harx-500/5 absolute inset-0 rounded-xl backdrop-blur-[1px]" />
+            <div className="relative z-20 bg-slate-900/90 text-harx-100 text-xs font-bold px-3 py-1 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-widest">
               Coming Soon
             </div>
           </div>
-          <div className="bg-[#1b253a] rounded-xl p-8 flex flex-col min-h-[180px] relative border border-slate-800 shadow-inner opacity-50">
+          <div className="glass-card rounded-xl p-8 flex flex-col min-h-[180px] relative border-harx-500/10 shadow-inner opacity-50">
             <div className="relative z-0 h-full flex flex-col">
               <div className="flex items-center mb-4 self-start">
-                <Brain className="text-cyan-400 mr-2" />
+                <Brain className="text-harx-alt-400 mr-2" />
                 <span className="text-lg font-bold text-white tracking-wide">Adaptive Script Prompter</span>
               </div>
               <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-                <FileText className="w-8 h-8 text-slate-500 mb-3" />
-                <div className="text-slate-400 text-sm italic">Script prompter will activate when call starts</div>
+                <FileText className="w-8 h-8 text-harx-500/50 mb-3" />
+                <div className="text-harx-100/50 text-sm italic">Script prompter will activate when call starts</div>
               </div>
             </div>
           </div>
