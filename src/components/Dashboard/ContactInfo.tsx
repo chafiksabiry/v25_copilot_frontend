@@ -32,10 +32,18 @@ export function ContactInfo() {
   const [currentCallSid, setCurrentCallSid] = useState<string | null>(null);
   const isRecordingRef = useRef(false);
 
-  // Synchronize ref with global state
+  // Synchronize recording ref with global state
   useEffect(() => {
     isRecordingRef.current = state.callState.isRecording;
   }, [state.callState.isRecording]);
+
+  // Synchronize volume with active connection
+  useEffect(() => {
+    if (activeConnection && typeof activeConnection.volume === 'function') {
+      console.log('🔊 Setting call volume to:', state.volume);
+      activeConnection.volume(state.volume);
+    }
+  }, [state.volume, activeConnection]);
 
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);

@@ -21,6 +21,7 @@ export interface AgentState {
   // Audio and recording
   isAIListening: boolean;
   audioLevel: number;
+  volume: number;
   mediaStream: MediaStream | null;
 
   // Transcript and conversation
@@ -54,6 +55,7 @@ export type AgentAction =
   | { type: 'UPDATE_CALL_STATE'; callState: Partial<CallState> }
   | { type: 'TOGGLE_AI_LISTENING' }
   | { type: 'UPDATE_AUDIO_LEVEL'; level: number }
+  | { type: 'UPDATE_VOLUME'; volume: number }
   | { type: 'SET_MEDIA_STREAM'; mediaStream: MediaStream | null }
   | { type: 'ADD_TRANSCRIPT_ENTRY'; entry: TranscriptEntry }
   | { type: 'UPDATE_PERSONALITY_PROFILE'; profile: PersonalityProfile }
@@ -78,6 +80,7 @@ const initialState: AgentState = {
   },
   isAIListening: false,
   audioLevel: 0,
+  volume: 1,
   mediaStream: null,
   transcript: [],
   recommendations: [],
@@ -182,6 +185,12 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
       return {
         ...state,
         audioLevel: action.level
+      };
+
+    case 'UPDATE_VOLUME':
+      return {
+        ...state,
+        volume: action.volume
       };
 
     case 'SET_MEDIA_STREAM':

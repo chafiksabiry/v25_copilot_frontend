@@ -37,11 +37,10 @@ const TopStatusBar: React.FC = () => {
   };
 
   // Mute/unmute speaker (output)
-  // Note: This only toggles a local state; actual output mute requires control of an <audio> element
   const handleToggleSpeaker = () => {
-    setIsSpeakerMuted(m => !m);
-    // If you have an <audio> element, you can set its volume or muted property here
-    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
+    const newMuted = !isSpeakerMuted;
+    setIsSpeakerMuted(newMuted);
+    dispatch({ type: 'UPDATE_VOLUME', volume: newMuted ? 0 : 1 });
   };
 
   const handleToggleRecording = async () => {
@@ -177,16 +176,36 @@ const TopStatusBar: React.FC = () => {
         <div className="relative w-full h-full">
           <StatusCard
             icon={<Volume2 size={20} className="text-harx-400" />}
-            title="Audio Level"
+            title="Volume Control"
             value={
-              <div className="w-full">
-                <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
-                  <div
-                    className="bg-harx-400 h-3 rounded-full transition-all duration-100"
-                    style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
-                  ></div>
+              <div className="w-full h-full flex flex-col justify-end pb-1">
+                <div className="relative group/slider mt-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={state.volume}
+                    onChange={(e) => dispatch({ type: 'UPDATE_VOLUME', volume: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-harx-500 hover:accent-harx-400 transition-all"
+                  />
+                  <div 
+                    className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-harx-400 text-[10px] font-black px-2 py-0.5 rounded border border-white/5 opacity-0 group-hover/slider:opacity-100 transition-opacity pointer-events-none shadow-xl"
+                  >
+                    {Math.round(state.volume * 100)}%
+                  </div>
                 </div>
-                <span className="block mt-2 text-harx-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
+                <div className="flex items-center justify-between mt-1 px-1">
+                  <span className="text-[10px] font-black text-harx-400 tracking-tighter uppercase">{Math.round(state.volume * 100)}%</span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div 
+                        key={i} 
+                        className={`w-1 h-3 rounded-full transition-all duration-300 ${state.audioLevel * 5 >= i ? 'bg-harx-500 shadow-[0_0_5px_rgba(255,77,77,0.5)]' : 'bg-slate-700/50'}`} 
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             }
           />
