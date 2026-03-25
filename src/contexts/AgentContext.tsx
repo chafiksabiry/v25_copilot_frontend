@@ -25,6 +25,8 @@ export interface AgentState {
   isMicMuted: boolean;
   isSpeakerMuted: boolean;
   isSpeakerPhone: boolean;
+  availableOutputDevices: MediaDeviceInfo[];
+  selectedOutputDeviceId: string | null;
   mediaStream: MediaStream | null;
 
   // Transcript and conversation
@@ -62,6 +64,8 @@ export type AgentAction =
   | { type: 'TOGGLE_MIC' }
   | { type: 'TOGGLE_SPEAKER' }
   | { type: 'TOGGLE_OUTPUT_MODE' }
+  | { type: 'SET_OUTPUT_DEVICES'; devices: MediaDeviceInfo[] }
+  | { type: 'SELECT_OUTPUT_DEVICE'; deviceId: string }
   | { type: 'SET_MEDIA_STREAM'; mediaStream: MediaStream | null }
   | { type: 'ADD_TRANSCRIPT_ENTRY'; entry: TranscriptEntry }
   | { type: 'UPDATE_PERSONALITY_PROFILE'; profile: PersonalityProfile }
@@ -90,6 +94,8 @@ const initialState: AgentState = {
   isMicMuted: false,
   isSpeakerMuted: false,
   isSpeakerPhone: true,
+  availableOutputDevices: [],
+  selectedOutputDeviceId: null,
   mediaStream: null,
   transcript: [],
   recommendations: [],
@@ -218,6 +224,18 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
       return {
         ...state,
         isSpeakerPhone: !state.isSpeakerPhone
+      };
+
+    case 'SET_OUTPUT_DEVICES':
+      return {
+        ...state,
+        availableOutputDevices: action.devices
+      };
+
+    case 'SELECT_OUTPUT_DEVICE':
+      return {
+        ...state,
+        selectedOutputDeviceId: action.deviceId
       };
 
     case 'SET_MEDIA_STREAM':
