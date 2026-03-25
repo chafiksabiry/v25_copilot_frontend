@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Clock } from 'lucide-react';
 
 interface IntelligenceInsight {
   id: string;
@@ -40,87 +41,98 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
 
   const getTypeColor = (type: IntelligenceInsight['type']) => {
     switch (type) {
-      case 'sentiment': return 'bg-harx-100 text-harx-800';
-      case 'keyword': return 'bg-green-100 text-green-800';
-      case 'action': return 'bg-yellow-100 text-yellow-800';
-      case 'recommendation': return 'bg-harx-alt-100 text-harx-alt-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'sentiment': return 'bg-harx-500/20 text-harx-100 border border-harx-500/20';
+      case 'keyword': return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20';
+      case 'action': return 'bg-amber-500/20 text-amber-400 border border-amber-500/20';
+      case 'recommendation': return 'bg-harx-alt-500/20 text-harx-alt-400 border border-harx-alt-500/20';
+      default: return 'bg-white/5 text-slate-400 border border-white/5';
     }
   };
 
   const getPriorityColor = (priority: IntelligenceInsight['priority']) => {
     switch (priority) {
-      case 'high': return 'border-red-500';
-      case 'medium': return 'border-yellow-500';
-      case 'low': return 'border-green-500';
-      default: return 'border-gray-300';
+      case 'high': return 'border-rose-500/50 shadow-rose-500/5';
+      case 'medium': return 'border-amber-500/50 shadow-amber-500/5';
+      case 'low': return 'border-emerald-500/50 shadow-emerald-500/5';
+      default: return 'border-white/10';
     }
   };
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden relative group">
-      <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/5">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
-            <span className="text-white text-xs font-black">AI</span>
+      <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/2 relative z-10">
+        <div className="flex items-center space-x-4">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/20 border border-harx-500/30">
+            <span className="text-white text-sm font-black tracking-tighter">AI</span>
           </div>
-          <h2 className="text-lg font-black text-white tracking-tight">Intelligence</h2>
-          <span className="bg-harx-500/20 text-harx-400 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-harx-500/20">
-            {insights.length}
+          <div>
+            <h2 className="text-lg font-black text-white tracking-widest uppercase">Intelligence</h2>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Real-time tactical feedback</p>
+          </div>
+          <span className="bg-white/5 text-harx-400 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-white/10 ml-2">
+            {insights.length} Signals
           </span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as any)}
-            className="text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-slate-300 focus:ring-1 focus:ring-harx-500 outline-none transition-all"
+            className="text-[9px] font-black uppercase tracking-[0.2em] bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-slate-300 focus:ring-1 focus:ring-harx-500 outline-none transition-all cursor-pointer hover:bg-white/10"
           >
-            <option value="all" className="bg-slate-900">All</option>
+            <option value="all" className="bg-slate-900">All Signals</option>
             <option value="sentiment" className="bg-slate-900">Sentiment</option>
-            <option value="keyword" className="bg-slate-900">Keywords</option>
-            <option value="action" className="bg-slate-900">Actions</option>
-            <option value="recommendation" className="bg-slate-900">AI Recs</option>
+            <option value="keyword" className="bg-slate-900">Contextual</option>
+            <option value="action" className="bg-slate-900">Execution</option>
+            <option value="recommendation" className="bg-slate-900">Tactics</option>
           </select>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-gray-500 hover:text-gray-700"
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300"
           >
-            {expanded ? '▼' : '▶'}
+            {expanded ? '▲' : '▼'}
           </button>
         </div>
       </div>
 
       {expanded && (
-        <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+        <div className="p-6 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar relative z-10 bg-white/2">
           {filteredInsights.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              No insights available
+            <div className="text-center text-slate-500 py-16 flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/5 opacity-30">
+                <span className="text-3xl">📡</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em]">No Intelligence Signals Identified</p>
             </div>
           ) : (
             filteredInsights.map((insight) => (
               <div
                 key={insight.id}
-                className={`p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all duration-300 relative overflow-hidden group/item ${getPriorityColor(insight.priority)}`}
+                className={`p-5 rounded-2xl border bg-white/5 hover:bg-white/10 cursor-pointer transition-all duration-500 relative overflow-hidden group/item ${getPriorityColor(insight.priority)}`}
                 onClick={() => onInsightClick?.(insight.id)}
               >
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(insight.priority).replace('border-', 'bg-')}`}></div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3 flex-1">
-                    <span className="text-lg">{getTypeIcon(insight.type)}</span>
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${insight.priority === 'high' ? 'bg-rose-500' : insight.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                <div className="flex items-start justify-between relative z-10">
+                  <div className="flex items-start space-x-4 flex-1">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl shadow-inner group-hover/item:scale-110 transition-transform duration-500">
+                        {getTypeIcon(insight.type)}
+                    </div>
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-medium text-sm">{insight.title}</h3>
-                        <span className={`text-xs px-2 py-1 rounded ${getTypeColor(insight.type)}`}>
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-black text-white text-sm tracking-tight capitalize">{insight.title}</h3>
+                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full ${getTypeColor(insight.type)}`}>
                           {insight.type}
                         </span>
-                        <span className="text-xs text-gray-500">
-                          {Math.round(insight.confidence * 100)}% confidence
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                          {Math.round(insight.confidence * 100)}% Match
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{insight.description}</p>
-                      <span className="text-xs text-gray-400">
-                        {new Date(insight.timestamp).toLocaleTimeString()}
-                      </span>
+                      <p className="text-[13px] text-slate-300 font-medium leading-relaxed tracking-tight mb-3 group-hover/item:text-white transition-colors">
+                         {insight.description}
+                      </p>
+                      <div className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] flex items-center">
+                        <Clock className="w-3 h-3 mr-1.5 opacity-50" />
+                        {new Date(insight.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
                   </div>
                   <button
@@ -128,7 +140,7 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
                       e.stopPropagation();
                       onDismiss?.(insight.id);
                     }}
-                    className="text-gray-400 hover:text-gray-600 text-sm"
+                    className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-500 hover:text-white hover:bg-rose-500/20 transition-all"
                   >
                     ×
                   </button>
@@ -140,12 +152,14 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
       )}
 
       {!expanded && insights.length > 0 && (
-        <div className="p-4">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>{getTypeIcon(insights[0].type)}</span>
-            <span>{insights[0].title}</span>
-            <span className="text-gray-400">•</span>
-            <span>{insights.length - 1} more insights</span>
+        <div className="px-6 py-4 bg-white/2 relative z-10">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-white">
+              <span className="text-lg">{getTypeIcon(insights[0].type)}</span>
+              <span className="font-bold tracking-tight">{insights[0].title}</span>
+            </div>
+            <div className="h-1 w-1 rounded-full bg-slate-700"></div>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{insights.length - 1} pending signals in queue</span>
           </div>
         </div>
       )}

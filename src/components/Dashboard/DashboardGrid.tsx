@@ -25,15 +25,15 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-400' },
-  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-400' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-gradient-to-r from-rose-500/20 to-rose-600/20 text-rose-400' },
-  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-gradient-to-r from-harx-500/20 to-harx-alt-500/20 text-harx-400' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-gradient-to-r from-indigo-500/20 to-indigo-600/20 text-indigo-400' },
-  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 text-orange-400' },
-  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-gradient-to-r from-teal-500/20 to-teal-600/20 text-teal-400' },
-  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-gradient-to-r from-slate-500/20 to-slate-600/20 text-slate-400' }
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-white/5 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]' },
+  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-white/5 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-white/5 text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]' },
+  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-white/5 text-amber-400 border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-white/5 text-harx-500 border border-harx-500/30 shadow-[0_0_20px_rgba(255,77,77,0.15)]' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-white/5 text-indigo-400 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]' },
+  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-white/5 text-orange-400 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]' },
+  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-white/5 text-teal-400 border border-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.1)]' },
+  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-white/5 text-slate-400 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' }
 ];
 
 const DashboardGrid: React.FC = () => {
@@ -218,10 +218,10 @@ const DashboardGrid: React.FC = () => {
         {/* Left Column: Phases & Coaching (7 cols) */}
         <div className="col-span-7 flex flex-col space-y-6">
           <div className="relative h-full">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
-                Coming Soon
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
             <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-xl opacity-30 grayscale-[0.8] hover:grayscale-0 transition-all duration-700">
@@ -230,10 +230,10 @@ const DashboardGrid: React.FC = () => {
           </div>
 
           <div className="relative h-[400px]">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
-                Coming Soon
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
             <div className="glass-card rounded-2xl p-8 flex flex-col shadow-xl opacity-30 grayscale-[0.8]">
@@ -254,10 +254,10 @@ const DashboardGrid: React.FC = () => {
         {/* Right Column: Live Transcript (5 cols) */}
         <div className="col-span-5 h-full">
           <div className="relative h-full min-h-[500px]">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
-                Coming Soon
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
             <div className="glass-card rounded-2xl p-2 h-full shadow-2xl opacity-30">

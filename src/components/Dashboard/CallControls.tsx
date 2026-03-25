@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Device } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useCallStorage } from '../../hooks/useCallStorage';
+import { Phone, X } from 'lucide-react';
 
 interface CallControlsProps {
   phoneNumber?: string;
@@ -33,7 +34,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
   onCallSidChange
 }) => {
   const { storeCall } = useCallStorage();
-  const [device, setDevice] = useState<Device | null>(null);
   const [connection, setConnection] = useState<any>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
   const [callSid, setCallSid] = useState<string>('');
@@ -47,10 +47,6 @@ export const CallControls: React.FC<CallControlsProps> = ({
     }
 
     console.log("Starting call initiation...", { phoneNumber, agentId });
-    console.log("Environment variables:", {
-      VITE_API_URL_CALL: import.meta.env.VITE_API_URL_CALL,
-      NODE_ENV: import.meta.env.NODE_ENV
-    });
     
     setIsLoading(true);
     setError('');
@@ -58,31 +54,21 @@ export const CallControls: React.FC<CallControlsProps> = ({
     try {
       const apiUrl = import.meta.env.VITE_API_URL_CALL || 'http://localhost:3000';
       const tokenUrl = `${apiUrl}/api/calls/token`;
-      console.log("Fetching token from:", tokenUrl);
       
       const response = await axios.get<TokenResponse>(tokenUrl);
-      console.log("Response status:", response.status);
-      console.log("Response data:", response.data);
-      
       const token = (response.data as TokenResponse).token;
-      console.log("Token received:", token ? "Token exists" : "No token");
       
       if (!token) {
         throw new Error("No token received from server");
       }
       
-      console.log("Creating Twilio Device...");
       const newDevice = new Device(token, {
         codecPreferences: ['pcmu', 'pcma'] as any,
         edge: ['ashburn', 'dublin', 'sydney']
       });
-      console.log("Device created:", newDevice);
       
-      console.log("Registering device...");
       await newDevice.register();
-      console.log("Device registered successfully");
       
-      console.log("Connecting call...");
       const conn = await newDevice.connect({
         params: { 
           To: phoneNumber,
@@ -100,17 +86,10 @@ export const CallControls: React.FC<CallControlsProps> = ({
           noiseSuppression: true
         }
       } as any);
-      console.log("Connection established:", conn);
 
       setConnection(conn);
-      setDevice(newDevice);
       setCallStatus("initiating");
       onCallStatusChange?.("initiating");
-
-      // Add device event listeners
-      newDevice.on('ready', () => {
-        console.log("Device is ready");
-      });
 
       newDevice.on('error', (error: any) => {
         console.error("Device error:", error);
@@ -119,33 +98,21 @@ export const CallControls: React.FC<CallControlsProps> = ({
         onCallStatusChange?.("error");
       });
 
-      // Connection event listeners
-      conn.on('connect', () => {
-        console.log("Connection event: connect");
-        const callSid = conn.parameters?.CallSid;
-        console.log("CallSid:", callSid);
-      });
-
       conn.on('accept', () => {
         console.log("✅ Call accepted");
         const Sid = conn.parameters?.CallSid;
-        console.log("CallSid recupéré", Sid);
         setCallSid(Sid);
         onCallSidChange?.(Sid);
-        // Set call details in global state
         AIAssistantAPI.setCallDetails(Sid, agentId);
         setCallStatus("active");
         onCallStatusChange?.("active");
       });
 
       conn.on('disconnect', async () => {
-        console.log("Call disconnected");
         setCallStatus("ended");
         onCallStatusChange?.("ended");
         setConnection(null);
-        setDevice(null);
         
-        // Store call in database when it disconnects
         if (callSid && agentId) {
           await storeCall(callSid, agentId);
         }
@@ -158,10 +125,7 @@ export const CallControls: React.FC<CallControlsProps> = ({
         onCallStatusChange?.("error");
       });
 
-      console.log("Call initiation completed successfully");
-
     } catch (err: any) {
-      console.error("Failed to initiate call:", err);
       setError(`Failed to initiate call: ${err.message}`);
       setCallStatus("error");
       onCallStatusChange?.("error");
@@ -174,11 +138,9 @@ export const CallControls: React.FC<CallControlsProps> = ({
     if (connection) {
       connection.disconnect();
       setConnection(null);
-      setDevice(null);
       setCallStatus("ended");
       onCallStatusChange?.("ended");
       
-      // Store call in database when it ends
       if (callSid && agentId) {
         await storeCall(callSid, agentId);
       }
@@ -187,86 +149,88 @@ export const CallControls: React.FC<CallControlsProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'text-green-600';
-      case 'initiating': return 'text-yellow-600';
-      case 'error': return 'text-red-600';
-      case 'ended': return 'text-gray-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return '📞';
-      case 'initiating': return '⏳';
-      case 'error': return '❌';
-      case 'ended': return '📴';
-      default: return '📱';
+      case 'active': return 'text-emerald-400';
+      case 'initiating': return 'text-amber-400';
+      case 'error': return 'text-rose-400';
+      case 'ended': return 'text-slate-500';
+      default: return 'text-slate-500';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Call Controls</h2>
-        <div className="flex items-center space-x-2">
-          <span className={`text-sm font-medium ${getStatusColor(callStatus)}`}>
-            {getStatusIcon(callStatus)} {callStatus}
-          </span>
+    <div className="glass-card rounded-2xl overflow-hidden shadow-2xl border border-white/5 relative group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-harx-500/10 transition-all duration-1000"></div>
+      
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2 relative z-10">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-harx-500/10 rounded-xl">
+             <Phone className="w-5 h-5 text-harx-500" />
+          </div>
+          <h2 className="text-white font-black tracking-widest uppercase">Call Controls</h2>
+        </div>
+        <div className="flex items-center space-x-3 bg-white/5 px-4 py-2 rounded-full border border-white/10 shadow-inner">
+            <div className={`w-2 h-2 rounded-full animate-pulse ${callStatus === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-600'}`}></div>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${getStatusColor(callStatus)}`}>
+                {callStatus}
+            </span>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm">
-          {error}
+        <div className="m-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-[10px] font-black uppercase tracking-widest relative z-10 animate-in fade-in slide-in-from-top-2 duration-500">
+           <span className="opacity-60 mr-2">Signal Error:</span> {error}
         </div>
       )}
 
-      <div className="space-y-3">
-        <div className="flex items-center space-x-2">
-          <label className="text-sm font-medium text-gray-700">Phone Number:</label>
-          <span className="text-sm text-gray-600">{phoneNumber || 'Not set'}</span>
+      <div className="p-6 space-y-6 relative z-10 bg-white/2">
+        <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner group/item hover:bg-white/10 transition-all">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Target Identity</label>
+                <span className="text-white font-bold tracking-tight block truncate">{phoneNumber || 'Awaiting connection...'}</span>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner group/item hover:bg-white/10 transition-all">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Assigned Agent</label>
+                <span className="text-white font-bold tracking-tight block truncate">{agentId || 'Awaiting authentication...'}</span>
+            </div>
         </div>
-
-        <div className="flex items-center space-x-2">
-          <label className="text-sm font-medium text-gray-700">Agent ID:</label>
-          <span className="text-sm text-gray-600">{agentId || 'Not set'}</span>
-        </div>
-
+ 
         {callSid && (
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Call SID:</label>
-            <span className="text-sm text-gray-600 font-mono">{callSid}</span>
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 shadow-inner animate-in zoom-in-95 duration-700">
+            <label className="text-[9px] font-black text-emerald-500 uppercase tracking-widest block mb-1">Twilio Session SID</label>
+            <span className="text-emerald-400 font-mono text-[11px] truncate block opacity-80">{callSid}</span>
           </div>
         )}
 
-        <div className="flex space-x-3 pt-2">
+        <div className="flex space-x-4 pt-2">
           <button
             onClick={initiateCall}
             disabled={isLoading || callStatus === 'active' || callStatus === 'initiating'}
-            className={`px-4 py-2 rounded text-sm font-medium ${
+            className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 shadow-xl active:scale-95 border ${
               isLoading || callStatus === 'active' || callStatus === 'initiating'
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-500 text-white hover:bg-green-600'
+                ? 'bg-slate-800 text-slate-600 border-white/5 cursor-not-allowed shadow-none'
+                : 'bg-gradient-harx text-white border-white/20 shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-1'
             }`}
           >
-            {isLoading ? 'Initiating...' : 'Start Call'}
+            {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2"></div>
+            ) : <Phone className="w-4 h-4 mr-2" />}
+            <span>{isLoading ? 'Connecting...' : 'Start Session'}</span>
           </button>
-
+ 
           <button
             onClick={endCall}
             disabled={!connection || callStatus === 'ended'}
-            className={`px-4 py-2 rounded text-sm font-medium ${
+            className={`flex-1 flex items-center justify-center space-x-2 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 shadow-xl active:scale-95 border ${
               !connection || callStatus === 'ended'
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-red-500 text-white hover:bg-red-600'
+                ? 'bg-slate-800 text-slate-600 border-white/5 cursor-not-allowed shadow-none'
+                : 'bg-rose-600 text-white border-rose-500 shadow-rose-600/20 hover:bg-rose-700 hover:-translate-y-1'
             }`}
           >
-            End Call
+            <X className="w-4 h-4 mr-2" />
+            <span>End Session</span>
           </button>
         </div>
-              </div>
       </div>
+    </div>
   );
 };
-
