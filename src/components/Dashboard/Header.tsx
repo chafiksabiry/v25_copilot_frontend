@@ -68,7 +68,7 @@ export function Header() {
             title="Dashboard"
           >
             <LayoutDashboard size={18} className="group-hover/btn:text-harx-500 transition-colors" />
-            <span className="font-black text-[10px] uppercase tracking-widest">Core Command</span>
+            <span className="font-black text-[10px] uppercase tracking-widest">Dashboard</span>
           </button>
 
           {state.callState.isActive && (
