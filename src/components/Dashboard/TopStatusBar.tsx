@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Play, Headphones } from 'lucide-react';
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
@@ -23,24 +23,37 @@ const TopStatusBar: React.FC = () => {
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
 
-  // Mute/unmute microphone
-  const handleToggleMic = () => {
+  // Synchronize microphone mute with MediaStream
+  useEffect(() => {
     if (state.mediaStream) {
       state.mediaStream.getAudioTracks().forEach(track => {
-        track.enabled = !isMicMuted;
+        track.enabled = !state.isMicMuted;
       });
-      setIsMicMuted(m => !m);
     }
+  }, [state.isMicMuted, state.mediaStream]);
+
+  // Synchronize speaker mute with volume behavior
+  useEffect(() => {
+    if (state.isSpeakerMuted) {
+      // Opt-in behavior: muting the speaker sets app volume to 0
+      if (state.volume !== 0) {
+        dispatch({ type: 'UPDATE_VOLUME', volume: 0 });
+      }
+    } else {
+        // Unmuting restores to 1 if it was 0
+        if (state.volume === 0) {
+            dispatch({ type: 'UPDATE_VOLUME', volume: 1 });
+        }
+    }
+  }, [state.isSpeakerMuted, dispatch]);
+
+  const handleToggleMic = () => {
+    dispatch({ type: 'TOGGLE_MIC' });
   };
 
-  // Mute/unmute speaker (output)
   const handleToggleSpeaker = () => {
-    const newMuted = !isSpeakerMuted;
-    setIsSpeakerMuted(newMuted);
-    dispatch({ type: 'UPDATE_VOLUME', volume: newMuted ? 0 : 1 });
+    dispatch({ type: 'TOGGLE_SPEAKER' });
   };
 
   const handleToggleRecording = async () => {
@@ -252,16 +265,16 @@ const TopStatusBar: React.FC = () => {
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleMic}
-                  aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                  aria-label={state.isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
-                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
+                  {state.isMicMuted ? <MicOff size={20} className="text-rose-400" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
                 <button
-                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
+                  className={`p-3 rounded-lg transition-all ${state.isSpeakerMuted ? 'bg-rose-500/20' : 'bg-[#1b253a] hover:bg-[#22304a]'}`}
                   onClick={handleToggleSpeaker}
-                  aria-label={isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
+                  aria-label={state.isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
                 >
-                  {isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
+                  {state.isSpeakerMuted ? <VolumeX size={20} className="text-rose-400" /> : <Volume2 size={20} className="text-slate-300" />}
                 </button>
               </div>
             </div>

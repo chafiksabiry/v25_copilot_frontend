@@ -1,9 +1,9 @@
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
-import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut } from 'lucide-react';
+import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut, VolumeX, MicOff } from 'lucide-react';
 
 export function Header() {
-  const { state } = useAgent();
+  const { state, dispatch } = useAgent();
   const { profile } = useAgentProfile();
 
   const handleLogout = () => {
@@ -87,12 +87,29 @@ export function Header() {
           )}
 
           <div className="flex items-center space-x-3 border-l border-white/10 pl-5">
-            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border border-transparent hover:border-white/10" title="Volume">
-              <Volume2 className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
+            <button 
+              onClick={() => dispatch({ type: 'TOGGLE_SPEAKER' })}
+              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isSpeakerMuted ? 'bg-rose-500/20 border-rose-500/30' : 'bg-white/5 hover:bg-white/10 border-transparent hover:border-white/10'}`} 
+              title={state.isSpeakerMuted ? "Unmute Speaker" : "Mute Speaker"}
+            >
+              {state.isSpeakerMuted ? (
+                <VolumeX className="w-5 h-5 text-rose-400" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
+              )}
               <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover/icon:opacity-100 rounded-full transition-opacity"></div>
             </button>
-            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border border-transparent hover:border-white/10" title="Microphone">
-              <Mic className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
+
+            <button 
+              onClick={() => dispatch({ type: 'TOGGLE_MIC' })}
+              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isMicMuted ? 'bg-rose-500/20 border-rose-500/30' : 'bg-white/5 hover:bg-white/10 border-transparent hover:border-white/10'}`} 
+              title={state.isMicMuted ? "Unmute Mic" : "Mute Mic"}
+            >
+              {state.isMicMuted ? (
+                <MicOff className="w-5 h-5 text-rose-400" />
+              ) : (
+                <Mic className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
+              )}
               <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover/icon:opacity-100 rounded-full transition-opacity"></div>
             </button>
             <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border border-transparent hover:border-white/10" title="Settings">

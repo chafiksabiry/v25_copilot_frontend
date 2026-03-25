@@ -45,6 +45,14 @@ export function ContactInfo() {
     }
   }, [state.volume, activeConnection]);
 
+  // Synchronize microphone mute with active connection
+  useEffect(() => {
+    if (activeConnection && typeof activeConnection.mute === 'function') {
+      console.log('🎤 Setting call mute to:', state.isMicMuted);
+      activeConnection.mute(state.isMicMuted);
+    }
+  }, [state.isMicMuted, activeConnection]);
+
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);
   const leadId = searchParams.get('leadId');
