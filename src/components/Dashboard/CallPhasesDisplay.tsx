@@ -156,7 +156,7 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
                   onClick={() => onPhaseClick?.(phase.id)}
                 >
                   <div className="flex items-center flex-1 min-w-0">
-                    <span className={`flex items-center justify-center w-10 h-10 mr-4 rounded-xl text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, 'bg-slate-50 ')} border border-slate-100 shadow-inner transition-transform group-hover:scale-110 duration-500`}>
+                    <span className={`flex items-center justify-center w-10 h-10 mr-4 rounded-xl text-lg font-bold ${phase.color?.replace(/bg-[^ ]+ /, 'bg-slate-50 ') || 'bg-slate-50'} border border-slate-100 shadow-inner transition-transform group-hover:scale-110 duration-500`}>
                       {isCompleted ? <span className="text-emerald-600">✓</span> : phase.icon}
                     </span>
                     <span className={`font-black uppercase tracking-widest transition-colors truncate ${isActive ? 'text-slate-900' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`}>

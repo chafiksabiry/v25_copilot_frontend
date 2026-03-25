@@ -29,7 +29,7 @@ const repsPhases = [
   { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm' },
   { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm' },
   { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm' },
-  { id: 'discovery', name: 'Need Discovery', icon: 'bg-amber-50 text-amber-600 border border-amber-100 shadow-sm' },
+  { id: 'discovery', name: 'Need Discovery', icon: '🔍', color: 'bg-amber-50 text-amber-600 border border-amber-100 shadow-sm' },
   { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-pink-50 text-harx-600 border border-pink-100 shadow-sm' },
   { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm' },
   { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-orange-50 text-orange-600 border border-orange-100 shadow-sm' },
