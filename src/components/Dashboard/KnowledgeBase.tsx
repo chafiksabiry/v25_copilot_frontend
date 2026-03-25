@@ -52,10 +52,10 @@ export function KnowledgeBase() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'Compliance': return 'bg-red-600/20 text-red-300';
-      case 'Education': return 'bg-harx-600/20 text-harx-300';
-      case 'Sales': return 'bg-green-600/20 text-green-300';
-      default: return 'bg-slate-600/20 text-slate-300';
+      case 'Compliance': return 'bg-rose-100 text-rose-600 border border-rose-200';
+      case 'Education': return 'bg-blue-100 text-blue-600 border border-blue-200';
+      case 'Sales': return 'bg-emerald-100 text-emerald-600 border border-emerald-200';
+      default: return 'bg-slate-100 text-slate-600 border border-slate-200';
     }
   };
 
@@ -72,24 +72,24 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="bg-[#0a0f1a]/60 backdrop-blur-xl rounded-2xl p-5 relative group overflow-hidden h-full flex flex-col border border-white/10 hover:border-harx-500/30 transition-all duration-500">
-      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-harx-500/10 to-transparent rounded-full blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity"></div>
-      <div className="flex items-center space-x-3 mb-5">
-        <div className="p-2.5 bg-harx-500/10 rounded-xl border border-harx-500/20 shadow-lg shadow-harx-500/5">
-          <BookOpen className="w-5 h-5 text-harx-400" />
+    <div className="glass-card rounded-2xl p-3 relative group overflow-hidden h-full flex flex-col bg-white/80 backdrop-blur-xl border border-pink-100/30 shadow-lg">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="flex items-center space-x-2 mb-3">
+        <div className="p-2 bg-pink-50 rounded-xl border border-pink-100">
+          <BookOpen className="w-5 h-5 text-harx-500" />
         </div>
-        <h3 className="text-lg font-black text-white tracking-[0.1em] uppercase">Knowledge Base</h3>
+        <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Knowledge Base</h3>
       </div>
 
       {/* Search */}
       <div className="relative mb-3">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
           placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3.5 bg-white/[0.04] border border-white/10 rounded-2x text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-harx-500/30 focus:border-harx-500/50 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-inner"
+          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all text-xs font-black uppercase tracking-widest"
         />
       </div>
 
@@ -104,14 +104,14 @@ export function KnowledgeBase() {
           filteredItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-white/10 cursor-pointer group/item"
+              className="bg-white rounded-xl p-3 hover:bg-slate-50 transition-all duration-300 border border-slate-100 hover:border-slate-200 cursor-pointer group/item shadow-sm"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="p-1.5 bg-harx-500/10 rounded-lg text-harx-400">
+                  <div className="p-1.5 bg-pink-50 rounded-lg text-harx-500 border border-pink-100">
                     {getTypeIcon(item.type)}
                   </div>
-                  <h4 className="text-sm font-black text-white truncate group-hover/item:text-harx-400 transition-colors tracking-tight">{item.title}</h4>
+                  <h4 className="text-sm font-black text-slate-900 truncate group-hover/item:text-harx-500 transition-colors tracking-tight">{item.title}</h4>
                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
                     {item.category}
                   </span>
@@ -130,19 +130,19 @@ export function KnowledgeBase() {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-200 leading-relaxed mb-2 line-clamp-2">
+              <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2 italic font-bold">
                 {item.content}
               </p>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-full bg-slate-600 rounded-full h-1">
+                <div className="flex items-center space-x-2 flex-1">
+                  <div className="flex-1 bg-slate-100 rounded-full h-1">
                     <div
-                      className="bg-harx-500 h-1 rounded-full"
+                      className="bg-harx-500 h-1 rounded-full shadow-[0_0_8px_rgba(255,77,77,0.3)]"
                       style={{ width: `${item.relevanceScore}%` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                  <span className="text-[9px] font-black text-slate-400 whitespace-nowrap uppercase tracking-widest">
                     {item.relevanceScore}% match
                   </span>
                 </div>
@@ -153,10 +153,10 @@ export function KnowledgeBase() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-3 pt-3 border-t border-white/5">
+      <div className="mt-3 pt-3 border-t border-slate-100">
         <div className="flex flex-wrap gap-2">
           {['Risk Disclosures', 'Sales Scripts', 'FAQs'].map(tag => (
-            <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-white/5 hover:bg-harx-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-white/5">
+            <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-slate-50 hover:bg-harx-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-slate-200">
               {tag}
             </button>
           ))}

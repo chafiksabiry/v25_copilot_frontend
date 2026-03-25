@@ -26,15 +26,15 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-rose-500/10 text-rose-400 border-rose-500/30' },
-  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-harx-500/20 text-white border-harx-500/50 shadow-[0_0_20px_rgba(255,77,77,0.3)]' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
-  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
-  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
-  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-white/5 text-slate-400 border-white/10' }
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm' },
+  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm' },
+  { id: 'discovery', name: 'Need Discovery', icon: 'bg-amber-50 text-amber-600 border border-amber-100 shadow-sm' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-pink-50 text-harx-600 border border-pink-100 shadow-sm' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm' },
+  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-orange-50 text-orange-600 border border-orange-100 shadow-sm' },
+  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-50 text-teal-600 border border-teal-100 shadow-sm' },
+  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-slate-50 text-slate-500 border border-slate-200 shadow-sm' }
 ];
 
 const DashboardGrid: React.FC = () => {
@@ -56,32 +56,32 @@ const DashboardGrid: React.FC = () => {
   const fullTranscription = transcriptTexts.join(' ');
 
   return (
-    <div className="w-full pb-2 animate-in fade-in duration-1000">
+    <div className="w-full pb-2">
       <div className="grid grid-cols-6 gap-2 my-1 w-full h-[120px]">
         <StatusCard
-          icon={<Brain className="text-harx-alt-400" />}
+          icon={<Brain className="text-harx-alt-500" />}
           title="DISC Profile"
           value={
             <div className="w-full flex flex-col items-center">
               {state.personalityProfile ? (
                 <div className="flex flex-col items-center">
                   <div className="flex gap-2 justify-center mb-2">
-                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'D' ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-500/50'}`}>D</span>
-                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'I' ? 'bg-yellow-400 text-white' : 'bg-yellow-400/20 text-yellow-400/50'}`}>I</span>
-                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'S' ? 'bg-green-500 text-white' : 'bg-green-500/20 text-green-500/50'}`}>S</span>
-                    <span className={`rounded px-2 py-1 font-bold ${state.personalityProfile.primaryType === 'C' ? 'bg-harx-500 text-white' : 'bg-harx-500/20 text-harx-500/50'}`}>C</span>
+                    <span className={`rounded-lg px-3 py-1 font-black text-xs ${state.personalityProfile.primaryType === 'D' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-rose-50 text-rose-500/40 border border-rose-100'}`}>D</span>
+                    <span className={`rounded-lg px-3 py-1 font-black text-xs ${state.personalityProfile.primaryType === 'I' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-orange-50 text-orange-500/40 border border-orange-100'}`}>I</span>
+                    <span className={`rounded-lg px-3 py-1 font-black text-xs ${state.personalityProfile.primaryType === 'S' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-500/40 border border-emerald-100'}`}>S</span>
+                    <span className={`rounded-lg px-3 py-1 font-black text-xs ${state.personalityProfile.primaryType === 'C' ? 'bg-harx-500 text-white shadow-lg shadow-harx-500/20' : 'bg-pink-50 text-harx-500/40 border border-pink-100'}`}>C</span>
                   </div>
-                  <div className="text-white font-bold text-center capitalize">{state.personalityProfile.primaryType} Profile Detected</div>
+                  <div className="text-slate-900 font-black text-[10px] text-center uppercase tracking-widest">{state.personalityProfile.primaryType} Profile Detected</div>
                 </div>
               ) : (
                 <>
                   <div className="flex gap-2 justify-center mb-2">
-                    <span className="bg-red-500/20 text-red-500/50 rounded px-2 py-1 font-bold">D</span>
-                    <span className="bg-yellow-400/20 text-yellow-400/50 rounded px-2 py-1 font-bold">I</span>
-                    <span className="bg-green-500/20 text-green-500/50 rounded px-2 py-1 font-bold">S</span>
-                    <span className="bg-harx-500/20 text-harx-500/50 rounded px-2 py-1 font-bold">C</span>
+                    <span className="bg-rose-50 text-rose-500/40 border border-rose-100 rounded-lg px-3 py-1 font-black text-xs">D</span>
+                    <span className="bg-orange-50 text-orange-500/40 border border-orange-100 rounded-lg px-3 py-1 font-black text-xs">I</span>
+                    <span className="bg-emerald-50 text-emerald-500/40 border border-emerald-100 rounded-lg px-3 py-1 font-black text-xs">S</span>
+                    <span className="bg-pink-50 text-harx-500/40 border border-pink-100 rounded-lg px-3 py-1 font-black text-xs">C</span>
                   </div>
-                  <div className="text-slate-400 text-sm text-center w-full">Start call to analyze</div>
+                  <div className="text-slate-400 text-[8px] font-black uppercase tracking-widest text-center w-full">Start call to analyze</div>
                 </>
               )}
             </div>
@@ -92,64 +92,64 @@ const DashboardGrid: React.FC = () => {
           disabled
         />
         <StatusCard
-          icon={<Radar className="text-cyan-400" />}
+          icon={<Radar className="text-cyan-600" />}
           title="Transaction Progress"
           value={
             <div className="flex flex-col w-full">
-              <span className="text-slate-500 font-bold text-2xl mb-1">0%</span>
-              <span className="text-slate-500 text-sm mb-1">Success Probability</span>
-              <div className="w-full h-2 bg-slate-500/30 rounded-full mb-1">
-                <div className="h-2 rounded-full bg-slate-600" style={{ width: '0%' }} />
+              <span className="text-slate-900 font-black text-2xl mb-1">0%</span>
+              <span className="text-slate-400 text-[8px] font-black uppercase tracking-widest mb-1">Success Probability</span>
+              <div className="w-full h-1.5 bg-slate-100 rounded-full mb-1 border border-slate-200">
+                <div className="h-1.5 rounded-full bg-slate-300" style={{ width: '0%' }} />
               </div>
-              <span className="text-slate-500 text-sm">0% to goal</span>
+              <span className="text-slate-400 text-[8px] font-black uppercase tracking-widest">0% to goal</span>
             </div>
           }
           disabled
         />
 
         <StatusCard
-          icon={<MapPin className="text-cyan-400" />}
+          icon={<MapPin className="text-cyan-600" />}
           title="Call Structure"
           value={
             <div className="flex flex-col items-center justify-center w-full mt-2">
-              <MapPin className="w-10 h-10 text-slate-500 mb-5" />
-              <span className="text-slate-500 text-base text-center">No active methodology</span>
+              <MapPin className="w-10 h-10 text-slate-200 mb-5" />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">No active methodology</span>
             </div>
           }
           disabled
         />
 
         <StatusCard
-          icon={<GraduationCap className="text-harx-400" />}
+          icon={<GraduationCap className="text-harx-500" />}
           title="Coaching"
           value={
             <div className="flex flex-col items-center justify-center w-full mt-2">
-              <GraduationCap className="w-10 h-10 text-slate-500 mb-5" />
-              <span className="text-slate-500 text-base text-center">Start call for coaching</span>
+              <GraduationCap className="w-10 h-10 text-slate-200 mb-5" />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">Start call for coaching</span>
             </div>
           }
           disabled
         />
 
         <StatusCard
-          icon={<Target className="text-cyan-400" />}
+          icon={<Target className="text-cyan-600" />}
           title="Targeting"
           value={
             <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Target className="w-10 h-10 text-slate-500 mb-5" />
-              <span className="text-slate-500 text-base text-center">No transaction goal set</span>
+              <Target className="w-10 h-10 text-slate-200 mb-5" />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">No transaction goal set</span>
             </div>
           }
           disabled
         />
 
         <StatusCard
-          icon={<Lightbulb className="text-yellow-400" />}
+          icon={<Lightbulb className="text-orange-500" />}
           title="Recommendations"
           value={
             <div className="flex flex-col items-center justify-center w-full mt-2">
-              <Lightbulb className="w-10 h-10 text-slate-500 mb-5" />
-              <span className="text-slate-500 text-base text-center">No recommendations yet</span>
+              <Lightbulb className="w-10 h-10 text-slate-200 mb-5" />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">No recommendations yet</span>
             </div>
           }
           disabled
@@ -220,34 +220,24 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-7 flex flex-col space-y-2">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
-                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
-                    Cognitive Analytics Offline
-                  </div>
-                </div>
-                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
-            <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-xl opacity-30 grayscale-[0.8] hover:grayscale-0 transition-all duration-700">
+            <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-lg opacity-40 grayscale-[0.8] hover:grayscale-0 transition-all duration-700 border border-pink-100/30 relative">
               <RealTimeCoaching />
             </div>
           </div>
 
           <div className="relative h-[250px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
-                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
-                    Cognitive Analytics Offline
-                  </div>
-                </div>
-                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
-            <div className="glass-card rounded-2xl p-8 flex flex-col shadow-xl opacity-30 grayscale-[0.8]">
+            <div className="glass-card rounded-2xl p-8 flex flex-col shadow-lg opacity-40 grayscale-[0.8] border border-pink-100/30">
               <CallPhasesDisplay
                 phases={repsPhases as any}
                 isCallActive={state.callState.isActive}
@@ -266,17 +256,12 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-5 h-full">
           <div className="relative h-full min-h-[300px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
-                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
-                    Cognitive Analytics Offline
-                  </div>
-                </div>
-                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
+              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
+                Cognitive Analytics Offline
               </div>
             </div>
-            <div className="glass-card rounded-2xl p-2 h-full shadow-2xl opacity-30">
+            <div className="glass-card rounded-2xl p-2 h-full shadow-lg opacity-40 border border-pink-100/30">
               <LiveTranscript />
             </div>
           </div>
@@ -288,22 +273,22 @@ const DashboardGrid: React.FC = () => {
         {/* Left Column: Script Prompter (7 cols) */}
         <div className="col-span-7 relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="absolute inset-0 bg-[#0a0f1a]/60 backdrop-blur-[3px] rounded-2xl border border-white/5" />
-            <div className="relative z-20 bg-gradient-to-r from-slate-800 to-slate-900 text-slate-400 text-[9px] font-black px-4 py-1.5 rounded-full border border-white/10 shadow-2xl uppercase tracking-[0.3em]">
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-2xl" />
+            <div className="relative z-20 bg-white/90 text-harx-600 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.2em] animate-pulse">
               Coming Soon
             </div>
           </div>
-          <div className="glass-card rounded-2xl p-4 flex flex-col h-full min-h-[220px] relative shadow-inner opacity-30">
+          <div className="glass-card rounded-2xl p-4 flex flex-col h-full min-h-[220px] relative shadow-sm opacity-40 border border-pink-100/30">
             <div className="relative z-0 h-full flex flex-col">
               <div className="flex items-center mb-4 self-start group">
-                <div className="p-2 bg-harx-alt-500/10 rounded-xl mr-3 group-hover:bg-harx-alt-500/20 transition-all">
-                  <Brain className="text-harx-alt-400" />
+                <div className="p-2 bg-harx-alt-500/10 rounded-xl mr-3 group-hover:bg-harx-alt-500/20 transition-all border border-harx-alt-100">
+                  <Brain className="text-harx-alt-500" />
                 </div>
-                <span className="text-sm font-black text-white tracking-widest uppercase">Adaptive Script Prompter</span>
+                <span className="text-sm font-black text-slate-900 tracking-widest uppercase">Adaptive Script Prompter</span>
               </div>
               <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-                <FileText className="w-8 h-8 text-harx-500/30 mb-2" />
-                <div className="text-harx-100/30 text-[10px] font-black uppercase tracking-widest italic text-center">Prompter will activate on connection</div>
+                <FileText className="w-8 h-8 text-pink-200 mb-2" />
+                <div className="text-pink-300 text-[10px] font-black uppercase tracking-widest italic text-center">Prompter will activate on connection</div>
               </div>
             </div>
           </div>
