@@ -16,10 +16,10 @@ function AppContent() {
   return (
     <TranscriptionProvider destinationZone={destinationZone || undefined}>
       <TranscriptionBridge />
-      <div className="min-h-screen bg-mesh-gradient">
+      <div className="min-h-screen bg-mesh-gradient overflow-hidden">
         <Header />
         <div className="max-w-[1800px] mx-auto px-2">
-          <div className="pt-6 pb-2">
+          <div className="pt-2 pb-0">
             <TopStatusBar />
           </div>
           <ContactInfo />

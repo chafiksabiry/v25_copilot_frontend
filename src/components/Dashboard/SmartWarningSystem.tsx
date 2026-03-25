@@ -18,7 +18,7 @@ export const SmartWarningSystem: React.FC = () => {
             {activeWarnings.map(warning => (
                 <div
                     key={warning.id}
-                    className={`p-6 rounded-2xl border shadow-2xl animate-in slide-in-from-right-10 duration-700 glass-card backdrop-blur-3xl relative overflow-hidden group ${warning.severity === 'critical' ? 'border-rose-500/50 shadow-rose-500/10 bg-rose-500/5' :
+                    className={`p-3 rounded-2xl border shadow-2xl animate-in slide-in-from-right-10 duration-700 glass-card backdrop-blur-3xl relative overflow-hidden group ${warning.severity === 'critical' ? 'border-rose-500/50 shadow-rose-500/10 bg-rose-500/5' :
                         warning.severity === 'high' ? 'border-amber-500/50 shadow-amber-500/10 bg-amber-500/5' : 'border-harx-500/50 shadow-harx-500/10 bg-harx-500/5'
                         }`}
                 >
@@ -44,7 +44,7 @@ export const SmartWarningSystem: React.FC = () => {
                         </button>
                     </div>
 
-                    <p className="text-slate-300 text-sm mb-6 leading-relaxed font-bold tracking-tight px-1 relative z-10">
+                    <p className="text-slate-300 text-xs mb-3 leading-tight font-bold tracking-tight px-1 relative z-10">
                         {warning.message}
                     </p>
 
@@ -53,7 +53,7 @@ export const SmartWarningSystem: React.FC = () => {
                             <button
                                 key={idx}
                                 onClick={() => resolveWarning(warning.id)}
-                                className={`px-5 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border active:scale-95 shadow-lg ${warning.severity === 'critical' 
+                                className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border active:scale-95 shadow-lg ${warning.severity === 'critical' 
                                     ? 'bg-rose-500 text-white border-rose-500 shadow-rose-500/20 hover:bg-rose-600' 
                                     : 'bg-white/5 hover:bg-white/10 text-white border-white/10 shadow-sm'}`}
                             >

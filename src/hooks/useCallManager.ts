@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 
 import { useGigPhoneNumber } from './useGigPhoneNumber';
-import { Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
 
 export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'error' | 'call.initiated' | 'call.answered' | 'call.hangup';
 
 export const useCallManager = () => {
-  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,13 +39,13 @@ export const useCallManager = () => {
       setError(null);
     });
 
-    newSocket.on('connect_error', (err) => {
+    newSocket.on('connect_error', (err: Error) => {
       console.error('❌ Socket.IO connection error:', err);
       // Don't set global error immediately to avoid UI disruption on temporary disconnects
       // unless it persists.
     });
 
-    newSocket.on('disconnect', (reason) => {
+    newSocket.on('disconnect', (reason: string) => {
       console.log('🔌 Socket.IO disconnected:', reason);
     });
 
@@ -107,41 +106,6 @@ export const useCallManager = () => {
   }, []);
 
   const initiateCall = useCallback(async (to: string, from: string, agentId: string) => {
-  if (!socketRef.current) {
-    const err = 'Socket not initialized';
-    console.error(err);
-    setError(err);
-    return;
-  }
-
-  try {
-    console.log('📞 Initiating call via Socket.IO:', { to, from, agentId });
-    setError(null);
-    setCallStatus('initiating');
-
-    // Validate gig phone number
-    const phoneData = await checkPhoneNumber();
-    if (!phoneData) {
-      setError('Failed to validate gig phone number');
-      setCallStatus('error');
-      return;
-    }
-
-    // Configure voice feature
-    const voiceConfigured = await configureVoiceFeature(phoneData.number);
-    if (!voiceConfigured) {
-      setError('Failed to configure voice feature');
-      setCallStatus('error');
-      return;
-    }
-
-    // Emit event to backend to start call
-    socketRef.current.emit('initiate-call', { to, from, agentId });
-  } catch (err) {
-    console.error('❌ Error initiating call:', err);
-    setError(err instanceof Error ? err.message : 'Failed to initiate call');
-    setCallStatus('error');
-  }
     if (!socketRef.current) {
       const err = 'Socket not initialized';
       console.error(err);
@@ -154,15 +118,30 @@ export const useCallManager = () => {
       setError(null);
       setCallStatus('initiating');
 
+      // Validate gig phone number
+      const phoneData = await checkPhoneNumber();
+      if (!phoneData) {
+        setError('Failed to validate gig phone number');
+        setCallStatus('error');
+        return;
+      }
+
+      // Configure voice feature
+      const voiceConfigured = await configureVoiceFeature(phoneData.number);
+      if (!voiceConfigured) {
+        setError('Failed to configure voice feature');
+        setCallStatus('error');
+        return;
+      }
+
       // Emit event to backend to start call
       socketRef.current.emit('initiate-call', { to, from, agentId });
-
     } catch (err) {
       console.error('❌ Error initiating call:', err);
       setError(err instanceof Error ? err.message : 'Failed to initiate call');
       setCallStatus('error');
     }
-  }, []);
+  }, [checkPhoneNumber, configureVoiceFeature]);
 
   const endCall = useCallback(async () => {
     if (!currentCallId) {

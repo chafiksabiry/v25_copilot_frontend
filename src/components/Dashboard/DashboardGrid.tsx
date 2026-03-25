@@ -55,8 +55,8 @@ const DashboardGrid: React.FC = () => {
   const fullTranscription = transcriptTexts.join(' ');
 
   return (
-    <div className="w-full pb-8">
-      <div className="grid grid-cols-6 gap-x-6 gap-y-6 my-6 w-full h-[180px]">
+    <div className="w-full pb-2">
+      <div className="grid grid-cols-6 gap-2 my-1 w-full h-[120px]">
         <StatusCard
           icon={<Brain className="text-harx-alt-400" />}
           title="DISC Profile"
@@ -214,9 +214,9 @@ const DashboardGrid: React.FC = () => {
       )}
 
       {/* Featured Real-Time Section */}
-      <div className="grid grid-cols-12 gap-6 mt-6 min-h-[450px]">
+      <div className="grid grid-cols-12 gap-2 mt-1 min-h-[300px]">
         {/* Left Column: Phases & Coaching (7 cols) */}
-        <div className="col-span-7 flex flex-col space-y-6">
+        <div className="col-span-7 flex flex-col space-y-2">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
@@ -229,7 +229,7 @@ const DashboardGrid: React.FC = () => {
             </div>
           </div>
 
-          <div className="relative h-[400px]">
+          <div className="relative h-[250px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
               <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
@@ -253,7 +253,7 @@ const DashboardGrid: React.FC = () => {
 
         {/* Right Column: Live Transcript (5 cols) */}
         <div className="col-span-5 h-full">
-          <div className="relative h-full min-h-[500px]">
+          <div className="relative h-full min-h-[300px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
               <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
@@ -268,7 +268,7 @@ const DashboardGrid: React.FC = () => {
       </div>
 
       {/* Adaptive Script Prompter Overlay/Section */}
-      <div className="grid grid-cols-1 gap-6 mt-6">
+      <div className="grid grid-cols-1 gap-2 mt-2">
         <div className="relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />

@@ -90,7 +90,7 @@ export function QuickActions() {
     <div className="glass-card rounded-2xl overflow-hidden shadow-2xl border border-white/5 relative group h-full flex flex-col">
       <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-harx-500/10 transition-all duration-1000"></div>
       
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2 relative z-10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/2 relative z-10">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-harx-500/10 rounded-xl">
              <Zap className="w-5 h-5 text-harx-500" />
@@ -105,7 +105,7 @@ export function QuickActions() {
         )}
       </div>
  
-      <div className="flex-1 p-6 space-y-6 relative z-10 overflow-y-auto custom-scrollbar bg-white/2">
+      <div className="flex-1 p-3 space-y-2 relative z-10 overflow-y-auto custom-scrollbar bg-white/2">
         {/* Priority Transaction Action */}
         {transactionAction && (
           <div className="p-5 border border-emerald-500/20 bg-emerald-500/5 rounded-2xl shadow-inner animate-in zoom-in-95 duration-700 relative overflow-hidden group/priority">
@@ -132,13 +132,13 @@ export function QuickActions() {
         )}
 
         {/* Standard Quick Actions Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           {quickActions.map((action) => (
             <button
               key={action.id}
               onClick={action.action}
               disabled={!action.enabled}
-              className={`flex flex-col items-center justify-center space-y-3 p-5 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all duration-500 border relative overflow-hidden group/action ${
+              className={`flex flex-col items-center justify-center space-y-1 p-2 rounded-xl font-black text-[8px] uppercase tracking-widest transition-all duration-500 border relative overflow-hidden group/action ${
                 !action.enabled 
                   ? 'bg-slate-800/40 text-slate-600 border-white/5 cursor-not-allowed shadow-none grayscale' 
                   : `hover:scale-[1.05] hover:-translate-y-1 shadow-xl border-white/10 ${action.color.replace('bg-harx-600', 'bg-white/5 hover:bg-white/10 text-white').replace('bg-green-600', 'bg-white/5 hover:bg-white/10 text-white').replace('bg-harx-alt-600', 'bg-white/5 hover:bg-white/10 text-white').replace('bg-orange-600', 'bg-white/5 hover:bg-white/10 text-white').replace('bg-cyan-600', 'bg-white/5 hover:bg-white/10 text-white').replace('bg-slate-600', 'bg-white/5 hover:bg-white/10 text-white')}`

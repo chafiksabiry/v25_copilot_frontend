@@ -43,7 +43,7 @@ export function Header() {
     .slice(0, 2);
 
   return (
-    <header className="glass-card sticky top-0 z-[60] px-8 py-5 border-b border-white/10 backdrop-blur-3xl relative overflow-hidden group">
+    <header className="glass-card sticky top-0 z-[60] px-8 py-2 border-b border-white/10 backdrop-blur-3xl relative overflow-hidden group">
       <div className="absolute inset-0 bg-mesh-gradient opacity-20 group-hover:opacity-30 transition-opacity duration-1000"></div>
       <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center space-x-5">

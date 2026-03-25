@@ -60,7 +60,7 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden relative group">
-      <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/2 relative z-10">
+      <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/2 relative z-10">
         <div className="flex items-center space-x-4">
           <div className="w-10 h-10 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/20 border border-harx-500/30">
             <span className="text-white text-sm font-black tracking-tighter">AI</span>
@@ -95,7 +95,7 @@ export const IntelligenceBar: React.FC<IntelligenceBarProps> = ({
       </div>
 
       {expanded && (
-        <div className="p-6 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar relative z-10 bg-white/2">
+        <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar relative z-10 bg-white/2">
           {filteredInsights.length === 0 ? (
             <div className="text-center text-slate-500 py-16 flex flex-col items-center">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/5 opacity-30">

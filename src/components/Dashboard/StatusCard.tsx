@@ -25,7 +25,7 @@ const statusColors = {
 const StatusCard: React.FC<StatusCardProps> = ({
   icon, title, value, subtitle, status, expandable, expanded, onToggle, children, disabled, disabledTitle = "Coming Soon"
 }) => (
-  <div className={`relative glass-card rounded-2xl shadow-2xl py-6 px-5 w-full h-full flex flex-col justify-between transition-all duration-500 border border-white/5 hover:border-harx-500/30 group ${disabled ? 'opacity-40 grayscale-[0.8]' : 'hover:-translate-y-1'}`}>
+  <div className={`relative glass-card rounded-2xl shadow-2xl py-2 px-3 w-full h-full flex flex-col justify-between transition-all duration-500 border border-white/5 hover:border-harx-500/30 group ${disabled ? 'opacity-40 grayscale-[0.8]' : 'hover:-translate-y-1'}`}>
     {disabled && (
       <div className="absolute inset-0 z-10 flex items-center justify-center p-2 group-hover:opacity-100 opacity-80 transition-opacity duration-500">
         <div className="absolute inset-0 bg-slate-900/60 rounded-2xl backdrop-blur-[2px]" />
@@ -35,11 +35,11 @@ const StatusCard: React.FC<StatusCardProps> = ({
       </div>
     )}
     <div className="flex items-center justify-between relative z-0">
-      <div className="flex items-center space-x-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[18px] border border-white/5 bg-white/5 transition-all duration-500 ${!disabled ? 'group-hover:bg-harx-500/20 group-hover:border-harx-500/40 group-hover:text-harx-400 group-hover:shadow-[0_0_15px_rgba(255,77,77,0.2)]' : ''}`}>
+      <div className="flex items-center space-x-2">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm border border-white/5 bg-white/5 transition-all duration-500 ${!disabled ? 'group-hover:bg-harx-500/20 group-hover:border-harx-500/40 group-hover:text-harx-400 group-hover:shadow-[0_0_15px_rgba(255,77,77,0.2)]' : ''}`}>
           {icon}
         </div>
-        <span className="font-black text-[10px] text-slate-500 uppercase tracking-[0.3em] group-hover:text-slate-300 transition-colors">{title}</span>
+        <span className="font-black text-[9px] text-slate-500 uppercase tracking-widest group-hover:text-slate-300 transition-colors">{title}</span>
       </div>
       {expandable && !disabled && (
         <button className="text-slate-500 hover:text-harx-500 transition-colors" onClick={(e) => { e.stopPropagation(); onToggle?.(); }}>
@@ -48,12 +48,12 @@ const StatusCard: React.FC<StatusCardProps> = ({
       )}
     </div>
     
-    <div className={`font-black mt-5 leading-tight tracking-tight flex-1 flex items-end ${status ? statusColors[status] : 'text-white'}`}>
-        <div className="w-full truncate">{value}</div>
+    <div className={`font-black mt-1 leading-tight tracking-tight flex-1 flex items-end ${status ? statusColors[status] : 'text-white'}`}>
+        <div className="w-full truncate text-sm">{value}</div>
     </div>
     
     {subtitle && (
-      <div className="text-[9px] font-black text-slate-600 mt-3 uppercase tracking-[0.2em] border-t border-white/5 pt-3 group-hover:text-harx-500/60 transition-colors">{subtitle}</div>
+      <div className="text-[8px] font-black text-slate-600 mt-1 uppercase tracking-widest border-t border-white/5 pt-1 group-hover:text-harx-500/60 transition-colors">{subtitle}</div>
     )}
     
     {children && expanded && !disabled && (
