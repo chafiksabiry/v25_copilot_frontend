@@ -27,9 +27,9 @@ export function ContactInfo() {
   const { dispatch, state } = useAgent();
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
-  const [, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
   const [currentCallSid, setCurrentCallSid] = useState<string | null>(null);
+  const deviceRef = useRef<Device | null>(null);
   const isRecordingRef = useRef(false);
 
   // Synchronize recording ref with global state
@@ -52,6 +52,34 @@ export function ContactInfo() {
       activeConnection.mute(state.isMicMuted);
     }
   }, [state.isMicMuted, activeConnection]);
+
+  // Synchronize speaker phone mode with active connection
+  useEffect(() => {
+    const syncOutputDevice = async () => {
+      if (state.availableOutputDevices.length > 0) {
+        const headset = state.availableOutputDevices.find(d => 
+          d.label.toLowerCase().includes('headset') || 
+          d.label.toLowerCase().includes('headphones') || 
+          d.label.toLowerCase().includes('casque') ||
+          d.label.toLowerCase().includes('hands-free')
+        );
+        
+        const speaker = state.availableOutputDevices.find(d => 
+          d.label.toLowerCase().includes('speaker') || 
+          d.label.toLowerCase().includes('haut-parleur') || 
+          d.label.toLowerCase().includes('internal')
+        ) || state.availableOutputDevices[0];
+
+        const targetId = state.isSpeakerPhone ? (speaker?.deviceId || 'default') : (headset?.deviceId || speaker?.deviceId || 'default');
+        
+        if (deviceRef.current && deviceRef.current.audio && typeof deviceRef.current.audio.speakerDevices?.set === 'function') {
+            console.log('🔄 Effect: Switching Twilio output to:', targetId);
+            await deviceRef.current.audio.speakerDevices.set([targetId]);
+        }
+      }
+    };
+    syncOutputDevice();
+  }, [state.isSpeakerPhone, state.availableOutputDevices]);
 
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -225,7 +253,52 @@ export function ContactInfo() {
 
       // Store active connection and device
       setActiveConnection(conn);
-      setActiveDevice(newDevice);
+      deviceRef.current = newDevice;
+
+      // Handle audio output device switching
+      const updateSpeakerDevices = async () => {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const outputDevices = devices.filter(d => d.kind === 'audiooutput');
+          dispatch({ type: 'SET_OUTPUT_DEVICES', devices: outputDevices });
+
+          if (outputDevices.length > 0) {
+            // Try to find headphones/headset for "casque" mode
+            const headset = outputDevices.find(d => 
+              d.label.toLowerCase().includes('headset') || 
+              d.label.toLowerCase().includes('headphones') || 
+              d.label.toLowerCase().includes('casque') ||
+              d.label.toLowerCase().includes('hands-free')
+            );
+            
+            // Auto-detect: if a headset is found and not currently in speakerPhone mode, or if we want to be smart:
+            if (headset && state.isSpeakerPhone) {
+                console.log('🎧 Headset detected at start, switching mode to Headset');
+                dispatch({ type: 'TOGGLE_OUTPUT_MODE' });
+            }
+
+            // Try to find speakers for "haut-parleur" mode
+            const speaker = outputDevices.find(d => 
+              d.label.toLowerCase().includes('speaker') || 
+              d.label.toLowerCase().includes('haut-parleur') || 
+              d.label.toLowerCase().includes('internal')
+            ) || outputDevices[0]; // Fallback to first device
+
+            const targetId = state.isSpeakerPhone ? (speaker?.deviceId || 'default') : (headset?.deviceId || speaker?.deviceId || 'default');
+            
+            console.log(`🔊 Switching output to ${state.isSpeakerPhone ? 'Speaker' : 'Headset'}:`, targetId);
+            
+            if (newDevice.audio && typeof newDevice.audio.speakerDevices?.set === 'function') {
+                await newDevice.audio.speakerDevices.set([targetId]);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to update speaker devices:', err);
+        }
+      };
+
+      // Call immediately and set up effect for future changes
+      updateSpeakerDevices();
 
       // Set up event listeners
       conn.on('connect', () => {
@@ -283,7 +356,7 @@ export function ContactInfo() {
         console.log("Call disconnected");
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
-        setActiveDevice(null);
+        deviceRef.current = null;
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
         // Stop transcription
@@ -302,7 +375,7 @@ export function ContactInfo() {
         console.error("Call error:", error);
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
-        setActiveDevice(null);
+        deviceRef.current = null;
 
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
@@ -327,7 +400,7 @@ export function ContactInfo() {
 
     // Reset call-related states only
     setActiveConnection(null);
-    setActiveDevice(null);
+    deviceRef.current = null;
     setCallStatus('idle'); // Reset to idle instead of 'ended'
     dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
