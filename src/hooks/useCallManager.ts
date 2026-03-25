@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { CallEvent } from '../types/call';
-import { io, Socket } from 'socket.io-client';
+
+
 import { useGigPhoneNumber } from './useGigPhoneNumber';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
@@ -9,13 +9,11 @@ export type CallStatus = 'idle' | 'initiating' | 'in-progress' | 'ended' | 'erro
 
 export const useCallManager = () => {
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
+  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [currentCallId, setCurrentCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-
-  // Use a ref to keep track of the socket instance
   const socketRef = useRef<Socket | null>(null);
-  const { checkPhoneNumber, configureVoiceFeature, isLoading: gigLoading, error: gigError } = useGigPhoneNumber();
+  const { checkPhoneNumber, configureVoiceFeature } = useGigPhoneNumber();
 
   // Établir la connexion WebSocket (Socket.IO)
   useEffect(() => {
@@ -202,7 +200,7 @@ export const useCallManager = () => {
     error,
     initiateCall,
     endCall,
-    mediaStream,
+
     isConnected: socketRef.current?.connected ?? false
   };
 };

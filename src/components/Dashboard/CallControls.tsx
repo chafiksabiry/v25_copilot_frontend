@@ -159,9 +159,9 @@ export const CallControls: React.FC<CallControlsProps> = ({
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden shadow-2xl border border-white/5 relative group">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-harx-500/10 transition-all duration-1000"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-8 -mt-8 pointer-events-none group-hover:bg-harx-500/10 transition-all duration-1000"></div>
       
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2 relative z-10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/2 relative z-10">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-harx-500/10 rounded-xl">
              <Phone className="w-5 h-5 text-harx-500" />
@@ -177,31 +177,31 @@ export const CallControls: React.FC<CallControlsProps> = ({
       </div>
 
       {error && (
-        <div className="m-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-[10px] font-black uppercase tracking-widest relative z-10 animate-in fade-in slide-in-from-top-2 duration-500">
+        <div className="m-3 p-2 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-[10px] font-black uppercase tracking-widest relative z-10 animate-in fade-in slide-in-from-top-2 duration-500">
            <span className="opacity-60 mr-2">Signal Error:</span> {error}
         </div>
       )}
 
       <div className="p-6 space-y-6 relative z-10 bg-white/2">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner group/item hover:bg-white/10 transition-all">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Target Identity</label>
                 <span className="text-white font-bold tracking-tight block truncate">{phoneNumber || 'Awaiting connection...'}</span>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner group/item hover:bg-white/10 transition-all">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-2 shadow-inner group/item hover:bg-white/10 transition-all">
                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Assigned Agent</label>
                 <span className="text-white font-bold tracking-tight block truncate">{agentId || 'Awaiting authentication...'}</span>
             </div>
         </div>
  
         {callSid && (
-          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 shadow-inner animate-in zoom-in-95 duration-700">
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-2 shadow-inner animate-in zoom-in-95 duration-700">
             <label className="text-[9px] font-black text-emerald-500 uppercase tracking-widest block mb-1">Twilio Session SID</label>
             <span className="text-emerald-400 font-mono text-[11px] truncate block opacity-80">{callSid}</span>
           </div>
         )}
 
-        <div className="flex space-x-4 pt-2">
+        <div className="flex space-x-2 pt-2">
           <button
             onClick={initiateCall}
             disabled={isLoading || callStatus === 'active' || callStatus === 'initiating'}
