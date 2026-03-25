@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Play, Headphones } from 'lucide-react';
+import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Headphones } from 'lucide-react';
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
@@ -82,61 +82,61 @@ const TopStatusBar: React.FC = () => {
     <div className="w-full max-w-[1800px] mx-auto px-2 py-1 overflow-x-auto">
       <div className="grid grid-cols-9 gap-1 h-[90px]">
         <StatusCard
-          icon={<PhoneOff size={20} className="text-slate-400" />}
+          icon={<PhoneOff size={18} className="text-slate-400" />}
           title="Call"
           value={state.callState.isActive
-            ? <span className="text-emerald-600 font-semibold">Active</span>
-            : <span className="text-slate-400 font-semibold">Inactive</span>
+            ? <span className="text-emerald-600 font-black uppercase text-[10px]">Active</span>
+            : <span className="text-slate-400 font-black uppercase text-[10px]">Inactive</span>
           }
           expandable
           expanded={callExpanded}
           onToggle={() => setCallExpanded(e => !e)}
         />
         <div className="relative w-full h-full">
-          <div className="absolute inset-x-0 bottom-[-10px] z-20 flex justify-center">
+          <div className="absolute inset-x-0 bottom-[-8px] z-20 flex justify-center">
             {state.callState.isActive && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleToggleRecording();
                 }}
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all shadow-md ${state.callState.isRecording
-                  ? 'bg-rose-500 hover:bg-rose-600 text-white animate-pulse'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
+                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-[8px] font-black transition-all shadow-md active:scale-95 ${state.callState.isRecording
+                  ? 'bg-rose-500 text-white animate-pulse'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                   }`}
               >
-                <Mic size={10} fill={state.callState.isRecording ? "white" : "none"} />
-                <span>{state.callState.isRecording ? 'STOP REC' : 'START REC'}</span>
+                <div className={`w-1 h-1 rounded-full ${state.callState.isRecording ? 'bg-white' : 'bg-rose-500'} mr-1`}></div>
+                <span>{state.callState.isRecording ? 'STOP' : 'REC'}</span>
               </button>
             )}
           </div>
           <StatusCard
-            icon={<CheckSquare size={20} className="text-slate-400" />}
+            icon={<CheckSquare size={18} className="text-slate-400" />}
             title="Recording"
             value={state.callState.isRecording ? (
-              <span className="bg-rose-500 px-3 py-1 rounded-full text-xs font-semibold text-white animate-pulse">RECORDING</span>
+              <span className="text-rose-500 font-black text-[10px] uppercase tracking-widest animate-pulse">Recording...</span>
             ) : state.callState.recordingUrl ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   window.open(state.callState.recordingUrl!, '_blank');
                 }}
-                className="bg-harx-600 hover:bg-harx-700 px-3 py-1 rounded-full text-xs font-semibold text-white flex items-center space-x-1 transition-colors"
+                className="bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-lg text-[9px] font-black text-white flex items-center space-x-1 transition-colors shadow-sm"
               >
-                <Headphones size={12} />
+                <Headphones size={10} />
                 <span>LISTEN</span>
               </button>
             ) : (
-              <span className="bg-slate-100 px-3 py-1 rounded-full text-xs font-semibold text-slate-500 border border-slate-200">STOPPED</span>
+              <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Stopped</span>
             )}
           />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<BarChart2 size={20} className="text-emerald-500" />}
+            icon={<BarChart2 size={18} className="text-emerald-500" />}
             title="Metrics"
-            value={<span className={`${state.callMetrics.overallScore < 50 ? 'text-rose-500' : 'text-emerald-600'} font-extrabold`}>{Math.round(state.callMetrics.overallScore)}%</span>}
-            subtitle={<span>Overall Score</span>}
+            value={<span className={`${state.callMetrics.overallScore < 50 ? 'text-rose-600' : 'text-emerald-600'} font-black text-xl tracking-tighter`}>{Math.round(state.callMetrics.overallScore)}%</span>}
+            subtitle={<span className="text-[8px] font-black uppercase text-slate-400">Efficiency Score</span>}
             status={state.callMetrics.overallScore < 50 ? "danger" : state.callMetrics.overallScore < 80 ? "warning" : "success"}
             expandable
             expanded={metricsExpanded}
@@ -146,17 +146,17 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Brain size={20} className="text-harx-alt-500" />}
+            icon={<Brain size={18} className="text-harx-500" />}
             title="Rep Profile"
             value={agentProfile ? (
-              <span className="text-slate-900 font-bold leading-tight line-clamp-1">
+              <span className="text-slate-900 font-black text-[10px] tracking-widest uppercase truncate block">
                 {agentProfile.personalInfo.name}
               </span>
             ) : (
-              <span className="text-slate-400 font-semibold tracking-tighter">Analyzing...</span>
+              <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Analyzing...</span>
             )}
             subtitle={agentProfile?.professionalSummary?.currentRole && (
-              <span className="text-harx-alt-600 text-[10px] font-bold uppercase truncate block">{agentProfile.professionalSummary.currentRole}</span>
+              <span className="text-harx-500 text-[8px] font-black uppercase tracking-widest truncate block mt-0.5">{agentProfile.professionalSummary.currentRole}</span>
             )}
             expandable
             expanded={profileExpanded}
@@ -165,11 +165,11 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Shield size={20} className={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "text-rose-500" : "text-cyan-600"} />}
+            icon={<Shield size={18} className={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "text-rose-500" : "text-slate-400"} />}
             title="Warnings"
             value={state.smartWarnings.filter(w => !w.resolved).length > 0
-              ? <span className="text-rose-600 font-semibold">{state.smartWarnings.filter(w => !w.resolved).length} Active</span>
-              : <span className="text-emerald-600 font-semibold">All Clear</span>
+              ? <span className="text-rose-600 font-black text-[10px] uppercase tracking-widest">{state.smartWarnings.filter(w => !w.resolved).length} Alerts</span>
+              : <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest">No Alerts</span>
             }
             status={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "danger" : "success"}
             expandable
@@ -179,19 +179,18 @@ const TopStatusBar: React.FC = () => {
           />
         </div>
         <StatusCard
-          icon={<Target size={20} className="text-cyan-600" />}
+          icon={<Target size={18} className="text-slate-400" />}
           title="Transaction"
-          value={<span className="text-rose-600 font-extrabold">0%</span>}
-          subtitle={<span>Success Rate</span>}
-          status="danger"
+          value={<span className="text-slate-300 font-black text-xl tracking-tighter">0%</span>}
+          subtitle={<span className="text-[8px] font-black text-slate-300 uppercase">Success Rate</span>}
           disabled
         />
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Volume2 size={20} className="text-harx-500" />}
-            title="Volume Control"
+            icon={<Volume2 size={18} className="text-harx-500" />}
+            title="Volume"
             value={
-              <div className="w-full h-full flex flex-col justify-end pb-1">
+              <div className="w-full flex flex-col justify-end">
                 <div className="relative group/slider mt-1">
                   <input
                     type="range"
@@ -200,21 +199,16 @@ const TopStatusBar: React.FC = () => {
                     step="0.01"
                     value={state.volume}
                     onChange={(e) => dispatch({ type: 'UPDATE_VOLUME', volume: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-harx-500 hover:accent-harx-400 transition-all border border-slate-200"
+                    className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-harx-500 hover:accent-harx-600 transition-all"
                   />
-                  <div 
-                    className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white text-harx-500 text-[10px] font-black px-2 py-0.5 rounded border border-slate-200 opacity-0 group-hover/slider:opacity-100 transition-opacity pointer-events-none shadow-md"
-                  >
-                    {Math.round(state.volume * 100)}%
-                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-1 px-1">
-                  <span className="text-[10px] font-black text-harx-500 tracking-tighter uppercase">{Math.round(state.volume * 100)}%</span>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{Math.round(state.volume * 100)}%</span>
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <div 
                         key={i} 
-                        className={`w-1 h-3 rounded-full transition-all duration-300 ${state.audioLevel * 5 >= i ? 'bg-harx-500 shadow-[0_0_5px_rgba(255,77,77,0.3)]' : 'bg-slate-200'}`} 
+                        className={`w-1 h-3 rounded-full transition-all duration-300 ${state.audioLevel * 5 >= i ? 'bg-harx-500' : 'bg-slate-100'}`} 
                       />
                     ))}
                   </div>
@@ -225,97 +219,87 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Activity size={20} className={isTranscriptionActive ? "text-emerald-500" : "text-violet-500"} />}
+            icon={<Activity size={18} className={isTranscriptionActive ? "text-emerald-500" : "text-slate-300"} />}
             title="AI Status"
             value={isTranscriptionActive
               ? <div className="flex flex-col">
-                <span className="text-emerald-600 font-semibold">Active ({Math.round(analysisConfidence * 100)}%)</span>
+                <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest">Live ({Math.round(analysisConfidence * 100)}%)</span>
               </div>
-              : <span className="text-slate-400 font-semibold">Idle</span>
+              : <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Waiting</span>
             }
             disabled
           />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<TrendingUp size={20} className="text-orange-500" />}
+            icon={<TrendingUp size={18} className="text-orange-500" />}
             title="Phase"
-            value={<span className="text-orange-600 font-semibold whitespace-nowrap">{state.callState.currentPhase || aiCurrentPhase || 'No active phase'}</span>}
+            value={<span className="text-orange-600 font-black text-[10px] uppercase tracking-widest truncate block">{state.callState.currentPhase || aiCurrentPhase || 'Discovery'}</span>}
             disabled
           />
         </div>
       </div>
       {callExpanded && (
-        <div className="bg-white/80 rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto border border-slate-200 shadow-lg backdrop-blur-xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Call Controls & Recording</h2>
+        <div className="bg-white rounded-3xl mt-4 p-8 w-full max-w-[1800px] mx-auto border border-slate-100 shadow-2xl animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">System Controls & Recording</h2>
             <button
-              className="text-slate-400 hover:text-white text-xl"
+              className="text-slate-400 hover:text-slate-900 transition-colors"
               onClick={() => setCallExpanded(false)}
-              aria-label="Collapse call controls"
             >
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" /></svg>
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
-          <div className="flex gap-x-16">
-            {/* Audio Controls */}
-            <div className="flex-1">
-              <div className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tight">Audio Controls</div>
+          <div className="grid grid-cols-3 gap-8">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+              <div className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Audio Hardware</div>
               <div className="flex space-x-3">
                 <button
-                  className="bg-slate-50 p-3 rounded-lg text-slate-400 hover:bg-slate-100 border border-slate-200"
+                  className={`p-4 rounded-xl transition-all border ${state.isMicMuted ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-200 hover:border-harx-500/30 shadow-sm'}`}
                   onClick={handleToggleMic}
-                  aria-label={state.isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
-                  {state.isMicMuted ? <MicOff size={20} className="text-rose-500" /> : <Mic size={20} className="text-slate-400" />}
+                  {state.isMicMuted ? <MicOff size={24} className="text-rose-500" /> : <Mic size={24} className="text-slate-400" />}
                 </button>
                 <button
-                  className={`p-3 rounded-lg transition-all border ${state.isSpeakerMuted ? 'bg-rose-50 border-rose-100 shadow-sm' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'}`}
+                  className={`p-4 rounded-xl transition-all border ${state.isSpeakerMuted ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-200 hover:border-harx-500/30 shadow-sm'}`}
                   onClick={handleToggleSpeaker}
-                  aria-label={state.isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
                 >
-                  {state.isSpeakerMuted ? <VolumeX size={20} className="text-rose-500" /> : <Volume2 size={20} className="text-slate-400" />}
+                  {state.isSpeakerMuted ? <VolumeX size={24} className="text-rose-500" /> : <Volume2 size={24} className="text-slate-400" />}
                 </button>
               </div>
             </div>
-            {/* Call Status */}
-            <div className="flex-1">
-              <div className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tight">Call Status</div>
+            
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col justify-center items-center text-center">
+              <div className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Signal Status</div>
               {state.callState.isActive ? (
-                <span className="text-emerald-600 font-black uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">Active</span>
+                <div className="flex items-center space-x-2 bg-emerald-500 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20">
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  <span>Transmitting</span>
+                </div>
               ) : (
-                <span className="text-slate-400 font-black uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">Inactive</span>
+                <span className="text-slate-400 font-black uppercase text-[10px] tracking-widest border border-slate-200 px-6 py-2 rounded-xl bg-white shadow-sm">Offline</span>
               )}
             </div>
-            <div className="flex-1">
-              <div className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tight">Recording Status</div>
-              <div className="bg-slate-50 rounded-lg p-4 flex flex-col space-y-3 border border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${state.callState.isRecording ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                    <span className="text-slate-600 font-bold uppercase text-xs tracking-widest">
-                      {state.callState.isRecording ? 'Recording Live' : 'Recording Stopped'}
-                    </span>
-                  </div>
-                  {state.callState.isActive && (
-                    <button
-                      onClick={handleToggleRecording}
-                      className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${state.callState.isRecording
-                        ? 'bg-rose-100 text-rose-600 border border-rose-200 hover:bg-rose-200'
-                        : 'bg-emerald-100 text-emerald-600 border border-emerald-200 hover:bg-emerald-200'
-                        }`}
-                    >
-                      {state.callState.isRecording ? 'STOP' : 'START'}
-                    </button>
-                  )}
+
+            <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl flex flex-col justify-between relative overflow-hidden group/rec">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover/rec:bg-white/10 transition-all duration-700"></div>
+              <div className="text-[10px] font-black text-white/40 mb-4 uppercase tracking-[0.3em] relative z-10">Data Acquisition</div>
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-2.5 h-2.5 rounded-full ${state.callState.isRecording ? 'bg-rose-500 animate-pulse' : 'bg-white/20'}`}></div>
+                  <span className="text-white font-black uppercase text-[10px] tracking-widest">
+                    {state.callState.isRecording ? 'Recording Live' : 'Not Saved'}
+                  </span>
                 </div>
-                {state.callState.recordingUrl && (
+                {state.callState.isActive && (
                   <button
-                    onClick={() => window.open(state.callState.recordingUrl!, '_blank')}
-                    className="flex items-center space-x-2 bg-harx-600 hover:bg-harx-700 text-white px-4 py-2 rounded-lg transition-colors w-full justify-center shadow-md shadow-harx-500/20"
+                    onClick={handleToggleRecording}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${state.callState.isRecording
+                      ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/40'
+                      : 'bg-white text-slate-900 hover:bg-slate-50 shadow-lg shadow-white/20'
+                      }`}
                   >
-                    <Play size={16} fill="white" />
-                    <span className="font-black text-xs uppercase tracking-widest">Play Recording</span>
+                    {state.callState.isRecording ? 'Terminate' : 'Initialize'}
                   </button>
                 )}
               </div>

@@ -18,11 +18,11 @@ export const SmartWarningSystem: React.FC = () => {
             {activeWarnings.map(warning => (
                 <div
                     key={warning.id}
-                    className={`p-3 rounded-2xl border shadow-xl animate-in slide-in-from-right-10 duration-700 glass-card backdrop-blur-3xl relative overflow-hidden group ${warning.severity === 'critical' ? 'border-rose-200 bg-rose-50 shadow-rose-500/5' :
-                        warning.severity === 'high' ? 'border-amber-200 bg-amber-50 shadow-amber-500/5' : 'border-pink-200 bg-pink-50 shadow-harx-500/5'
+                    className={`p-4 rounded-[28px] border shadow-2xl animate-in slide-in-from-right-10 duration-700 bg-white relative overflow-hidden group ${warning.severity === 'critical' ? 'border-rose-100 shadow-rose-500/5' :
+                        warning.severity === 'high' ? 'border-amber-100 shadow-amber-500/5' : 'border-slate-100 shadow-slate-900/5'
                         }`}
                 >
-                    <div className={`absolute top-0 right-0 w-32 h-32 opacity-10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:opacity-20 transition-all duration-1000 ${warning.severity === 'critical' ? 'bg-rose-500' : warning.severity === 'high' ? 'bg-amber-500' : 'bg-harx-500'}`}></div>
+                    <div className={`absolute top-0 right-0 w-32 h-32 opacity-5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:opacity-10 transition-all duration-1000 ${warning.severity === 'critical' ? 'bg-rose-500' : warning.severity === 'high' ? 'bg-amber-500' : 'bg-slate-900'}`}></div>
                     <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3 relative z-10">
                             <div className={`p-1.5 rounded-lg border ${warning.severity === 'critical' ? 'bg-white text-rose-600 border-rose-100' : 'bg-white text-amber-600 border-amber-100'}`}>

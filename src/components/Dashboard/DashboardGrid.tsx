@@ -26,15 +26,15 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm' },
-  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-rose-50 text-rose-600 border border-rose-100 shadow-sm' },
-  { id: 'discovery', name: 'Need Discovery', icon: '🔍', color: 'bg-amber-50 text-amber-600 border border-amber-100 shadow-sm' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-pink-50 text-harx-600 border border-pink-100 shadow-sm' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm' },
-  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-orange-50 text-orange-600 border border-orange-100 shadow-sm' },
-  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-50 text-teal-600 border border-teal-100 shadow-sm' },
-  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-slate-50 text-slate-500 border border-slate-200 shadow-sm' }
+  { id: 'context', name: 'Preparation', icon: '📋', color: 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm' },
+  { id: 'sbam', name: 'Opening', icon: '👥', color: 'bg-slate-900 text-white shadow-lg' },
+  { id: 'legal', name: 'Compliance', icon: '🛡️', color: 'bg-rose-50 text-rose-600 border border-rose-100 shock-sm' },
+  { id: 'discovery', name: 'Discovery', icon: '🔍', color: 'bg-amber-50 text-amber-600 border border-amber-100 shadow-sm' },
+  { id: 'value', name: 'Proposition', icon: '🎯', color: 'bg-harx-500 text-white shadow-lg shadow-harx-500/20' },
+  { id: 'documents', name: 'Quote', icon: '📄', color: 'bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm' },
+  { id: 'objections', name: 'Objections', icon: '⚠️', color: 'bg-orange-50 text-orange-600 border border-orange-100 shadow-sm' },
+  { id: 'closing', name: 'Closing', icon: '🤝', color: 'bg-teal-50 text-teal-600 border border-teal-100 shadow-sm' },
+  { id: 'postcall', name: 'Finish', icon: '✅', color: 'bg-slate-50 text-slate-400 border border-slate-200' }
 ];
 
 const DashboardGrid: React.FC = () => {
@@ -219,25 +219,22 @@ const DashboardGrid: React.FC = () => {
         {/* Left Column: Phases & Coaching (7 cols) */}
         <div className="col-span-7 flex flex-col space-y-2">
           <div className="relative h-full">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
-                Cognitive Analytics Offline
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-3xl">
+              <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] rounded-3xl" />
+              <div className="relative z-20 bg-slate-900/90 text-white text-[9px] font-black px-5 py-2 rounded-xl border border-slate-800 shadow-2xl uppercase tracking-[0.3em] active:scale-95 transition-all">
+                Cognitive Engine Inactive
               </div>
             </div>
-            <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-lg opacity-40 grayscale-[0.8] hover:grayscale-0 transition-all duration-700 border border-pink-100/30 relative">
+            <div className="bg-white rounded-3xl p-6 flex flex-col h-full shadow-[0_4px_25px_rgb(0,0,0,0.02)] opacity-30 border border-slate-100 relative">
               <RealTimeCoaching />
             </div>
           </div>
 
           <div className="relative h-[250px]">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
-                Cognitive Analytics Offline
-              </div>
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-3xl">
+              <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] rounded-3xl" />
             </div>
-            <div className="glass-card rounded-2xl p-8 flex flex-col shadow-lg opacity-40 grayscale-[0.8] border border-pink-100/30">
+            <div className="bg-white rounded-3xl p-6 flex flex-col shadow-[0_4px_25px_rgb(0,0,0,0.02)] opacity-30 border border-slate-100">
               <CallPhasesDisplay
                 phases={repsPhases as any}
                 isCallActive={state.callState.isActive}
@@ -255,13 +252,13 @@ const DashboardGrid: React.FC = () => {
         {/* Right Column: Live Transcript (5 cols) */}
         <div className="col-span-5 h-full">
           <div className="relative h-full min-h-[300px]">
-            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-white/80 text-harx-600 text-[10px] font-black px-5 py-2 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.3em] animate-pulse transform rotate-[-2deg]">
-                Cognitive Analytics Offline
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-3xl">
+              <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] rounded-3xl" />
+              <div className="relative z-20 bg-slate-900/90 text-white text-[9px] font-black px-5 py-2 rounded-xl border border-slate-800 shadow-2xl uppercase tracking-[0.3em]">
+                Waiting for Stream
               </div>
             </div>
-            <div className="glass-card rounded-2xl p-2 h-full shadow-lg opacity-40 border border-pink-100/30">
+            <div className="bg-white rounded-3xl p-4 h-full shadow-[0_4px_25px_rgb(0,0,0,0.02)] opacity-30 border border-slate-100">
               <LiveTranscript />
             </div>
           </div>
@@ -273,22 +270,22 @@ const DashboardGrid: React.FC = () => {
         {/* Left Column: Script Prompter (7 cols) */}
         <div className="col-span-7 relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-2xl" />
-            <div className="relative z-20 bg-white/90 text-harx-600 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-xl uppercase tracking-[0.2em] animate-pulse">
-              Coming Soon
+            <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] rounded-3xl" />
+            <div className="relative z-20 bg-slate-900/90 text-white text-[9px] font-black px-6 py-2 rounded-xl border border-slate-800 shadow-2xl uppercase tracking-[0.3em]">
+              PROMPTER OFFLINE
             </div>
           </div>
-          <div className="glass-card rounded-2xl p-4 flex flex-col h-full min-h-[220px] relative shadow-sm opacity-40 border border-pink-100/30">
+          <div className="bg-white rounded-3xl p-6 flex flex-col h-full min-h-[220px] relative shadow-[0_4px_25px_rgb(0,0,0,0.02)] opacity-30 border border-slate-100">
             <div className="relative z-0 h-full flex flex-col">
-              <div className="flex items-center mb-4 self-start group">
-                <div className="p-2 bg-harx-alt-500/10 rounded-xl mr-3 group-hover:bg-harx-alt-500/20 transition-all border border-harx-alt-100">
-                  <Brain className="text-harx-alt-500" />
+              <div className="flex items-center mb-6 self-start group">
+                <div className="p-3 bg-slate-900 rounded-xl mr-4 shadow-lg">
+                  <FileText size={20} className="text-white" />
                 </div>
-                <span className="text-sm font-black text-slate-900 tracking-widest uppercase">Adaptive Script Prompter</span>
+                <span className="text-sm font-black text-slate-900 tracking-[0.2em] uppercase">Tactical Script Prompter</span>
               </div>
-              <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-                <FileText className="w-8 h-8 text-pink-200 mb-2" />
-                <div className="text-pink-300 text-[10px] font-black uppercase tracking-widest italic text-center">Prompter will activate on connection</div>
+              <div className="flex flex-col items-center justify-center flex-1">
+                <div className="w-16 h-1 w-slate-100 rounded-full mb-4"></div>
+                <div className="text-slate-300 text-[10px] font-black uppercase tracking-widest text-center">Protocol initiation required</div>
               </div>
             </div>
           </div>

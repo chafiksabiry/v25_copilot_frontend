@@ -72,13 +72,13 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="glass-card rounded-2xl p-3 relative group overflow-hidden h-full flex flex-col bg-white/80 backdrop-blur-xl border border-pink-100/30 shadow-lg">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-      <div className="flex items-center space-x-2 mb-3">
-        <div className="p-2 bg-pink-50 rounded-xl border border-pink-100">
-          <BookOpen className="w-5 h-5 text-harx-500" />
+    <div className="bg-white rounded-3xl p-5 relative group overflow-hidden h-full flex flex-col border border-slate-100 shadow-xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-pink-50/20 transition-all duration-1000"></div>
+      <div className="flex items-center space-x-3 mb-5">
+        <div className="p-2.5 bg-slate-900 rounded-xl shadow-lg shadow-slate-900/10">
+          <BookOpen className="w-5 h-5 text-white" />
         </div>
-        <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Knowledge Base</h3>
+        <h3 className="text-lg font-black text-slate-900 tracking-[0.1em] uppercase">Tactical Intelligence</h3>
       </div>
 
       {/* Search */}
@@ -89,7 +89,7 @@ export function KnowledgeBase() {
           placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 transition-all text-xs font-black uppercase tracking-widest"
+          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all text-xs font-black uppercase tracking-widest"
         />
       </div>
 
@@ -108,10 +108,10 @@ export function KnowledgeBase() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="p-1.5 bg-pink-50 rounded-lg text-harx-500 border border-pink-100">
+                  <div className="p-2 bg-slate-50 rounded-xl text-slate-900 border border-slate-100 shadow-sm">
                     {getTypeIcon(item.type)}
                   </div>
-                  <h4 className="text-sm font-black text-slate-900 truncate group-hover/item:text-harx-500 transition-colors tracking-tight">{item.title}</h4>
+                  <h4 className="text-sm font-black text-slate-900 truncate group-hover/item:text-slate-900 transition-colors tracking-tight">{item.title}</h4>
                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
                     {item.category}
                   </span>
@@ -138,7 +138,7 @@ export function KnowledgeBase() {
                 <div className="flex items-center space-x-2 flex-1">
                   <div className="flex-1 bg-slate-100 rounded-full h-1">
                     <div
-                      className="bg-harx-500 h-1 rounded-full shadow-[0_0_8px_rgba(255,77,77,0.3)]"
+                      className="bg-slate-900 h-1.5 rounded-full"
                       style={{ width: `${item.relevanceScore}%` }}
                     />
                   </div>

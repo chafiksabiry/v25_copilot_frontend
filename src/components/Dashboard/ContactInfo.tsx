@@ -7,7 +7,7 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Calendar, Briefcase
+  Phone, Mail, Calendar, Briefcase, Target, MessageSquare
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -86,7 +86,7 @@ export function ContactInfo() {
   const leadId = searchParams.get('leadId');
 
   // Use the hook to fetch lead data
-  const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
+  const { lead: apiLead } = useLead(leadId);
 
   // Populated gig data from lead
   const gig = apiLead?.gigId;
@@ -171,14 +171,6 @@ export function ContactInfo() {
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
   };
 
-  const maskPhone = (phone: string) => {
-    if (!phone) return '';
-    const cleanPhone = phone.replace(/\s+/g, '');
-    if (cleanPhone.startsWith('+')) {
-      return `${cleanPhone.substring(0, 5)}...`;
-    }
-    return `+${cleanPhone.substring(0, 4)}...`;
-  };
 
 
   // Debug: Log contact data whenever it changes
@@ -427,104 +419,85 @@ export function ContactInfo() {
 
 
   return (
-    <div className="relative group">
-      <div className="glass-card rounded-2xl shadow-lg px-4 py-3 flex items-center justify-between mt-1 mb-2 border border-pink-100/50 hover:border-pink-200/50 transition-all duration-700 relative overflow-hidden bg-white/40">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-harx opacity-30"></div>
-        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-harx-500/5 rounded-full blur-3xl group-hover:bg-harx-500/10 transition-all duration-1000"></div>
-        {/* Avatar + Infos */}
-        <div className="flex items-center space-x-6 relative z-10">
-          {leadLoading ? (
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 relative">
-                <div className="absolute inset-0 border-2 border-harx-500/10 rounded-full"></div>
-                <div className="absolute inset-0 border-2 border-transparent border-t-harx-500 rounded-full animate-spin"></div>
-              </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identifying Signal...</span>
+    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group mb-4">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50/50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-pink-50/30 transition-all duration-1000"></div>
+      
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+        <div className="flex items-center space-x-6">
+          <div className="relative group/avatar">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-harx-500 to-harx-alt-500 rounded-2xl opacity-0 group-hover/avatar:opacity-20 blur-sm transition-all duration-500"></div>
+            <div className="relative w-20 h-20 bg-slate-50 border-2 border-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden ring-4 ring-slate-50 transition-transform duration-500 group-hover/avatar:scale-105">
+              {contact.avatar ? (
+                <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-black text-slate-400 leading-none">{contact.name.charAt(0)}</span>
+              )}
             </div>
-          ) : leadError ? (
-            <div className="text-rose-500 text-[10px] font-black uppercase tracking-widest bg-rose-50 px-4 py-2 rounded-xl border border-rose-100">Protocol Error: {leadError}</div>
-          ) : (
-            <>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center p-1 shadow-md shadow-harx-500/10 transform group-hover:rotate-3 transition-transform duration-700">
-                <div className="w-full h-full rounded-[14px] overflow-hidden bg-white flex items-center justify-center border border-white/20">
-                    {contact.avatar ? (
-                    <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
-                    ) : (
-                    <span className="text-slate-400 font-black text-sm tracking-tighter">{contact.name.split(' ').map(n => n[0]).join('')}</span>
-                    )}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-lg font-black text-slate-900 tracking-tight">{contact.name}</span>
-                  <span className="bg-emerald-50 text-emerald-600 text-[8px] px-2 py-0.5 rounded-full font-black border border-emerald-100 uppercase tracking-widest">Priority</span>
-                  {gig && (
-                    <span className="bg-slate-50 text-slate-500 text-[8px] px-2 py-0.5 rounded-full border border-slate-100 flex items-center font-black uppercase tracking-widest shadow-sm">
-                      <Briefcase className="w-3 h-3 mr-1 text-harx-500" />
-                      {gig.title}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2 text-slate-400 text-[9px] font-black uppercase tracking-widest group-hover:text-slate-600 transition-colors">
-                  <div className="p-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                    <Mail className="w-3.5 h-3.5" />
-                  </div>
-                  <span>{contact.email}</span>
-                  <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-                  <span>Score: <span className="text-harx-500">{contact.leadScore}</span></span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-        {/* Bouton Start Call + Tabs */}
-        <div className="flex-1 flex flex-col items-center relative z-10 mx-4">
-          {callStatus === 'active' ? (
-            <button
-              onClick={endCall}
-              className="w-48 flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-500 shadow-lg bg-rose-600 hover:bg-rose-700 text-white hover:-translate-y-1 active:scale-95 border border-rose-500/50 group/call"
-            >
-              <div className="p-1.5 bg-white/20 rounded-lg group-hover/call:rotate-12 transition-transform">
-                <Phone className="w-4 h-4 fill-white" />
-              </div>
-              <span>End Call</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleStartCall}
-              disabled={isCallLoading || callStatus === 'initiating'}
-              className={`w-48 flex items-center justify-center space-x-2 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-500 shadow-xl hover:-translate-y-1 active:scale-95 group/call
-                  ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none' : 'bg-gradient-harx text-white shadow-harx-500/20 border border-white hover:shadow-harx-500/40'}`}
-            >
-              <div className={`p-1.5 rounded-lg transition-all duration-500 ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-200' : 'bg-white/20 group-hover/call:rotate-12 transform'}`}>
-                {isCallLoading || callStatus === 'initiating' ? (
-                    <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                    <Phone className="w-4 h-4 fill-white" />
-                )}
-              </div>
-              <span>{isCallLoading || callStatus === 'initiating' ? 'Wait...' : 'Initiate Call'}</span>
-            </button>
-          )}
-
-          <div className="flex items-center space-x-2 text-slate-400 text-[8px] font-black uppercase tracking-widest mt-1.5 opacity-60 group-hover:opacity-100 transition-opacity duration-700">
-            <div className="p-0.5 bg-slate-50 rounded border border-slate-100">
-                <Phone className="w-2.5 h-2.5" />
-            </div>
-            <span>{maskPhone(contact.phone)}</span>
           </div>
-        </div >
-        {/* Actions à droite */}
-        <div className="flex items-center space-x-2 relative z-10">
-          <button className="bg-slate-50 border border-slate-100 text-slate-400 p-2.5 rounded-xl cursor-not-allowed group-hover:bg-white group-hover:border-slate-200 transition-all duration-500 shadow-sm" title="Schedule Follow-up">
-            <Calendar className="w-4 h-4" />
-          </button>
-          <button className="bg-gradient-harx text-white p-2.5 rounded-xl shadow-lg shadow-harx-500/10 hover:-translate-y-1 active:scale-95 transition-all duration-300 border border-white/20">
-            <Phone className="w-4 h-4 fill-white/20" />
-          </button>
-          <button className="bg-slate-50 border border-slate-100 text-slate-400 p-2.5 rounded-xl cursor-not-allowed group-hover:bg-white group-hover:border-slate-200 transition-all duration-500 shadow-sm" title="Send Briefing">
-            <Mail className="w-4 h-4" />
-          </button>
+          
+          <div className="flex flex-col">
+            <div className="flex items-center space-x-3 mb-2">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">{contact.name}</h2>
+              <span className="px-2.5 py-1 bg-harx-500 text-white text-[8px] font-black uppercase tracking-[0.2em] rounded-lg shadow-md shadow-harx-500/20">
+                Priority
+              </span>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{contact.email}</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{contact.phone}</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-pink-50 px-3 py-1.5 rounded-xl border border-pink-100">
+                <Target className="w-3.5 h-3.5 text-harx-500" />
+                <span className="text-[10px] font-black text-harx-600 uppercase tracking-widest">Score: {contact.leadScore}</span>
+              </div>
+              {gig && (
+                <div className="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl">
+                  <Briefcase className="w-3.5 h-3.5 text-white/50" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{gig.title}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+           {state.callState.isActive ? (
+             <button
+               onClick={endCall}
+               className="flex items-center space-x-3 bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/20 active:scale-95 group/call"
+             >
+               <Phone className="w-5 h-5 animate-pulse" />
+               <span className="font-black text-xs uppercase tracking-[0.2em]">End Session</span>
+             </button>
+           ) : (
+             <button
+               onClick={handleStartCall}
+               disabled={isCallLoading || callStatus === 'initiating'}
+               className={`flex items-center space-x-4 px-10 py-5 rounded-2xl transition-all duration-300 shadow-2xl active:scale-95 group/call
+                 ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-100 text-slate-400' : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-rose-500/30'}`}
+             >
+               {isCallLoading || callStatus === 'initiating' ? (
+                 <div className="w-5 h-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin"></div>
+               ) : (
+                 <Phone className="w-6 h-6 group-hover/call:rotate-12 transition-transform" />
+               )}
+               <span className="font-black text-sm uppercase tracking-[0.3em]">{isCallLoading || callStatus === 'initiating' ? 'Scaling...' : 'Initiate Call'}</span>
+             </button>
+           )}
+           <div className="flex flex-col space-y-2">
+             <button className="p-2.5 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition-all border border-slate-100 rounded-xl shadow-sm">
+               <Calendar className="w-4 h-4" />
+             </button>
+             <button className="p-2.5 bg-white hover:bg-slate-50 text-slate-400 hover:text-harx-500 transition-all border border-slate-100 rounded-xl shadow-sm">
+               <MessageSquare className="w-4 h-4" />
+             </button>
+           </div>
         </div>
       </div>
     </div>

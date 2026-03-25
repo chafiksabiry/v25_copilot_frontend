@@ -16,20 +16,20 @@ export const LiveTranscript: React.FC = () => {
 
     if (!isActive && transcripts.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-12 text-center glass-card border border-pink-100/30 rounded-2xl relative overflow-hidden group shadow-sm bg-white/70">
-                <div className="absolute inset-0 bg-mesh-gradient opacity-30"></div>
-                <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center mb-6 border border-pink-100 group-hover:bg-harx-alt-50 transition-all duration-700 relative z-10 shadow-sm">
-                    <MessageSquare className="w-10 h-10 text-slate-200 group-hover:text-harx-alt-500 transition-all duration-700" />
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-12 text-center bg-white border border-slate-100 rounded-[40px] relative overflow-hidden group shadow-sm">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-pink-50/50 transition-all duration-1000"></div>
+                <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-10 border border-slate-100 group-hover:bg-slate-900 group-hover:border-slate-800 transition-all duration-500 relative z-10 shadow-sm">
+                    <MessageSquare className="w-10 h-10 text-slate-200 group-hover:text-white transition-all duration-500" />
                 </div>
-                <p className="text-xl font-black text-slate-900 tracking-tight uppercase relative z-10">Live Transcription Hub</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 relative z-10">Waiting for live audio stream initialization</p>
+                <p className="text-xl font-black text-slate-900 tracking-tight uppercase relative z-10">Intelligence Stream</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-4 relative z-10">System awaiting audio signal for real-time decoding</p>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full glass-card overflow-hidden shadow-lg border border-pink-100/30 relative group bg-white/80 backdrop-blur-xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-harx-alt-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-harx-alt-500/10 transition-all duration-1000"></div>
+        <div className="flex flex-col h-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 relative group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-pink-50/10 transition-all duration-1000"></div>
             
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 relative z-10">
                 <div className="flex items-center space-x-3">
@@ -62,11 +62,11 @@ export const LiveTranscript: React.FC = () => {
                     <div key={idx} className="flex flex-col space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="flex items-center justify-between px-2">
                             <div className="flex items-center space-x-3">
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${entry.speaker === 'agent' ? 'bg-pink-50 text-harx-500 border-pink-100 shadow-sm' : 'bg-harx-alt-50 text-harx-alt-500 border-harx-alt-100 shadow-sm'}`}>
-                                    <User className="w-4 h-4" />
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all duration-500 ${entry.speaker === 'agent' ? 'bg-slate-900 text-white border-slate-800 shadow-lg' : 'bg-white text-harx-500 border-slate-100 shadow-sm'}`}>
+                                    <User className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    {entry.speaker === 'agent' ? 'Intelligence Hub' : 'External Signal'}
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${entry.speaker === 'agent' ? 'text-slate-900' : 'text-slate-400'}`}>
+                                    {entry.speaker === 'agent' ? 'System Intelligence' : 'Signal Source'}
                                 </span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase italic">

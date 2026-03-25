@@ -25,11 +25,11 @@ const statusColors = {
 const StatusCard: React.FC<StatusCardProps> = ({
   icon, title, value, subtitle, status, expandable, expanded, onToggle, children, disabled, disabledTitle = "Coming Soon"
 }) => (
-  <div className={`relative glass-card rounded-2xl shadow-sm py-2 px-3 w-full h-full flex flex-col justify-between transition-all duration-500 border border-pink-100/30 hover:border-harx-500/30 group ${disabled ? 'opacity-50 grayscale-[0.8]' : 'hover:-translate-y-1 hover:shadow-md'}`}>
+  <div className={`relative bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] py-3 px-4 w-full h-full flex flex-col justify-between transition-all duration-500 border border-slate-100 hover:border-harx-500/20 group ${disabled ? 'opacity-50' : 'hover:-translate-y-1 hover:shadow-md'}`}>
     {disabled && (
       <div className="absolute inset-0 z-10 flex items-center justify-center p-2 group-hover:opacity-100 opacity-80 transition-opacity duration-500">
-        <div className="absolute inset-0 bg-white/60 rounded-2xl backdrop-blur-[2px]" />
-        <span className="relative z-20 bg-white/90 text-harx-500 text-[8px] font-black px-3 py-1 rounded-full border border-harx-500/20 uppercase tracking-[0.2em] shadow-lg transform rotate-[-5deg] group-hover:rotate-0 transition-transform">
+        <div className="absolute inset-0 bg-white/40 rounded-3xl backdrop-blur-[1px]" />
+        <span className="relative z-20 bg-slate-900 text-white text-[8px] font-black px-3 py-1.5 rounded-lg border border-slate-800 uppercase tracking-[0.2em] shadow-xl transform rotate-[-5deg] group-hover:rotate-0 transition-all">
           {disabledTitle}
         </span>
       </div>

@@ -114,16 +114,16 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
   return (
     <div className="flex flex-col space-y-2 p-2 relative">
-      <div className="flex items-center mb-6">
-        <div className="p-2 bg-pink-50 rounded-xl mr-3 border border-pink-100">
-          <span className="text-xl">🧠</span>
+      <div className="flex items-center mb-8">
+        <div className="p-3 bg-slate-900 rounded-xl mr-4 shadow-xl">
+          <span className="text-xl">📊</span>
         </div>
-        <h2 className="text-xl font-black text-slate-900 tracking-widest uppercase">REPS Call Phases</h2>
+        <h2 className="text-xl font-black text-slate-900 tracking-[0.2em] uppercase">Tactical Phases</h2>
         {analysisConfidence > 0 && (
-          <div className="ml-auto flex items-center bg-white border border-slate-200 rounded-full px-3 py-1 shadow-sm">
-            <div className="w-1.5 h-1.5 bg-harx-500 rounded-full mr-2 shadow-[0_0_8px_rgba(255,77,77,0.3)]"></div>
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-              AI Confidence: <span className="text-slate-900">{Math.round(analysisConfidence * 100)}%</span>
+          <div className="ml-auto flex items-center bg-slate-50 border border-slate-100 rounded-full px-4 py-1.5 shadow-sm">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2.5 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
+            <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+              AI Precision: <span className="text-slate-900">{Math.round(analysisConfidence * 100)}%</span>
             </span>
           </div>
         )}
@@ -146,28 +146,27 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
             const status = isActive ? 'in-progress' : (isCompleted ? 'completed' : 'pending');
 
             return (
-              <div key={phase.id} className="relative mb-3 group">
+              <div key={phase.id} className="relative mb-4 group">
                 <div
-                  className={`p-4 rounded-2xl text-sm flex items-center justify-between cursor-pointer transition-all duration-500 shadow-sm
-                  ${isActive ? 'bg-rose-50 border-harx-500/50 border-2 scale-[1.02] shadow-lg' : 'bg-white border border-slate-100 hover:bg-slate-50 hover:border-slate-200'}
-                  ${isCompleted ? 'bg-emerald-50/50' : ''}
-                  relative backdrop-blur-md
+                  className={`p-5 rounded-3xl text-sm flex items-center justify-between cursor-pointer transition-all duration-500 shadow-[0_4px_25px_rgb(0,0,0,0.02)]
+                  ${isActive ? 'bg-slate-900 border-slate-800 border-2 scale-[1.02] shadow-2xl relative z-10' : 'bg-white border border-slate-50 hover:bg-slate-50 hover:border-slate-100'}
+                  ${isCompleted ? 'bg-slate-50/30' : ''}
                 `}
                   onClick={() => onPhaseClick?.(phase.id)}
                 >
                   <div className="flex items-center flex-1 min-w-0">
-                    <span className={`flex items-center justify-center w-10 h-10 mr-4 rounded-xl text-lg font-bold ${phase.color?.replace(/bg-[^ ]+ /, 'bg-slate-50 ') || 'bg-slate-50'} border border-slate-100 shadow-inner transition-transform group-hover:scale-110 duration-500`}>
-                      {isCompleted ? <span className="text-emerald-600">✓</span> : phase.icon}
-                    </span>
-                    <span className={`font-black uppercase tracking-widest transition-colors truncate ${isActive ? 'text-slate-900' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    <div className={`flex items-center justify-center w-12 h-12 mr-5 rounded-2xl text-xl font-bold transition-all duration-500 shadow-sm ${isActive ? 'bg-white/10 text-white' : isCompleted ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
+                      {isCompleted ? '✓' : phase.icon}
+                    </div>
+                    <span className={`font-black uppercase tracking-[0.2em] transition-colors truncate ${isActive ? 'text-white' : isCompleted ? 'text-emerald-600' : 'text-slate-400'}`}>
                       {phase.name}
                     </span>
                   </div>
-                  <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] ml-2 ${isActive ? 'bg-harx-500 text-white animate-pulse' :
-                    isCompleted ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' :
-                      'bg-slate-50 text-slate-400 border border-slate-100'
+                  <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] ml-3 ${isActive ? 'bg-white/10 text-white animate-pulse' :
+                    isCompleted ? 'text-emerald-600 font-black' :
+                      'text-slate-300'
                     }`}>
-                    {isActive ? 'Current Phase' : status === 'completed' ? 'Verified' : 'Pending'}
+                    {isActive ? 'Current' : status === 'completed' ? 'Verified' : 'Pending'}
                   </span>
                 </div>
               </div>
@@ -178,15 +177,15 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* AI Suggestion Section */}
       {isCallActive && nextStepSuggestion && (
-        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-8 shadow-md relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-harx-500/5 rounded-full blur-2xl -mr-12 -mt-12 group-hover:bg-harx-500/10 transition-all duration-1000"></div>
-          <div className="flex items-center mb-4 relative z-10">
-            <div className="p-1.5 bg-white rounded-lg mr-3 border border-pink-100 shadow-sm">
+        <div className="bg-slate-900 rounded-3xl p-8 mb-10 shadow-2xl relative overflow-hidden group border border-slate-800">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none group-hover:bg-white/10 transition-all duration-1000"></div>
+          <div className="flex items-center mb-5 relative z-10">
+            <div className="p-2 bg-white/10 rounded-xl mr-4 border border-white/10">
               <span className="text-xl">💡</span>
             </div>
-            <h3 className="text-[10px] font-black text-harx-500 uppercase tracking-[0.3em]">AI Next Step Strategy</h3>
+            <h3 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Next Step Strategy</h3>
           </div>
-          <p className="text-slate-900 text-base leading-relaxed font-black tracking-tight relative z-10 italic">
+          <p className="text-white text-lg leading-relaxed font-black tracking-tight relative z-10 italic">
             "{nextStepSuggestion}"
           </p>
         </div>
@@ -262,14 +261,14 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
 
       {/* Call Not Active Message */}
       {!isCallActive && (
-        <div className="glass-card rounded-3xl p-16 text-center border border-pink-100/30 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden group shadow-lg">
-          <div className="absolute inset-0 bg-mesh-gradient opacity-30 group-hover:opacity-40 transition-opacity duration-1000"></div>
-          <div className="w-24 h-24 rounded-2xl bg-white flex items-center justify-center mb-8 shadow-xl border border-pink-100 group-hover:bg-harx-500/5 group-hover:border-harx-500/20 transition-all duration-500 relative z-10 transform group-hover:rotate-3">
-            <Phone className="w-12 h-12 text-slate-300 group-hover:text-harx-500 transition-all duration-500" />
+        <div className="bg-white rounded-[40px] p-24 text-center border border-slate-100 flex flex-col items-center justify-center min-h-[450px] relative overflow-hidden group shadow-[0_8px_50px_rgb(0,0,0,0.03)] mx-2">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-pink-50/50 transition-all duration-1000"></div>
+          <div className="w-24 h-24 rounded-3xl bg-slate-50 flex items-center justify-center mb-10 border border-slate-100 group-hover:bg-slate-900 group-hover:border-slate-800 transition-all duration-500 relative z-10 transform group-hover:scale-110 shadow-sm">
+            <Phone className="w-12 h-12 text-slate-300 group-hover:text-white transition-all duration-500" />
           </div>
-          <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight uppercase relative z-10">System Ready</h3>
-          <p className="text-slate-400 text-sm max-w-xs leading-relaxed font-black uppercase tracking-[0.2em] opacity-60 relative z-10 italic">
-            Awaiting active connection signal for live intelligence analysis.
+          <h3 className="text-3xl font-black text-slate-900 mb-6 tracking-tight uppercase relative z-10">Cognitive Hub Ready</h3>
+          <p className="text-slate-400 text-[10px] max-w-sm leading-relaxed font-black uppercase tracking-[0.4em] opacity-60 relative z-10 italic">
+            System awaiting data transmission for live behavioral analysis.
           </p>
         </div>
       )}
