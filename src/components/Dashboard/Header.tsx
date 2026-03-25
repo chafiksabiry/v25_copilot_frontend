@@ -89,24 +89,24 @@ export function Header() {
           <div className="flex items-center space-x-3 border-l border-white/10 pl-5">
             <button 
               onClick={() => dispatch({ type: 'TOGGLE_OUTPUT_MODE' })}
-              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isSpeakerPhone ? 'bg-white/5 hover:bg-white/10 border-transparent hover:border-white/10' : 'bg-harx-500/10 border-harx-500/20'}`} 
+              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isSpeakerPhone ? 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-white/20 shadow-lg shadow-black/20' : 'bg-harx-500/20 border-harx-500/30'}`} 
               title={state.isSpeakerPhone ? "Switch to Headset" : "Switch to Speaker"}
             >
               {state.isSpeakerPhone ? (
                 <Volume2 className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
               ) : (
-                <Headphones className="w-5 h-5 text-harx-400" />
+                <Headphones className="w-5 h-5 text-harx-500" />
               )}
               <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover/icon:opacity-100 rounded-full transition-opacity"></div>
             </button>
 
             <button 
               onClick={() => dispatch({ type: 'TOGGLE_MIC' })}
-              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isMicMuted ? 'bg-rose-500/20 border-rose-500/30' : 'bg-white/5 hover:bg-white/10 border-transparent hover:border-white/10'}`} 
+              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isMicMuted ? 'bg-rose-500/20 border-rose-500/30 shadow-lg shadow-rose-500/10' : 'bg-white/5 hover:bg-white/10 border-white/5 hover:border-white/20'}`} 
               title={state.isMicMuted ? "Unmute Mic" : "Mute Mic"}
             >
               {state.isMicMuted ? (
-                <MicOff className="w-5 h-5 text-rose-400" />
+                <MicOff className="w-5 h-5 text-rose-500" />
               ) : (
                 <Mic className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
               )}
