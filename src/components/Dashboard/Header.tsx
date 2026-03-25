@@ -1,6 +1,6 @@
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
-import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut, MicOff, Headphones } from 'lucide-react';
+import { User, Volume2, Mic, LayoutDashboard, LogOut, MicOff, Headphones } from 'lucide-react';
 
 export function Header() {
   const { state, dispatch } = useAgent();
@@ -110,10 +110,6 @@ export function Header() {
               ) : (
                 <Mic className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
               )}
-              <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover/icon:opacity-100 rounded-full transition-opacity"></div>
-            </button>
-            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border border-transparent hover:border-white/10" title="Settings">
-              <Settings className="w-5 h-5 text-slate-400 group-hover/icon:text-white transition-colors" />
               <div className="absolute inset-0 bg-harx-500/10 blur-xl opacity-0 group-hover/icon:opacity-100 rounded-full transition-opacity"></div>
             </button>
             
