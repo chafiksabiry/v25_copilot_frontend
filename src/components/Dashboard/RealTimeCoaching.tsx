@@ -7,25 +7,25 @@ export const RealTimeCoaching: React.FC = () => {
 
     if (!isActive && !nextStepSuggestion) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500 p-12 text-center glass-card border border-white/5 rounded-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-mesh-gradient opacity-5"></div>
-                <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6 border border-white/10 group-hover:bg-harx-500/10 transition-all duration-700 relative z-10">
-                    <Lightbulb className="w-10 h-10 opacity-20 group-hover:text-harx-400 group-hover:opacity-100 transition-all duration-700" />
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-12 text-center bg-[#0a0f1a]/60 backdrop-blur-xl border border-white/5 rounded-2xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-harx-500/5 to-harx-alt-500/5 opacity-50"></div>
+                <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-6 border border-white/10 group-hover:bg-harx-500/10 group-hover:border-harx-500/20 transition-all duration-700 relative z-10 shadow-2xl">
+                    <Lightbulb className="w-12 h-12 text-slate-500 opacity-20 group-hover:text-harx-400 group-hover:opacity-100 transition-all duration-700" />
                 </div>
-                <p className="text-xl font-black text-white tracking-tight uppercase relative z-10">AI Coaching Hub</p>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 relative z-10">Awaiting conversation stream for live tactical advice</p>
+                <p className="text-2xl font-black text-white tracking-tight uppercase relative z-10">AI Coaching Hub</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-3 relative z-10 opacity-70">Awaiting tactical conversation stream</p>
             </div>
         );
     }
 
     return (
         <div className="flex flex-col h-full glass-card overflow-hidden shadow-2xl border border-white/5 transition-all duration-500 group">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/2">
-                <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-harx-500/10 rounded-xl">
-                        <Lightbulb className="w-5 h-5 text-harx-500" />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-white/[0.04] backdrop-blur-md">
+                <div className="flex items-center space-x-4">
+                    <div className="p-2.5 bg-gradient-to-br from-harx-500/20 to-harx-alt-500/20 rounded-xl border border-harx-500/20 shadow-lg shadow-harx-500/5">
+                        <Lightbulb className="w-5 h-5 text-harx-400" />
                     </div>
-                    <h3 className="text-white font-black tracking-widest uppercase">Real-Time Coaching</h3>
+                    <h3 className="text-white text-base font-black tracking-[0.15em] uppercase">Real-Time Coaching</h3>
                 </div>
                 {analysisConfidence > 0 && (
                     <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full">

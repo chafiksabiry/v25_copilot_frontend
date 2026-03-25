@@ -72,13 +72,13 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="glass-card rounded-2xl p-3 relative group overflow-hidden h-full flex flex-col">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-      <div className="flex items-center space-x-2 mb-3">
-        <div className="p-2 bg-harx-500/10 rounded-xl">
+    <div className="bg-[#0a0f1a]/60 backdrop-blur-xl rounded-2xl p-5 relative group overflow-hidden h-full flex flex-col border border-white/10 hover:border-harx-500/30 transition-all duration-500">
+      <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-harx-500/10 to-transparent rounded-full blur-[80px] -mr-24 -mt-24 pointer-events-none group-hover:opacity-100 opacity-50 transition-opacity"></div>
+      <div className="flex items-center space-x-3 mb-5">
+        <div className="p-2.5 bg-harx-500/10 rounded-xl border border-harx-500/20 shadow-lg shadow-harx-500/5">
           <BookOpen className="w-5 h-5 text-harx-400" />
         </div>
-        <h3 className="text-lg font-black text-white tracking-tight uppercase">Knowledge Base</h3>
+        <h3 className="text-lg font-black text-white tracking-[0.1em] uppercase">Knowledge Base</h3>
       </div>
 
       {/* Search */}
@@ -89,7 +89,7 @@ export function KnowledgeBase() {
           placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-harx-500/50 focus:border-harx-500 transition-all text-xs font-bold uppercase tracking-widest"
+          className="w-full pl-12 pr-4 py-3.5 bg-white/[0.04] border border-white/10 rounded-2x text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-harx-500/30 focus:border-harx-500/50 transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-inner"
         />
       </div>
 

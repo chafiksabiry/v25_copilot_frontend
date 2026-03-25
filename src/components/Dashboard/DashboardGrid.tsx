@@ -26,15 +26,15 @@ const PlaceholderCard = ({ icon, title, subtitle }: { icon: React.ReactNode, tit
 */
 
 const repsPhases = [
-  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-white/5 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]' },
-  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-white/5 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' },
-  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-white/5 text-rose-400 border border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]' },
-  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-white/5 text-amber-400 border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]' },
-  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-white/5 text-harx-500 border border-harx-500/30 shadow-[0_0_20px_rgba(255,77,77,0.15)]' },
-  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-white/5 text-indigo-400 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]' },
-  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-white/5 text-orange-400 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]' },
-  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-white/5 text-teal-400 border border-teal-500/20 shadow-[0_0_15px_rgba(20,184,166,0.1)]' },
-  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-white/5 text-slate-400 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]' }
+  { id: 'context', name: 'Context & Preparation', icon: '📋', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  { id: 'sbam', name: 'SBAM & Opening', icon: '👥', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
+  { id: 'legal', name: 'Legal & Compliance', icon: '🛡️', color: 'bg-rose-500/10 text-rose-400 border-rose-500/30' },
+  { id: 'discovery', name: 'Need Discovery', icon: '💬', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
+  { id: 'value', name: 'Value Proposition', icon: '🎯', color: 'bg-harx-500/20 text-white border-harx-500/50 shadow-[0_0_20px_rgba(255,77,77,0.3)]' },
+  { id: 'documents', name: 'Documents/Quote', icon: '📄', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' },
+  { id: 'objections', name: 'Objection Handling', icon: '⚠️', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
+  { id: 'closing', name: 'Confirmation & Closing', icon: '🤝', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
+  { id: 'postcall', name: 'Post-Call Actions', icon: '✅', color: 'bg-white/5 text-slate-400 border-white/10' }
 ];
 
 const DashboardGrid: React.FC = () => {
@@ -56,7 +56,7 @@ const DashboardGrid: React.FC = () => {
   const fullTranscription = transcriptTexts.join(' ');
 
   return (
-    <div className="w-full pb-2">
+    <div className="w-full pb-2 animate-in fade-in duration-1000">
       <div className="grid grid-cols-6 gap-2 my-1 w-full h-[120px]">
         <StatusCard
           icon={<Brain className="text-harx-alt-400" />}
@@ -220,9 +220,14 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-7 flex flex-col space-y-2">
           <div className="relative h-full">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
-                Cognitive Analytics Offline
+              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
+              <div className="relative z-20 flex flex-col items-center">
+                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
+                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
+                    Cognitive Analytics Offline
+                  </div>
+                </div>
+                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
               </div>
             </div>
             <div className="glass-card rounded-2xl p-8 flex flex-col h-full shadow-xl opacity-30 grayscale-[0.8] hover:grayscale-0 transition-all duration-700">
@@ -232,9 +237,14 @@ const DashboardGrid: React.FC = () => {
 
           <div className="relative h-[250px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
-                Cognitive Analytics Offline
+              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
+              <div className="relative z-20 flex flex-col items-center">
+                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
+                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
+                    Cognitive Analytics Offline
+                  </div>
+                </div>
+                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
               </div>
             </div>
             <div className="glass-card rounded-2xl p-8 flex flex-col shadow-xl opacity-30 grayscale-[0.8]">
@@ -256,9 +266,14 @@ const DashboardGrid: React.FC = () => {
         <div className="col-span-5 h-full">
           <div className="relative h-full min-h-[300px]">
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center overflow-hidden rounded-2xl">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[3px] rounded-2xl" />
-              <div className="relative z-20 bg-slate-900/90 text-harx-500 text-[9px] font-black px-5 py-2 rounded-full border border-harx-500/30 shadow-[0_0_30px_rgba(255,77,77,0.2)] uppercase tracking-[0.3em] animate-pulse transform rotate-[-3deg]">
-                Cognitive Analytics Offline
+              <div className="absolute inset-0 bg-[#0a0f1a]/70 backdrop-blur-[6px] rounded-2xl border border-white/5" />
+              <div className="relative z-20 flex flex-col items-center">
+                <div className="bg-gradient-to-r from-harx-500 to-harx-alt-500 p-[1px] rounded-full shadow-[0_0_40px_rgba(255,77,77,0.3)] animate-pulse">
+                  <div className="bg-[#0a0f1a] text-white text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-[0.4em] transform rotate-[-2deg]">
+                    Cognitive Analytics Offline
+                  </div>
+                </div>
+                <div className="mt-3 text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-60">Requires Live Stream</div>
               </div>
             </div>
             <div className="glass-card rounded-2xl p-2 h-full shadow-2xl opacity-30">
@@ -273,8 +288,8 @@ const DashboardGrid: React.FC = () => {
         {/* Left Column: Script Prompter (7 cols) */}
         <div className="col-span-7 relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
-            <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
+            <div className="absolute inset-0 bg-[#0a0f1a]/60 backdrop-blur-[3px] rounded-2xl border border-white/5" />
+            <div className="relative z-20 bg-gradient-to-r from-slate-800 to-slate-900 text-slate-400 text-[9px] font-black px-4 py-1.5 rounded-full border border-white/10 shadow-2xl uppercase tracking-[0.3em]">
               Coming Soon
             </div>
           </div>

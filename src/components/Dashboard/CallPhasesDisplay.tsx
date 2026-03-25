@@ -149,9 +149,9 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
               <div key={phase.id} className="relative mb-3 group">
                 <div
                   className={`p-4 rounded-2xl text-sm flex items-center justify-between cursor-pointer transition-all duration-500 shadow-sm
-                  ${isActive ? 'bg-gradient-harx/20 border-harx-500/50 border-2 scale-[1.02] shadow-xl' : 'bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10'}
-                  ${isCompleted ? 'bg-emerald-500/5' : ''}
-                  relative backdrop-blur-md
+                  ${isActive ? 'bg-gradient-harx text-white border-transparent scale-[1.02] shadow-[0_0_30px_rgba(255,77,77,0.4)]' : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'}
+                  ${isCompleted ? 'bg-emerald-500/10 border-emerald-500/20' : ''}
+                  relative backdrop-blur-xl
                 `}
                   onClick={() => onPhaseClick?.(phase.id)}
                 >
@@ -159,15 +159,15 @@ export const CallPhasesDisplay: React.FC<CallPhasesDisplayProps> = ({
                     <span className={`flex items-center justify-center w-10 h-10 mr-4 rounded-xl text-lg font-bold ${phase.color.replace(/bg-[^ ]+ /, 'bg-white/5')} border border-white/5 shadow-inner transition-transform group-hover:scale-110 duration-500`}>
                       {isCompleted ? <span className="text-emerald-400">✓</span> : phase.icon}
                     </span>
-                    <span className={`font-black uppercase tracking-widest transition-colors truncate ${isActive ? 'text-white' : isCompleted ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    <span className={`font-black uppercase tracking-widest transition-colors truncate ${isActive ? 'text-white' : isCompleted ? 'text-emerald-400' : 'text-slate-400'}`}>
                       {phase.name}
                     </span>
                   </div>
-                  <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] ml-2 ${isActive ? 'bg-harx-500 text-white animate-pulse' :
-                    isCompleted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                      'bg-white/5 text-slate-600 border border-white/5'
+                  <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] ml-2 ${isActive ? 'bg-white text-harx-600 shadow-lg' :
+                    isCompleted ? 'bg-emerald-500 text-white shadow-emerald-500/20' :
+                      'bg-white/10 text-slate-500 border border-white/10'
                     }`}>
-                    {isActive ? 'Current Phase' : status === 'completed' ? 'Verified' : 'Pending'}
+                    {isActive ? 'Active Task' : status === 'completed' ? 'Verified' : 'Pending'}
                   </span>
                 </div>
               </div>
