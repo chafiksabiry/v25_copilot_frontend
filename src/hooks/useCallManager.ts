@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 
 import { useGigPhoneNumber } from './useGigPhoneNumber';
+import { Socket } from 'socket.io-client';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL_CALL;
 

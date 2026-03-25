@@ -38,7 +38,7 @@ export function CallMetrics() {
   ];
 
   return (
-    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+    <div className="glass-card rounded-2xl p-3 relative group overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
       <div className="flex items-center space-x-3 mb-6">
         <div className="p-2 bg-emerald-500/10 rounded-xl">
@@ -50,9 +50,9 @@ export function CallMetrics() {
         )}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {/* Overall Score */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/5 group-hover:bg-white/10 transition-colors duration-500">
+        <div className="bg-white/5 rounded-2xl p-2 border border-white/5 group-hover:bg-white/10 transition-colors duration-500">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="p-1.5 bg-yellow-400/10 rounded-lg">
