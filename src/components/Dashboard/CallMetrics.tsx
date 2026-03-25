@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { BarChart3, TrendingUp, Clock, Award } from 'lucide-react';
 

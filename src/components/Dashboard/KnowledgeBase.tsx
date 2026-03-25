@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { useAgent } from '../../contexts/AgentContext';
+import { useState } from 'react';
 import { BookOpen, Search, FileText, HelpCircle, Copy, ExternalLink } from 'lucide-react';
 
 export function KnowledgeBase() {
-  const { state } = useAgent();
   const [searchTerm, setSearchTerm] = useState('');
 
   // Mock knowledge base items
@@ -74,9 +72,9 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+    <div className="glass-card rounded-2xl p-3 relative group overflow-hidden h-full flex flex-col">
       <div className="absolute top-0 right-0 w-32 h-32 bg-harx-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-      <div className="flex items-center space-x-3 mb-6">
+      <div className="flex items-center space-x-2 mb-3">
         <div className="p-2 bg-harx-500/10 rounded-xl">
           <BookOpen className="w-5 h-5 text-harx-400" />
         </div>
@@ -84,7 +82,7 @@ export function KnowledgeBase() {
       </div>
 
       {/* Search */}
-      <div className="relative mb-6">
+      <div className="relative mb-3">
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
@@ -106,7 +104,7 @@ export function KnowledgeBase() {
           filteredItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white/5 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-white/10 cursor-pointer group/item"
+              className="bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-white/10 cursor-pointer group/item"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -155,7 +153,7 @@ export function KnowledgeBase() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-6 pt-6 border-t border-white/5">
+      <div className="mt-3 pt-3 border-t border-white/5">
         <div className="flex flex-wrap gap-2">
           {['Risk Disclosures', 'Sales Scripts', 'FAQs'].map(tag => (
             <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-white/5 hover:bg-harx-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-white/5">

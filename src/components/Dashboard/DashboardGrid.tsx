@@ -10,6 +10,7 @@ import TargetingDetails from './TargetingDetails';
 import RecommendationsDetails from './RecommendationsDetails';
 import { RealTimeCoaching } from './RealTimeCoaching';
 import { LiveTranscript } from './LiveTranscript';
+import { KnowledgeBase } from './KnowledgeBase';
 import { useAgent } from '../../contexts/AgentContext';
 import SmartWarningSystem from './SmartWarningSystem';
 
@@ -267,29 +268,35 @@ const DashboardGrid: React.FC = () => {
         </div>
       </div>
 
-      {/* Adaptive Script Prompter Overlay/Section */}
-      <div className="grid grid-cols-1 gap-2 mt-2">
-        <div className="relative">
+      {/* Bottom Layout: Script Prompter & Knowledge Base */}
+      <div className="grid grid-cols-12 gap-2 mt-2">
+        {/* Left Column: Script Prompter (7 cols) */}
+        <div className="col-span-7 relative">
           <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] rounded-2xl" />
             <div className="relative z-20 bg-slate-900/90 text-harx-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-harx-500/20 shadow-2xl uppercase tracking-[0.2em] animate-pulse">
               Coming Soon
             </div>
           </div>
-          <div className="glass-card rounded-2xl p-8 flex flex-col min-h-[220px] relative shadow-inner opacity-30">
+          <div className="glass-card rounded-2xl p-4 flex flex-col h-full min-h-[220px] relative shadow-inner opacity-30">
             <div className="relative z-0 h-full flex flex-col">
-              <div className="flex items-center mb-6 self-start group">
+              <div className="flex items-center mb-4 self-start group">
                 <div className="p-2 bg-harx-alt-500/10 rounded-xl mr-3 group-hover:bg-harx-alt-500/20 transition-all">
                   <Brain className="text-harx-alt-400" />
                 </div>
-                <span className="text-lg font-black text-white tracking-widest uppercase">Adaptive Script Prompter</span>
+                <span className="text-sm font-black text-white tracking-widest uppercase">Adaptive Script Prompter</span>
               </div>
               <div className="flex flex-col items-center justify-center flex-1 opacity-50">
-                <FileText className="w-10 h-10 text-harx-500/30 mb-4" />
-                <div className="text-harx-100/30 text-xs font-black uppercase tracking-[0.2em] italic">Prompter will activate on connection</div>
+                <FileText className="w-8 h-8 text-harx-500/30 mb-2" />
+                <div className="text-harx-100/30 text-[10px] font-black uppercase tracking-widest italic text-center">Prompter will activate on connection</div>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Right Column: Knowledge Base (5 cols) */}
+        <div className="col-span-5 relative">
+           <KnowledgeBase />
         </div>
       </div>
 
