@@ -56,6 +56,7 @@ export const useAgentProfile = () => {
 
             if (!userId) {
                 console.warn('[useAgentProfile] No userId found in cookies or localStorage');
+                window.location.href = '/auth';
                 return;
             }
 
@@ -81,6 +82,10 @@ export const useAgentProfile = () => {
                 }
             } catch (err: any) {
                 console.error('Error fetching agent profile:', err);
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    window.location.href = '/auth';
+                    return;
+                }
                 setError(err.message);
             } finally {
                 setLoading(false);

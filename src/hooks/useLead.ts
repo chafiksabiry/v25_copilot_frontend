@@ -53,12 +53,15 @@ export const useLead = (leadId: string | null): UseLeadResult => {
     try {
       // Try to get token from localStorage
       const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (!token) {
+        window.location.href = '/auth';
+        return;
       }
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
 
       // Prioritize VITE_API_URL_CALL as it's the standard backend for Copilot
       let apiUrl = import.meta.env.VITE_API_URL_CALL ||
@@ -88,6 +91,10 @@ export const useLead = (leadId: string | null): UseLeadResult => {
       }
     } catch (err: any) {
       console.error('Error fetching lead:', err);
+      if (err.response?.status === 401 || err.response?.status === 403 || err.response?.data?.error === 'Not authorized to access this route') {
+        window.location.href = '/auth';
+        return;
+      }
       setError(err.response?.data?.error || err.message || 'Failed to fetch lead');
       setLead(null);
     } finally {
