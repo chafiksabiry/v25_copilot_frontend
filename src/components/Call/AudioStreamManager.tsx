@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { useAgent } from '../../contexts/AgentContext';
 
 interface AudioStreamProps {
   callId: string | null;
 }
 
 export const AudioStreamManager: React.FC<AudioStreamProps> = ({ callId }) => {
+  const { state } = useAgent();
   const audioContextRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const streamWsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -16,10 +19,16 @@ export const AudioStreamManager: React.FC<AudioStreamProps> = ({ callId }) => {
 
     console.log('🎵 Setting up audio stream for call:', callId);
 
-    // Create AudioContext
+    // Create AudioContext and GainNode
     try {
-      audioContextRef.current = new AudioContext();
-      console.log('✅ AudioContext created');
+      const audioCtx = new AudioContext();
+      audioContextRef.current = audioCtx;
+      
+      const gainNode = audioCtx.createGain();
+      gainNode.connect(audioCtx.destination);
+      gainNodeRef.current = gainNode;
+      
+      console.log('✅ AudioContext and GainNode created');
     } catch (error) {
       console.error('❌ Failed to create AudioContext:', error);
       return;
@@ -54,7 +63,13 @@ export const AudioStreamManager: React.FC<AudioStreamProps> = ({ callId }) => {
         // Create and connect audio node
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
+        
+        // Connect to gain node for volume/mute control
+        if (gainNodeRef.current) {
+          source.connect(gainNodeRef.current);
+        } else {
+          source.connect(audioContextRef.current.destination);
+        }
         
         // Start playing
         console.log('🔊 Playing audio chunk');
@@ -89,6 +104,18 @@ export const AudioStreamManager: React.FC<AudioStreamProps> = ({ callId }) => {
       }
     };
   }, [callId]);
+
+  // Update gain node value when mute state changes
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      console.log(`🔊 Speaker ${state.isSpeakerMuted ? 'muted' : 'unmuted'}`);
+      gainNodeRef.current.gain.setTargetAtTime(
+        state.isSpeakerMuted ? 0 : 1, 
+        audioContextRef.current?.currentTime || 0, 
+        0.01
+      );
+    }
+  }, [state.isSpeakerMuted]);
 
   return null; // This component doesn't render anything visually
 };

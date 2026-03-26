@@ -13,6 +13,11 @@ import {
   WarningSystemState
 } from '../types';
 
+// Add type for Twilio connection and device to avoid 'any' if possible, 
+// though 'any' is used in existing hooks for simplicity
+type TwilioConnection = any;
+type TwilioDevice = any;
+
 // Define the complete agent state interface matching what components expect
 export interface AgentState {
   // Call state
@@ -28,6 +33,8 @@ export interface AgentState {
   availableOutputDevices: MediaDeviceInfo[];
   selectedOutputDeviceId: string | null;
   mediaStream: MediaStream | null;
+  twilioConnection: TwilioConnection | null;
+  twilioDevice: TwilioDevice | null;
 
   // Transcript and conversation
   transcript: TranscriptEntry[];
@@ -67,6 +74,9 @@ export type AgentAction =
   | { type: 'SET_OUTPUT_DEVICES'; devices: MediaDeviceInfo[] }
   | { type: 'SELECT_OUTPUT_DEVICE'; deviceId: string }
   | { type: 'SET_MEDIA_STREAM'; mediaStream: MediaStream | null }
+  | { type: 'SET_TWILIO_CONNECTION'; connection: TwilioConnection; device: TwilioDevice }
+  | { type: 'CLEAR_TWILIO_CONNECTION' }
+  | { type: 'SET_MIC_MUTE'; muted: boolean }
   | { type: 'ADD_TRANSCRIPT_ENTRY'; entry: TranscriptEntry }
   | { type: 'UPDATE_PERSONALITY_PROFILE'; profile: PersonalityProfile }
   | { type: 'ADD_RECOMMENDATION'; recommendation: Recommendation }
@@ -97,6 +107,8 @@ const initialState: AgentState = {
   availableOutputDevices: [],
   selectedOutputDeviceId: null,
   mediaStream: null,
+  twilioConnection: null,
+  twilioDevice: null,
   transcript: [],
   recommendations: [],
   callMetrics: {
@@ -244,6 +256,26 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
         mediaStream: action.mediaStream
       };
 
+    case 'SET_TWILIO_CONNECTION':
+      return {
+        ...state,
+        twilioConnection: action.connection,
+        twilioDevice: action.device
+      };
+
+    case 'CLEAR_TWILIO_CONNECTION':
+      return {
+        ...state,
+        twilioConnection: null,
+        twilioDevice: null
+      };
+
+    case 'SET_MIC_MUTE':
+      return {
+        ...state,
+        isMicMuted: action.muted
+      };
+
     case 'ADD_TRANSCRIPT_ENTRY':
       return {
         ...state,
@@ -358,6 +390,25 @@ const AgentContext = createContext<{
 // Provider component
 export function AgentProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(agentReducer, initialState);
+
+  // Synchronize Microphone Mute with Twilio Connection
+  React.useEffect(() => {
+    if (state.twilioConnection) {
+      if (typeof state.twilioConnection.mute === 'function') {
+        state.twilioConnection.mute(state.isMicMuted);
+        console.log(`🎤 Twilio Microphone ${state.isMicMuted ? 'Muted' : 'Unmuted'}`);
+      }
+    }
+  }, [state.isMicMuted, state.twilioConnection]);
+
+  // Synchronize Speaker Mute with Audio Element
+  React.useEffect(() => {
+    const remoteAudio = document.getElementById('call-audio') as HTMLAudioElement;
+    if (remoteAudio) {
+      remoteAudio.muted = state.isSpeakerMuted;
+      console.log(`🔊 Speaker ${state.isSpeakerMuted ? 'Muted' : 'Unmuted'}`);
+    }
+  }, [state.isSpeakerMuted]);
 
   return (
     <AgentContext.Provider value={{ state, dispatch }}>

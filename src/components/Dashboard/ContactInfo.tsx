@@ -207,9 +207,10 @@ export function ContactInfo() {
       } as any);
       console.log("Connection established:", conn);
 
-      // Store active connection and device
+      // Store active connection and device locally and globally
       setActiveConnection(conn);
       setActiveDevice(newDevice);
+      dispatch({ type: 'SET_TWILIO_CONNECTION', connection: conn, device: newDevice });
 
       // Set up event listeners
       conn.on('connect', () => {
@@ -238,6 +239,13 @@ export function ContactInfo() {
             const stream = conn.getRemoteStream();
             if (stream) {
               dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: stream });
+
+              // Attach remote stream to global call-audio element for speaker control
+              const remoteAudio = document.getElementById('call-audio') as HTMLAudioElement;
+              if (remoteAudio) {
+                remoteAudio.srcObject = stream;
+                console.log('🔊 Remote audio attached to #call-audio');
+              }
 
               // Log de debug pour la transcription
               console.log('🌍 Starting transcription with global context');
@@ -269,6 +277,7 @@ export function ContactInfo() {
         setActiveConnection(null);
         setActiveDevice(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+        dispatch({ type: 'CLEAR_TWILIO_CONNECTION' });
 
         // Stop transcription
         await stopTranscription();
@@ -287,6 +296,7 @@ export function ContactInfo() {
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
         setActiveDevice(null);
+        dispatch({ type: 'CLEAR_TWILIO_CONNECTION' });
 
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
@@ -314,6 +324,7 @@ export function ContactInfo() {
     setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
     dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
+    dispatch({ type: 'CLEAR_TWILIO_CONNECTION' });
 
     // Stop transcription
     await stopTranscription();

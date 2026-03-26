@@ -25,7 +25,8 @@ function AppContent() {
           <ContactInfo />
           <DashboardGrid />
         </div>
-
+        {/* Hidden audio element for Twilio call audio */}
+        <audio id="call-audio" autoPlay style={{ display: 'none' }} />
       </div>
     </TranscriptionProvider>
   );
