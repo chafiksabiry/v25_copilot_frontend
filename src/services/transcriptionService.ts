@@ -560,7 +560,7 @@ export class TranscriptionService {
 
           // Connect the STEREO MERGER to the processor
           currentMerger.connect(currentProcessor);
-          currentProcessor.connect(currentAudioContext.destination);
+          // currentProcessor.connect(currentAudioContext.destination);
 
           let packetCount = 0;
           this.audioProcessor.port.onmessage = (event) => {

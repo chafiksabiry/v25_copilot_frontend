@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import {
   Participant,
   Lead,
@@ -392,21 +392,33 @@ export function AgentProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(agentReducer, initialState);
 
   // Synchronize Microphone Mute with Twilio Connection
-  React.useEffect(() => {
+  useEffect(() => {
     if (state.twilioConnection) {
-      if (typeof state.twilioConnection.mute === 'function') {
-        state.twilioConnection.mute(state.isMicMuted);
-        console.log(`🎤 Twilio Microphone ${state.isMicMuted ? 'Muted' : 'Unmuted'}`);
-      }
+      const applyMute = () => {
+        if (typeof state.twilioConnection.mute === 'function') {
+          state.twilioConnection.mute(state.isMicMuted);
+          console.log(`🎤 Twilio Microphone synchronized: ${state.isMicMuted ? 'Muted' : 'Unmuted'}`);
+        }
+      };
+
+      // Apply immediately and also on 'accept' just in case of race conditions
+      applyMute();
+      state.twilioConnection.on('accept', applyMute);
+      
+      return () => {
+        if (state.twilioConnection) {
+          state.twilioConnection.off('accept', applyMute);
+        }
+      };
     }
   }, [state.isMicMuted, state.twilioConnection]);
 
   // Synchronize Speaker Mute with Audio Element
-  React.useEffect(() => {
+  useEffect(() => {
     const remoteAudio = document.getElementById('call-audio') as HTMLAudioElement;
     if (remoteAudio) {
       remoteAudio.muted = state.isSpeakerMuted;
-      console.log(`🔊 Speaker ${state.isSpeakerMuted ? 'Muted' : 'Unmuted'}`);
+      console.log(`🔊 Speaker synchronized: ${state.isSpeakerMuted ? 'Muted' : 'Unmuted'}`);
     }
   }, [state.isSpeakerMuted]);
 

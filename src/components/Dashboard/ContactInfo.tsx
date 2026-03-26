@@ -31,6 +31,7 @@ export function ContactInfo() {
   const [callStatus, setCallStatus] = useState<string>('idle');
   const [currentCallSid, setCurrentCallSid] = useState<string | null>(null);
   const isRecordingRef = useRef(false);
+  const localStreamRef = useRef<MediaStream | null>(null);
 
   // Synchronize ref with global state
   useEffect(() => {
@@ -253,6 +254,7 @@ export function ContactInfo() {
               // NEW: Capture local microphone stream for full bidirectional transcription
               try {
                 const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStreamRef.current = localStream;
                 console.log('🎤 Local microphone captured for bidirectional transcription');
                 await startTranscription(stream, contact.phone, localStream);
               } catch (micError) {
@@ -278,6 +280,12 @@ export function ContactInfo() {
         setActiveDevice(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
         dispatch({ type: 'CLEAR_TWILIO_CONNECTION' });
+
+        // Cleanup local stream
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach(track => track.stop());
+          localStreamRef.current = null;
+        }
 
         // Stop transcription
         await stopTranscription();
@@ -317,6 +325,12 @@ export function ContactInfo() {
 
     if (activeConnection) {
       activeConnection.disconnect();
+    }
+
+    // Cleanup local stream
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
     }
 
     // Reset call-related states only

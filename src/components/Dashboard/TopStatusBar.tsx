@@ -26,13 +26,7 @@ const TopStatusBar: React.FC = () => {
 
   // Mute/unmute microphone
   const handleToggleMic = () => {
-    const newMuteState = !state.isMicMuted;
     dispatch({ type: 'TOGGLE_MIC' });
-    if (state.mediaStream) {
-      state.mediaStream.getAudioTracks().forEach(track => {
-        track.enabled = !newMuteState;
-      });
-    }
   };
 
   // Mute/unmute speaker (output)
