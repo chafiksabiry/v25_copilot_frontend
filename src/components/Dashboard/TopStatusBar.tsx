@@ -219,7 +219,7 @@ const TopStatusBar: React.FC = () => {
             {/* Audio Controls */}
             <div className="flex-1">
               <div className="text-lg font-semibold text-white mb-2">Audio Controls</div>
-              <div className="flex space-x-3">
+              <div className="flex space-x-3 mb-4">
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleMic}
@@ -235,6 +235,25 @@ const TopStatusBar: React.FC = () => {
                 >
                   {state.isSpeakerPhone ? <Volume2 size={20} /> : <Headphones size={20} />}
                 </button>
+              </div>
+              <div className="flex flex-col space-y-2">
+                <div className="flex justify-between items-center text-xs text-slate-400">
+                  <span>Volume Application</span>
+                  <span>{Math.round(state.volume * 100)}%</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Volume2 size={16} className={state.volume === 0 ? "text-slate-600" : "text-blue-400"} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={state.volume}
+                    onChange={(e) => dispatch({ type: 'UPDATE_VOLUME', volume: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-[#3a4661] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    title="Attention: Le navigateur ne peut pas contrôler le volume global de Windows, uniquement le volume de l'application."
+                  />
+                </div>
               </div>
             </div>
             {/* Call Status */}
