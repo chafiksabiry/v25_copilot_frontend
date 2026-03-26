@@ -233,9 +233,27 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
       };
 
     case 'TOGGLE_OUTPUT_MODE':
+      const newIsSpeaker = !state.isSpeakerPhone;
+      // Try to find an appropriate device ID if switching
+      let newDeviceId = state.selectedOutputDeviceId;
+      
+      if (newIsSpeaker) {
+        // Switch to speaker (usually default or first one)
+        newDeviceId = state.availableOutputDevices[0]?.deviceId || 'default';
+      } else {
+        // Switch to headset/earpiece (try to find one with 'headset' in label)
+        const headset = state.availableOutputDevices.find(d => 
+          d.label.toLowerCase().includes('headset') || 
+          d.label.toLowerCase().includes('ear') ||
+          d.label.toLowerCase().includes('headphones')
+        );
+        newDeviceId = headset?.deviceId || state.availableOutputDevices[1]?.deviceId || 'default';
+      }
+
       return {
         ...state,
-        isSpeakerPhone: !state.isSpeakerPhone
+        isSpeakerPhone: newIsSpeaker,
+        selectedOutputDeviceId: newDeviceId
       };
 
     case 'SET_OUTPUT_DEVICES':
@@ -421,6 +439,54 @@ export function AgentProvider({ children }: { children: ReactNode }) {
       console.log(`🔊 Speaker synchronized: ${state.isSpeakerMuted ? 'Muted' : 'Unmuted'}`);
     }
   }, [state.isSpeakerMuted]);
+
+  // Enumerate output devices on mount
+  useEffect(() => {
+    const getDevices = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+          dispatch({ type: 'SET_OUTPUT_DEVICES', devices: audioOutputs });
+          console.log('🔈 Available output devices:', audioOutputs.length);
+        }
+      } catch (err) {
+        console.error('Error enumerating devices:', err);
+      }
+    };
+
+    getDevices();
+    
+    // Listen for device changes
+    navigator.mediaDevices?.addEventListener?.('devicechange', getDevices);
+    return () => navigator.mediaDevices?.removeEventListener?.('devicechange', getDevices);
+  }, []);
+
+  // Apply selected output device to audio element
+  useEffect(() => {
+    const applyOutputDevice = async () => {
+      const remoteAudio = document.getElementById('call-audio') as any;
+      if (remoteAudio && state.selectedOutputDeviceId && remoteAudio.setSinkId) {
+        try {
+          await remoteAudio.setSinkId(state.selectedOutputDeviceId);
+          console.log('🔌 Audio output switched to:', state.selectedOutputDeviceId);
+        } catch (err) {
+          console.error('Failed to set audio output device:', err);
+        }
+      }
+      
+      // Also update Twilio Device if available
+      if (state.twilioDevice && state.twilioDevice.audio && state.selectedOutputDeviceId) {
+        try {
+          state.twilioDevice.audio.speakerDevices.set([state.selectedOutputDeviceId]);
+        } catch (err) {
+          console.warn('Twilio speaker set warning:', err);
+        }
+      }
+    };
+
+    applyOutputDevice();
+  }, [state.selectedOutputDeviceId, state.twilioDevice]);
 
   return (
     <AgentContext.Provider value={{ state, dispatch }}>

@@ -105,10 +105,25 @@ export const AudioStreamManager: React.FC<AudioStreamProps> = ({ callId }) => {
     };
   }, [callId]);
 
-  // Update gain node value when mute state changes
+  // Update output device when selected device changes
+  useEffect(() => {
+    const applyOutputDevice = async () => {
+      if (audioContextRef.current && state.selectedOutputDeviceId && (audioContextRef.current as any).setSinkId) {
+        try {
+          await (audioContextRef.current as any).setSinkId(state.selectedOutputDeviceId);
+          console.log('🔌 Monitoring audio output switched to:', state.selectedOutputDeviceId);
+        } catch (err) {
+          console.error('Failed to set monitoring audio output device:', err);
+        }
+      }
+    };
+
+    applyOutputDevice();
+  }, [state.selectedOutputDeviceId]);
+
+  // Handle mute/volume if still needed (kept for completeness but usually follows global state)
   useEffect(() => {
     if (gainNodeRef.current) {
-      console.log(`🔊 Speaker ${state.isSpeakerMuted ? 'muted' : 'unmuted'}`);
       gainNodeRef.current.gain.setTargetAtTime(
         state.isSpeakerMuted ? 0 : 1, 
         audioContextRef.current?.currentTime || 0, 

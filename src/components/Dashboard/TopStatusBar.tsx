@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Play, Headphones } from 'lucide-react';
+import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, CheckSquare, Play, Headphones } from 'lucide-react';
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
@@ -29,9 +29,9 @@ const TopStatusBar: React.FC = () => {
     dispatch({ type: 'TOGGLE_MIC' });
   };
 
-  // Mute/unmute speaker (output)
+  // Toggle audio output mode (Speaker vs Headset)
   const handleToggleSpeaker = () => {
-    dispatch({ type: 'TOGGLE_SPEAKER' });
+    dispatch({ type: 'TOGGLE_OUTPUT_MODE' });
   };
 
   const handleToggleRecording = async () => {
@@ -166,17 +166,17 @@ const TopStatusBar: React.FC = () => {
         />
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Volume2 size={20} className="text-blue-400" />}
-            title="Audio Level"
-            value={
+            icon={state.isSpeakerPhone ? <Volume2 size={20} className="text-blue-400" /> : <Headphones size={20} className="text-blue-400" />}
+            title="Audio Output"
+            value={state.isSpeakerPhone ? <span className="text-blue-400 font-semibold">Speaker</span> : <span className="text-slate-300 font-semibold">Headset</span>}
+            subtitle={
               <div className="w-full">
-                <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
+                <div className="w-full h-1 bg-[#3a4661] rounded-full mt-1">
                   <div
-                    className="bg-blue-400 h-3 rounded-full transition-all duration-100"
+                    className="bg-blue-400 h-1 rounded-full transition-all duration-100"
                     style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
                   ></div>
                 </div>
-                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
               </div>
             }
           />
@@ -228,11 +228,12 @@ const TopStatusBar: React.FC = () => {
                   {state.isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
                 <button
-                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
+                  className={`p-3 rounded-lg transition-colors ${state.isSpeakerPhone ? 'bg-blue-600/20 text-blue-400' : 'bg-[#1b253a] text-slate-300 hover:bg-[#22304a]'}`}
                   onClick={handleToggleSpeaker}
-                  aria-label={state.isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
+                  aria-label={state.isSpeakerPhone ? 'Switch to headset' : 'Switch to speaker'}
+                  title={state.isSpeakerPhone ? 'Switch to headset' : 'Switch to speaker'}
                 >
-                  {state.isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
+                  {state.isSpeakerPhone ? <Volume2 size={20} /> : <Headphones size={20} />}
                 </button>
               </div>
             </div>

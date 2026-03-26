@@ -1,6 +1,6 @@
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
-import { User, Volume2, VolumeX, Mic, MicOff, LayoutDashboard, LogOut } from 'lucide-react';
+import { User, Volume2, Mic, MicOff, LayoutDashboard, LogOut, Headphones } from 'lucide-react';
 
 export function Header() {
   const { state, dispatch } = useAgent();
@@ -28,8 +28,7 @@ export function Header() {
   };
 
   const handleToggleSpeaker = () => {
-    dispatch({ type: 'TOGGLE_SPEAKER' });
-    // Local speaker mute logic would go here
+    dispatch({ type: 'TOGGLE_OUTPUT_MODE' });
   };
 
   const formatDuration = (ms: number) => {
@@ -86,10 +85,10 @@ export function Header() {
           <div className="flex items-center space-x-2 border-l border-slate-700 pl-4">
             <button 
               onClick={handleToggleSpeaker}
-              className={`p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group ${state.isSpeakerMuted ? 'text-red-400' : 'text-slate-300'}`} 
-              title={state.isSpeakerMuted ? "Unmute Speaker" : "Mute Speaker"}
+              className={`p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group ${state.isSpeakerPhone ? 'text-blue-400' : 'text-slate-300'}`} 
+              title={state.isSpeakerPhone ? "Switch to Headset" : "Switch to Speaker"}
             >
-              {state.isSpeakerMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              {state.isSpeakerPhone ? <Volume2 className="w-5 h-5" /> : <Headphones className="w-5 h-5" />}
               <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
             <button 
