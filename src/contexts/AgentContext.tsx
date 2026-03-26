@@ -236,29 +236,55 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
       const newIsSpeaker = !state.isSpeakerPhone;
       let newDeviceId = 'default';
       
-      const speakerKeywords = ['speaker', 'haut-parleur', 'internal', 'built-in', 'interne', 'realtek'];
-      const headsetKeywords = ['headset', 'casque', 'ear', 'headphones', 'écouteurs', 'hands-free', 'bluetooth'];
+      const speakerKeywords = ['speaker', 'haut-parleur', 'internal', 'built-in', 'interne', 'realtek', 'haut parleur'];
+      const headsetKeywords = ['headset', 'casque', 'ear', 'headphones', 'écouteurs', 'hands-free', 'bluetooth', 'airpods'];
 
       if (newIsSpeaker) {
-        // Switch to speaker: find device with speaker keywords AND NO headset keywords
+        // Switch to speaker: find device with speaker keywords AND NO headset keywords, ignore 'default' and 'communications'
         let speaker = state.availableOutputDevices.find(d => 
+          d.deviceId !== 'default' && d.deviceId !== 'communications' &&
           speakerKeywords.some(k => d.label.toLowerCase().includes(k)) &&
           !headsetKeywords.some(k => d.label.toLowerCase().includes(k))
         );
         
-        // Fallback: use first device that doesn't have headset keywords
+        // Fallback 1: any device that is not 'default', 'communications', and doesn't have headset keywords
         if (!speaker) {
           speaker = state.availableOutputDevices.find(d => 
+            d.deviceId !== 'default' && d.deviceId !== 'communications' &&
             !headsetKeywords.some(k => d.label.toLowerCase().includes(k))
+          );
+        }
+
+        // Fallback 2: just the first device that isn't default/communications
+        if (!speaker) {
+          speaker = state.availableOutputDevices.find(d => 
+            d.deviceId !== 'default' && d.deviceId !== 'communications'
           );
         }
         
         newDeviceId = speaker?.deviceId || 'default';
       } else {
         // Switch to headset/earpiece
-        const headset = state.availableOutputDevices.find(d => 
+        let headset = state.availableOutputDevices.find(d => 
+          d.deviceId !== 'default' && d.deviceId !== 'communications' &&
           headsetKeywords.some(k => d.label.toLowerCase().includes(k))
         );
+
+        // Fallback 1: use 'default' or 'communications' if they indicate headset
+        if (!headset) {
+          headset = state.availableOutputDevices.find(d => 
+            headsetKeywords.some(k => d.label.toLowerCase().includes(k))
+          );
+        }
+
+        // Fallback 2: first available that isn't speaker
+        if (!headset) {
+          headset = state.availableOutputDevices.find(d => 
+            d.deviceId !== 'default' && d.deviceId !== 'communications' &&
+            !speakerKeywords.some(k => d.label.toLowerCase().includes(k))
+          );
+        }
+        
         newDeviceId = headset?.deviceId || 'default';
       }
 
