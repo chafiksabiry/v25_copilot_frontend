@@ -482,21 +482,26 @@ export function AgentProvider({ children }: { children: ReactNode }) {
 
   // Synchronize Volume with Audio Element
   useEffect(() => {
-    // Update our specific call-audio element
-    const remoteAudio = document.getElementById('call-audio') as HTMLAudioElement;
-    if (remoteAudio) {
-      remoteAudio.volume = state.volume;
-    }
-    
-    // Update any Twilio-generated audio elements
-    const twilioAudioElements = document.querySelectorAll('audio');
-    twilioAudioElements.forEach((el) => {
-      // In a real WebRTC app, Twilio creates an audio element automatically
-      if (el instanceof HTMLAudioElement) {
-        el.volume = state.volume;
-      }
-    });
-  }, [state.volume, state.twilioConnection, state.twilioDevice]);
+    const applyVolume = () => {
+      // Find all audio and video elements (Twilio sometimes uses video tags for WebRTC audio, or handles them dynamically)
+      const mediaElements = document.querySelectorAll('audio, video');
+      mediaElements.forEach((el) => {
+        if (el instanceof HTMLMediaElement) {
+          el.volume = state.volume;
+        }
+      });
+    };
+
+    // Apply immediately when volume changes
+    applyVolume();
+
+    // Since Twilio Voice SDK creates its media elements dynamically when a call is accepted
+    // and might recreate them, we use an interval to ensure the volume is strictly enforced.
+    // This is performant because there are usually < 5 media elements on a page.
+    const interval = setInterval(applyVolume, 300);
+
+    return () => clearInterval(interval);
+  }, [state.volume]);
 
   // Enumerate output devices on mount
   useEffect(() => {
