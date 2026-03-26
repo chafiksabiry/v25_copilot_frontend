@@ -1,9 +1,9 @@
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
-import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut } from 'lucide-react';
+import { User, Volume2, VolumeX, Mic, MicOff, LayoutDashboard, LogOut } from 'lucide-react';
 
 export function Header() {
-  const { state } = useAgent();
+  const { state, dispatch } = useAgent();
   const { profile } = useAgentProfile();
 
   const handleLogout = () => {
@@ -21,6 +21,21 @@ export function Header() {
 
   const handleGoToDashboard = () => {
     window.location.href = '/repdashboard/profile';
+  };
+  
+  const handleToggleMic = () => {
+    const newMuteState = !state.isMicMuted;
+    dispatch({ type: 'TOGGLE_MIC' });
+    if (state.mediaStream) {
+      state.mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = !newMuteState;
+      });
+    }
+  };
+
+  const handleToggleSpeaker = () => {
+    dispatch({ type: 'TOGGLE_SPEAKER' });
+    // Local speaker mute logic would go here
   };
 
   const formatDuration = (ms: number) => {
@@ -75,16 +90,20 @@ export function Header() {
           )}
 
           <div className="flex items-center space-x-2 border-l border-slate-700 pl-4">
-            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Volume">
-              <Volume2 className="w-5 h-5 text-slate-300" />
+            <button 
+              onClick={handleToggleSpeaker}
+              className={`p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group ${state.isSpeakerMuted ? 'text-red-400' : 'text-slate-300'}`} 
+              title={state.isSpeakerMuted ? "Unmute Speaker" : "Mute Speaker"}
+            >
+              {state.isSpeakerMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
               <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
-            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Microphone">
-              <Mic className="w-5 h-5 text-slate-300" />
-              <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
-            </button>
-            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Settings">
-              <Settings className="w-5 h-5 text-slate-300" />
+            <button 
+              onClick={handleToggleMic}
+              className={`p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group ${state.isMicMuted ? 'text-red-400' : 'text-slate-300'}`} 
+              title={state.isMicMuted ? "Unmute Microphone" : "Mute Microphone"}
+            >
+              {state.isMicMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
 

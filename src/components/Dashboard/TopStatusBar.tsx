@@ -23,25 +23,21 @@ const TopStatusBar: React.FC = () => {
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
 
   // Mute/unmute microphone
   const handleToggleMic = () => {
+    const newMuteState = !state.isMicMuted;
+    dispatch({ type: 'TOGGLE_MIC' });
     if (state.mediaStream) {
       state.mediaStream.getAudioTracks().forEach(track => {
-        track.enabled = !isMicMuted;
+        track.enabled = !newMuteState;
       });
-      setIsMicMuted(m => !m);
     }
   };
 
   // Mute/unmute speaker (output)
-  // Note: This only toggles a local state; actual output mute requires control of an <audio> element
   const handleToggleSpeaker = () => {
-    setIsSpeakerMuted(m => !m);
-    // If you have an <audio> element, you can set its volume or muted property here
-    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
+    dispatch({ type: 'TOGGLE_SPEAKER' });
   };
 
   const handleToggleRecording = async () => {
@@ -233,16 +229,16 @@ const TopStatusBar: React.FC = () => {
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleMic}
-                  aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                  aria-label={state.isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
-                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
+                  {state.isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
                 <button
                   className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleSpeaker}
-                  aria-label={isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
+                  aria-label={state.isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
                 >
-                  {isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
+                  {state.isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
                 </button>
               </div>
             </div>
