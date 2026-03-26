@@ -105,7 +105,7 @@ const initialState: AgentState = {
   isSpeakerMuted: false,
   isSpeakerPhone: true,
   availableOutputDevices: [],
-  selectedOutputDeviceId: null,
+  selectedOutputDeviceId: 'default',
   mediaStream: null,
   twilioConnection: null,
   twilioDevice: null,
@@ -234,21 +234,35 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
 
     case 'TOGGLE_OUTPUT_MODE':
       const newIsSpeaker = !state.isSpeakerPhone;
-      // Try to find an appropriate device ID if switching
-      let newDeviceId = state.selectedOutputDeviceId;
+      let newDeviceId = 'default';
       
+      const speakerKeywords = ['speaker', 'haut-parleur', 'internal', 'built-in', 'interne', 'realtek'];
+      const headsetKeywords = ['headset', 'casque', 'ear', 'headphones', 'écouteurs', 'hands-free', 'bluetooth'];
+
       if (newIsSpeaker) {
-        // Switch to speaker (usually default or first one)
-        newDeviceId = state.availableOutputDevices[0]?.deviceId || 'default';
-      } else {
-        // Switch to headset/earpiece (try to find one with 'headset' in label)
-        const headset = state.availableOutputDevices.find(d => 
-          d.label.toLowerCase().includes('headset') || 
-          d.label.toLowerCase().includes('ear') ||
-          d.label.toLowerCase().includes('headphones')
+        // Switch to speaker: find device with speaker keywords AND NO headset keywords
+        let speaker = state.availableOutputDevices.find(d => 
+          speakerKeywords.some(k => d.label.toLowerCase().includes(k)) &&
+          !headsetKeywords.some(k => d.label.toLowerCase().includes(k))
         );
-        newDeviceId = headset?.deviceId || state.availableOutputDevices[1]?.deviceId || 'default';
+        
+        // Fallback: use first device that doesn't have headset keywords
+        if (!speaker) {
+          speaker = state.availableOutputDevices.find(d => 
+            !headsetKeywords.some(k => d.label.toLowerCase().includes(k))
+          );
+        }
+        
+        newDeviceId = speaker?.deviceId || 'default';
+      } else {
+        // Switch to headset/earpiece
+        const headset = state.availableOutputDevices.find(d => 
+          headsetKeywords.some(k => d.label.toLowerCase().includes(k))
+        );
+        newDeviceId = headset?.deviceId || 'default';
       }
+
+      console.log(`🔌 Switching output mode: ${newIsSpeaker ? 'Speaker' : 'Headset'} (Device ID: ${newDeviceId})`);
 
       return {
         ...state,
