@@ -16,50 +16,43 @@ interface StatusCardProps {
 }
 
 const statusColors = {
-  success: 'text-emerald-600',
-  warning: 'text-amber-600',
-  danger: 'text-rose-600',
-  info: 'text-harx-500',
+  success: 'text-emerald-400',
+  warning: 'text-amber-400',
+  danger: 'text-rose-500',
+  info: 'text-blue-400',
 };
 
 const StatusCard: React.FC<StatusCardProps> = ({
   icon, title, value, subtitle, status, expandable, expanded, onToggle, children, disabled, disabledTitle = "Coming Soon"
 }) => (
-  <div className={`relative bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] py-3 px-4 w-full h-full flex flex-col justify-between transition-all duration-500 border border-slate-100 hover:border-harx-500/20 group ${disabled ? 'opacity-50' : 'hover:-translate-y-1 hover:shadow-md'}`}>
+  <div className={`relative glass-card rounded-xl shadow-lg py-5 px-4 w-full h-full flex flex-col justify-between transition-all duration-300 hover:border-blue-500/30 ${disabled ? 'opacity-50 grayscale-[0.5]' : 'blue-glow-hover'}`}>
     {disabled && (
-      <div className="absolute inset-0 z-10 flex items-center justify-center p-2 group-hover:opacity-100 opacity-80 transition-opacity duration-500">
-        <div className="absolute inset-0 bg-white/40 rounded-3xl backdrop-blur-[1px]" />
-        <span className="relative z-20 bg-slate-900 text-white text-[8px] font-black px-3 py-1.5 rounded-lg border border-slate-800 uppercase tracking-[0.2em] shadow-xl transform rotate-[-5deg] group-hover:rotate-0 transition-all">
+      <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
+        <div className="absolute inset-0 bg-blue-500/5 rounded-xl backdrop-blur-[1px]" />
+        <span className="relative z-20 bg-slate-900/90 text-blue-100 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-500/20 uppercase tracking-widest shadow-xl">
           {disabledTitle}
         </span>
       </div>
     )}
-    <div className="flex items-center justify-between relative z-0">
-      <div className="flex items-center space-x-2">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm border border-slate-100 bg-slate-50 transition-all duration-500 ${!disabled ? 'group-hover:bg-harx-500/10 group-hover:border-harx-500/20 group-hover:text-harx-500 group-hover:shadow-sm' : ''}`}>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-3 text-slate-400">
+        <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center text-[18px] border border-white/5 transition-all group-hover:bg-blue-500/10 group-hover:border-blue-500/20 group-hover:text-blue-400">
           {icon}
         </div>
-        <span className="font-black text-[9px] text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors uppercase">{title}</span>
+        <span className="font-black text-[10px] uppercase tracking-[0.2em]">{title}</span>
       </div>
       {expandable && !disabled && (
-        <button className="text-slate-400 hover:text-harx-500 transition-colors" onClick={(e) => { e.stopPropagation(); onToggle?.(); }}>
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        <button className="text-slate-400" onClick={onToggle}>
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       )}
     </div>
-    
-    <div className={`font-black mt-1 leading-tight tracking-tight flex-1 flex items-end ${status ? statusColors[status] : 'text-slate-900'}`}>
-        <div className="w-full truncate text-sm">{value}</div>
-    </div>
-    
+    <div className={`text-[22px] font-black mt-3 leading-none tracking-tight ${status ? statusColors[status] : 'text-white'}`}>{value}</div>
     {subtitle && (
-      <div className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest border-t border-slate-100 pt-1 group-hover:text-harx-500/60 transition-colors">{subtitle}</div>
+      <div className="text-[10px] font-black text-slate-500 mt-2 uppercase tracking-widest">{subtitle}</div>
     )}
-    
     {children && expanded && !disabled && (
-      <div className="mt-4 text-[10px] text-slate-600 font-medium leading-relaxed border-t border-slate-100 pt-4 animate-in fade-in slide-in-from-top-2">
-        {children}
-      </div>
+      <div className="mt-2 text-xs text-slate-400">{children}</div>
     )}
   </div>
 );

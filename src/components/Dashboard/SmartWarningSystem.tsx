@@ -18,44 +18,39 @@ export const SmartWarningSystem: React.FC = () => {
             {activeWarnings.map(warning => (
                 <div
                     key={warning.id}
-                    className={`p-4 rounded-[28px] border shadow-2xl animate-in slide-in-from-right-10 duration-700 bg-white relative overflow-hidden group ${warning.severity === 'critical' ? 'border-rose-100 shadow-rose-500/5' :
-                        warning.severity === 'high' ? 'border-amber-100 shadow-amber-500/5' : 'border-slate-100 shadow-slate-900/5'
+                    className={`p-5 rounded-2xl border-2 shadow-2xl animate-in slide-in-from-right-10 duration-500 glass-morphism backdrop-blur-xl ${warning.severity === 'critical' ? 'border-red-500/50 shadow-red-500/10' :
+                        warning.severity === 'high' ? 'border-orange-500/50 shadow-orange-500/10' : 'border-yellow-500/50 shadow-yellow-500/10'
                         }`}
                 >
-                    <div className={`absolute top-0 right-0 w-32 h-32 opacity-5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:opacity-10 transition-all duration-1000 ${warning.severity === 'critical' ? 'bg-rose-500' : warning.severity === 'high' ? 'bg-amber-500' : 'bg-slate-900'}`}></div>
                     <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-3 relative z-10">
-                            <div className={`p-1.5 rounded-lg border ${warning.severity === 'critical' ? 'bg-white text-rose-600 border-rose-100' : 'bg-white text-amber-600 border-amber-100'}`}>
-                                {warning.severity === 'critical' ? (
-                                    <ShieldAlert className="w-5 h-5 focus-within:animate-pulse" />
-                                ) : (
-                                    <AlertTriangle className="w-5 h-5" />
-                                )}
-                            </div>
-                            <span className="font-black text-slate-900 uppercase tracking-[0.2em] text-xs">
+                        <div className="flex items-center gap-2">
+                            {warning.severity === 'critical' ? (
+                                <ShieldAlert className="w-5 h-5 text-red-500" />
+                            ) : (
+                                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                            )}
+                            <span className="font-bold text-white uppercase tracking-wider text-sm">
                                 {warning.title}
                             </span>
                         </div>
                         <button
                             onClick={() => resolveWarning(warning.id)}
-                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                            className="text-slate-400 hover:text-white transition-colors"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <p className="text-slate-600 text-xs mb-3 leading-tight font-black tracking-tight px-1 relative z-10 italic">
+                    <p className="text-slate-200 text-sm mb-4 leading-relaxed font-medium px-1">
                         {warning.message}
                     </p>
 
-                    <div className="flex gap-3 relative z-10">
+                    <div className="flex gap-2">
                         {warning.suggestedActions.map((action, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => resolveWarning(warning.id)}
-                                className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all border active:scale-95 shadow-sm ${warning.severity === 'critical' 
-                                    ? 'bg-rose-500 text-white border-rose-500 shadow-rose-500/20 hover:bg-rose-600' 
-                                    : 'bg-white hover:bg-slate-50 text-slate-900 border-slate-200'}`}
+                                className="px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all border border-white/10 active:scale-95 shadow-sm"
                             >
                                 {action}
                             </button>

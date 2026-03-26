@@ -7,7 +7,7 @@ import { useTranscription } from '../../contexts/TranscriptionContext';
 import { useLead } from '../../hooks/useLead';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
 import {
-  Phone, Mail, Calendar, Briefcase, Target, MessageSquare
+  Phone, Mail, Calendar, Briefcase
 } from 'lucide-react';
 
 interface TokenResponse {
@@ -27,66 +27,22 @@ export function ContactInfo() {
   const { dispatch, state } = useAgent();
   const [isCallLoading, setIsCallLoading] = useState(false);
   const [activeConnection, setActiveConnection] = useState<any>(null);
+  const [, setActiveDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<string>('idle');
   const [currentCallSid, setCurrentCallSid] = useState<string | null>(null);
-  const deviceRef = useRef<Device | null>(null);
   const isRecordingRef = useRef(false);
 
-  // Synchronize recording ref with global state
+  // Synchronize ref with global state
   useEffect(() => {
     isRecordingRef.current = state.callState.isRecording;
   }, [state.callState.isRecording]);
-
-  // Synchronize volume with active connection
-  useEffect(() => {
-    if (activeConnection && typeof activeConnection.volume === 'function') {
-      console.log('🔊 Setting call volume to:', state.volume);
-      activeConnection.volume(state.volume);
-    }
-  }, [state.volume, activeConnection]);
-
-  // Synchronize microphone mute with active connection
-  useEffect(() => {
-    if (activeConnection && typeof activeConnection.mute === 'function') {
-      console.log('🎤 Setting call mute to:', state.isMicMuted);
-      activeConnection.mute(state.isMicMuted);
-    }
-  }, [state.isMicMuted, activeConnection]);
-
-  // Synchronize speaker phone mode with active connection
-  useEffect(() => {
-    const syncOutputDevice = async () => {
-      if (state.availableOutputDevices.length > 0) {
-        const headset = state.availableOutputDevices.find(d => 
-          d.label.toLowerCase().includes('headset') || 
-          d.label.toLowerCase().includes('headphones') || 
-          d.label.toLowerCase().includes('casque') ||
-          d.label.toLowerCase().includes('hands-free')
-        );
-        
-        const speaker = state.availableOutputDevices.find(d => 
-          d.label.toLowerCase().includes('speaker') || 
-          d.label.toLowerCase().includes('haut-parleur') || 
-          d.label.toLowerCase().includes('internal')
-        ) || state.availableOutputDevices[0];
-
-        const targetId = state.isSpeakerPhone ? (speaker?.deviceId || 'default') : (headset?.deviceId || speaker?.deviceId || 'default');
-        
-        if (deviceRef.current && deviceRef.current.audio && typeof deviceRef.current.audio.speakerDevices?.set === 'function') {
-            console.log('🔄 Effect: Switching Twilio output to:', targetId);
-            await deviceRef.current.audio.speakerDevices.set([targetId]);
-        }
-      }
-    };
-    syncOutputDevice();
-  }, [state.isSpeakerPhone, state.availableOutputDevices]);
 
   // Get leadId from URL
   const searchParams = new URLSearchParams(window.location.search);
   const leadId = searchParams.get('leadId');
 
   // Use the hook to fetch lead data
-  const { lead: apiLead } = useLead(leadId);
+  const { lead: apiLead, loading: leadLoading, error: leadError } = useLead(leadId);
 
   // Populated gig data from lead
   const gig = apiLead?.gigId;
@@ -171,6 +127,14 @@ export function ContactInfo() {
     ] as { date: Date; type: 'call' | 'email' | 'meeting' | 'demo'; outcome: string; notes: string; }[]
   };
 
+  const maskPhone = (phone: string) => {
+    if (!phone) return '';
+    const cleanPhone = phone.replace(/\s+/g, '');
+    if (cleanPhone.startsWith('+')) {
+      return `${cleanPhone.substring(0, 5)}...`;
+    }
+    return `+${cleanPhone.substring(0, 4)}...`;
+  };
 
 
   // Debug: Log contact data whenever it changes
@@ -245,52 +209,7 @@ export function ContactInfo() {
 
       // Store active connection and device
       setActiveConnection(conn);
-      deviceRef.current = newDevice;
-
-      // Handle audio output device switching
-      const updateSpeakerDevices = async () => {
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const outputDevices = devices.filter(d => d.kind === 'audiooutput');
-          dispatch({ type: 'SET_OUTPUT_DEVICES', devices: outputDevices });
-
-          if (outputDevices.length > 0) {
-            // Try to find headphones/headset for "casque" mode
-            const headset = outputDevices.find(d => 
-              d.label.toLowerCase().includes('headset') || 
-              d.label.toLowerCase().includes('headphones') || 
-              d.label.toLowerCase().includes('casque') ||
-              d.label.toLowerCase().includes('hands-free')
-            );
-            
-            // Auto-detect: if a headset is found and not currently in speakerPhone mode, or if we want to be smart:
-            if (headset && state.isSpeakerPhone) {
-                console.log('🎧 Headset detected at start, switching mode to Headset');
-                dispatch({ type: 'TOGGLE_OUTPUT_MODE' });
-            }
-
-            // Try to find speakers for "haut-parleur" mode
-            const speaker = outputDevices.find(d => 
-              d.label.toLowerCase().includes('speaker') || 
-              d.label.toLowerCase().includes('haut-parleur') || 
-              d.label.toLowerCase().includes('internal')
-            ) || outputDevices[0]; // Fallback to first device
-
-            const targetId = state.isSpeakerPhone ? (speaker?.deviceId || 'default') : (headset?.deviceId || speaker?.deviceId || 'default');
-            
-            console.log(`🔊 Switching output to ${state.isSpeakerPhone ? 'Speaker' : 'Headset'}:`, targetId);
-            
-            if (newDevice.audio && typeof newDevice.audio.speakerDevices?.set === 'function') {
-                await newDevice.audio.speakerDevices.set([targetId]);
-            }
-          }
-        } catch (err) {
-          console.error('Failed to update speaker devices:', err);
-        }
-      };
-
-      // Call immediately and set up effect for future changes
-      updateSpeakerDevices();
+      setActiveDevice(newDevice);
 
       // Set up event listeners
       conn.on('connect', () => {
@@ -348,7 +267,7 @@ export function ContactInfo() {
         console.log("Call disconnected");
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
-        deviceRef.current = null;
+        setActiveDevice(null);
         dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
         // Stop transcription
@@ -367,7 +286,7 @@ export function ContactInfo() {
         console.error("Call error:", error);
         setCallStatus('idle'); // Reset to idle to allow new calls
         setActiveConnection(null);
-        deviceRef.current = null;
+        setActiveDevice(null);
 
         // Ajout : dispatch END_CALL pour mettre à jour le context global
         dispatch({ type: 'END_CALL' });
@@ -392,7 +311,7 @@ export function ContactInfo() {
 
     // Reset call-related states only
     setActiveConnection(null);
-    deviceRef.current = null;
+    setActiveDevice(null);
     setCallStatus('idle'); // Reset to idle instead of 'ended'
     dispatch({ type: 'SET_MEDIA_STREAM', mediaStream: null });
 
@@ -419,87 +338,90 @@ export function ContactInfo() {
 
 
   return (
-    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group mb-4">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50/50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:bg-pink-50/30 transition-all duration-1000"></div>
-      
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-        <div className="flex items-center space-x-6">
-          <div className="relative group/avatar">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-harx-500 to-harx-alt-500 rounded-2xl opacity-0 group-hover/avatar:opacity-20 blur-sm transition-all duration-500"></div>
-            <div className="relative w-20 h-20 bg-slate-50 border-2 border-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden ring-4 ring-slate-50 transition-transform duration-500 group-hover/avatar:scale-105">
-              {contact.avatar ? (
-                <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-2xl font-black text-slate-400 leading-none">{contact.name.charAt(0)}</span>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex flex-col">
-            <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">{contact.name}</h2>
-              <span className="px-2.5 py-1 bg-harx-500 text-white text-[8px] font-black uppercase tracking-[0.2em] rounded-lg shadow-md shadow-harx-500/20">
-                Priority
-              </span>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{contact.email}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{contact.phone}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-pink-50 px-3 py-1.5 rounded-xl border border-pink-100">
-                <Target className="w-3.5 h-3.5 text-harx-500" />
-                <span className="text-[10px] font-black text-harx-600 uppercase tracking-widest">Score: {contact.leadScore}</span>
-              </div>
-              {gig && (
-                <div className="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl">
-                  <Briefcase className="w-3.5 h-3.5 text-white/50" />
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{gig.title}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
+    <>
+      <div className="glass-card rounded-xl shadow-sm px-8 py-5 flex items-center justify-between mt-4 mb-4 border-blue-500/10">
+        {/* Avatar + Infos */}
+        {/* Avatar + Infos */}
         <div className="flex items-center space-x-4">
-           {state.callState.isActive ? (
-             <button
-               onClick={endCall}
-               className="flex items-center space-x-3 bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-xl shadow-slate-900/20 active:scale-95 group/call"
-             >
-               <Phone className="w-5 h-5 animate-pulse" />
-               <span className="font-black text-xs uppercase tracking-[0.2em]">End Session</span>
-             </button>
-           ) : (
-             <button
-               onClick={handleStartCall}
-               disabled={isCallLoading || callStatus === 'initiating'}
-               className={`flex items-center space-x-4 px-10 py-5 rounded-2xl transition-all duration-300 shadow-2xl active:scale-95 group/call
-                 ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-100 text-slate-400' : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-rose-500/30'}`}
-             >
-               {isCallLoading || callStatus === 'initiating' ? (
-                 <div className="w-5 h-5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin"></div>
-               ) : (
-                 <Phone className="w-6 h-6 group-hover/call:rotate-12 transition-transform" />
-               )}
-               <span className="font-black text-sm uppercase tracking-[0.3em]">{isCallLoading || callStatus === 'initiating' ? 'Scaling...' : 'Initiate Call'}</span>
-             </button>
-           )}
-           <div className="flex flex-col space-y-2">
-             <button className="p-2.5 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition-all border border-slate-100 rounded-xl shadow-sm">
-               <Calendar className="w-4 h-4" />
-             </button>
-             <button className="p-2.5 bg-white hover:bg-slate-50 text-slate-400 hover:text-harx-500 transition-all border border-slate-100 rounded-xl shadow-sm">
-               <MessageSquare className="w-4 h-4" />
-             </button>
-           </div>
+          {leadLoading ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="text-slate-300 text-sm">Loading lead...</span>
+            </div>
+          ) : leadError ? (
+            <div className="text-red-400 text-sm">Error: {leadError}</div>
+          ) : (
+            <>
+              <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/20">
+                {contact.avatar ? (
+                  <img src={contact.avatar} alt={contact.name} className="w-14 h-14 rounded-full object-cover" />
+                ) : (
+                  contact.name.split(' ').map(n => n[0]).join('')
+                )}
+              </div>
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="text-lg font-bold text-white">{contact.name}</span>
+                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30 uppercase tracking-wider">qualified</span>
+                  {gig && (
+                    <span className="bg-slate-900/40 text-blue-300 text-[10px] px-2 py-0.5 rounded-full border border-slate-700/50 flex items-center">
+                      <Briefcase className="w-3 h-3 mr-1" />
+                      {gig.title}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2 text-blue-400 text-sm font-medium">
+                  <Mail className="w-4 h-4" />
+                  <span>{contact.email}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        {/* Bouton Start Call + Tabs */}
+        <div className="flex-1 flex flex-col items-center">
+          {callStatus === 'active' ? (
+            <button
+              onClick={endCall}
+              className="w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg bg-red-600 hover:bg-red-700 text-white hover:-translate-y-0.5"
+            >
+              <Phone className="w-5 h-5 mr-2" />
+              End Call
+            </button>
+          ) : (
+            <button
+              onClick={handleStartCall}
+              disabled={isCallLoading || callStatus === 'initiating'}
+              className={`w-56 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:-translate-y-0.5
+                  ${isCallLoading || callStatus === 'initiating' ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' : 'bg-blue-600 text-white shadow-blue-500/20 active:scale-95'}`}
+            >
+              <Phone className="w-5 h-5 mr-2" />
+              {isCallLoading || callStatus === 'initiating' ? '...' : 'Call'}
+            </button>
+          )}
+
+          <div className="flex items-center space-x-2 text-slate-500 text-sm font-bold mt-2 tracking-wider opacity-60 cursor-not-allowed" title="Coming Soon">
+            <Phone className="w-4 h-4" />
+            <span>{maskPhone(contact.phone)}</span>
+          </div>
+
+          <div className="flex items-center space-x-6 mt-3">
+            <span className="text-slate-400 text-sm">Transcript <span className="font-bold text-white">0</span> entries</span>
+            <span className="flex items-center text-slate-500 text-sm opacity-50 cursor-not-allowed" title="Coming Soon">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M4 19h16M4 15h16M4 11h16M4 7h16" />
+              </svg>
+              Knowledge
+            </span>
+          </div>
+        </div >
+        {/* Actions à droite */}
+        < div className="flex items-center space-x-3" >
+          <button className="bg-slate-800 border border-slate-700 text-slate-500 p-2.5 rounded-xl cursor-not-allowed transition-all" title="Coming Soon"><Mail className="w-5 h-5" /></button>
+          <button className="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/10 hover:-translate-y-0.5 transition-all"><Phone className="w-5 h-5" /></button>
+          <button className="bg-slate-800 border border-slate-700 text-slate-500 p-2.5 rounded-xl cursor-not-allowed transition-all" title="Coming Soon"><Calendar className="w-5 h-5" /></button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

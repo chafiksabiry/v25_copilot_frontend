@@ -1,9 +1,9 @@
 import { useAgent } from '../../contexts/AgentContext';
 import { useAgentProfile } from '../../hooks/useAgentProfile';
-import { User, Volume2, Mic, LayoutDashboard, LogOut, MicOff, Headphones } from 'lucide-react';
+import { Settings, User, Volume2, Mic, LayoutDashboard, LogOut } from 'lucide-react';
 
 export function Header() {
-  const { state, dispatch } = useAgent();
+  const { state } = useAgent();
   const { profile } = useAgentProfile();
 
   const handleLogout = () => {
@@ -43,90 +43,68 @@ export function Header() {
     .slice(0, 2);
 
   return (
-    <header className="bg-white sticky top-0 z-[60] px-8 py-3 border-b border-slate-100 shadow-sm relative overflow-hidden group">
-      <div className="flex items-center justify-between relative z-10">
-        <div className="flex items-center space-x-5">
-          <div className="w-12 h-12 bg-gradient-harx rounded-2xl flex items-center justify-center shadow-md border border-white transform group-hover:scale-105 transition-all duration-700">
-            <span className="text-white font-black text-xl tracking-tighter">{agentInitials}</span>
+    <header className="glass-morphism sticky top-0 z-50 px-8 py-4 border-b border-blue-500/10">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
+            <span className="text-white font-bold text-lg">{agentInitials}</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-[0.2em] uppercase leading-none">
-              HARX <span className="text-harx-500">REPS</span> <span className="text-slate-400">AI COPILOT</span>
-            </h1>
-            <div className="flex items-center space-x-2 mt-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">System Operational</span>
-            </div>
-          </div>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide">REPS AI COPILOT</h1>
         </div>
 
-        <div className="flex items-center space-x-5">
+        <div className="flex items-center space-x-4">
           <button
             onClick={handleGoToDashboard}
-            className="flex items-center space-x-3 bg-slate-50 hover:bg-white text-slate-600 px-5 py-2.5 rounded-xl transition-all duration-300 border border-slate-200 group/btn active:scale-95 shadow-sm hover:shadow-md"
+            className="flex items-center space-x-2 bg-blue-500/5 hover:bg-blue-500/10 text-slate-200 px-4 py-2 rounded-lg transition-all border border-blue-500/20 group hover:border-blue-500/40"
             title="Dashboard"
           >
-            <LayoutDashboard size={18} className="group-hover/btn:text-harx-500 transition-colors" />
-            <span className="font-black text-[10px] uppercase tracking-widest">Dashboard</span>
+            <LayoutDashboard size={18} className="group-hover:text-blue-500 transition-colors" />
+            <span className="font-semibold text-sm">Dashboard</span>
           </button>
 
           {state.callState.isActive && (
-            <div className="flex items-center space-x-4 text-sm px-5 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <div className="flex items-center space-x-2 text-emerald-600">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.4)]"></span>
-                </div>
-                <span className="font-black tracking-[0.2em] uppercase text-[10px]">LIVE SIGNAL</span>
+            <div className="flex items-center space-x-3 text-sm px-4 py-2 bg-green-900/20 border border-green-500/20 rounded-lg">
+              <div className="flex items-center space-x-1 text-green-400">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="font-bold">LIVE</span>
               </div>
-              <div className="text-slate-900 font-black tracking-widest text-[11px]">
+              <div className="text-slate-300 font-mono">
                 {state.callState.startTime && formatDuration(Date.now() - state.callState.startTime.getTime())}
               </div>
             </div>
           )}
 
-          <div className="flex items-center space-x-3 border-l border-slate-200 pl-5">
-            <button 
-              onClick={() => dispatch({ type: 'TOGGLE_OUTPUT_MODE' })}
-              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isSpeakerPhone ? 'bg-slate-50 hover:bg-white border-slate-200' : 'bg-harx-500/10 border-harx-500/20'}`} 
-              title={state.isSpeakerPhone ? "Switch to Headset" : "Switch to Speaker"}
-            >
-              {state.isSpeakerPhone ? (
-                <Volume2 className="w-5 h-5 text-slate-400 group-hover/icon:text-harx-500 transition-colors" />
-              ) : (
-                <Headphones className="w-5 h-5 text-harx-500" />
-              )}
+          <div className="flex items-center space-x-2 border-l border-slate-700 pl-4">
+            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Volume">
+              <Volume2 className="w-5 h-5 text-slate-300" />
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+            </button>
+            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Microphone">
+              <Mic className="w-5 h-5 text-slate-300" />
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
+            </button>
+            <button className="p-2 hover:bg-blue-500/10 rounded-full transition-colors relative group" title="Settings">
+              <Settings className="w-5 h-5 text-slate-300" />
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
             </button>
 
-            <button 
-              onClick={() => dispatch({ type: 'TOGGLE_MIC' })}
-              className={`p-3 rounded-xl transition-all duration-300 relative group/icon active:scale-90 border mb-0.5 ${state.isMicMuted ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 hover:bg-white border-slate-200'}`} 
-              title={state.isMicMuted ? "Unmute Mic" : "Mute Mic"}
-            >
-              {state.isMicMuted ? (
-                <MicOff className="w-5 h-5 text-rose-500" />
-              ) : (
-                <Mic className="w-5 h-5 text-slate-400 group-hover/icon:text-harx-500 transition-colors" />
-              )}
-            </button>
-            
             <button
               onClick={handleLogout}
-              className="p-3 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-xl transition-all duration-300 border border-slate-200 hover:border-rose-200 group active:scale-90"
-              title="Deconnexion"
+              className="p-2 hover:bg-red-900/20 text-slate-300 hover:text-red-400 rounded-lg transition-all border border-transparent hover:border-red-500/20 group"
+              title="Déconnexion"
             >
               <LogOut className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-4 ml-4 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-200 hover:border-harx-500/30 transition-all duration-500 group/profile">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm group-hover/profile:border-harx-500/30 transition-colors duration-500">
-                <User size={18} className="text-harx-500" />
+            <div className="flex items-center space-x-3 text-slate-200 font-medium ml-2 glass-card px-4 py-2 rounded-xl border border-blue-500/20">
+              <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-blue-500/30 shadow-inner">
+                <User size={16} className="text-blue-500" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-slate-900 uppercase tracking-widest">{agentName}</span>
+                <span className="text-sm font-bold text-gray-200 leading-tight">{agentName}</span>
                 {profile?.professionalSummary?.currentRole && (
-                  <span className="text-harx-500 text-[8px] font-black uppercase tracking-[0.2em] mt-0.5">
-                    {profile.professionalSummary.currentRole}
+                  <span className="text-blue-500 text-[9px] font-bold uppercase tracking-wider">
+                    {profile.professionalSummary.currentRole.split(' ').slice(0, 3).join(' ')}
                   </span>
                 )}
               </div>

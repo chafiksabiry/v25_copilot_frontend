@@ -52,10 +52,10 @@ export function KnowledgeBase() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'Compliance': return 'bg-rose-100 text-rose-600 border border-rose-200';
-      case 'Education': return 'bg-blue-100 text-blue-600 border border-blue-200';
-      case 'Sales': return 'bg-emerald-100 text-emerald-600 border border-emerald-200';
-      default: return 'bg-slate-100 text-slate-600 border border-slate-200';
+      case 'Compliance': return 'bg-red-600/20 text-red-300';
+      case 'Education': return 'bg-blue-600/20 text-blue-300';
+      case 'Sales': return 'bg-green-600/20 text-green-300';
+      default: return 'bg-slate-600/20 text-slate-300';
     }
   };
 
@@ -72,24 +72,24 @@ export function KnowledgeBase() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-5 relative group overflow-hidden h-full flex flex-col border border-slate-100 shadow-xl">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-pink-50/20 transition-all duration-1000"></div>
-      <div className="flex items-center space-x-3 mb-5">
-        <div className="p-2.5 bg-slate-900 rounded-xl shadow-lg shadow-slate-900/10">
-          <BookOpen className="w-5 h-5 text-white" />
+    <div className="glass-card rounded-2xl p-6 relative group overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="flex items-center space-x-3 mb-6">
+        <div className="p-2 bg-blue-500/10 rounded-xl">
+          <BookOpen className="w-5 h-5 text-blue-400" />
         </div>
-        <h3 className="text-lg font-black text-slate-900 tracking-[0.1em] uppercase">Tactical Intelligence</h3>
+        <h3 className="text-lg font-black text-white tracking-tight uppercase">Knowledge Base</h3>
       </div>
 
       {/* Search */}
-      <div className="relative mb-3">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
           placeholder="Search documentation..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all text-xs font-black uppercase tracking-widest"
+          className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-xs font-bold uppercase tracking-widest"
         />
       </div>
 
@@ -104,14 +104,14 @@ export function KnowledgeBase() {
           filteredItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-xl p-3 hover:bg-slate-50 transition-all duration-300 border border-slate-100 hover:border-slate-200 cursor-pointer group/item shadow-sm"
+              className="bg-white/5 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 border border-white/5 hover:border-white/10 cursor-pointer group/item"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="p-2 bg-slate-50 rounded-xl text-slate-900 border border-slate-100 shadow-sm">
+                  <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400">
                     {getTypeIcon(item.type)}
                   </div>
-                  <h4 className="text-sm font-black text-slate-900 truncate group-hover/item:text-slate-900 transition-colors tracking-tight">{item.title}</h4>
+                  <h4 className="text-sm font-black text-white truncate group-hover/item:text-blue-400 transition-colors tracking-tight">{item.title}</h4>
                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
                     {item.category}
                   </span>
@@ -130,19 +130,19 @@ export function KnowledgeBase() {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed mb-2 line-clamp-2 italic font-bold">
+              <p className="text-xs text-slate-200 leading-relaxed mb-2 line-clamp-2">
                 {item.content}
               </p>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 flex-1">
-                  <div className="flex-1 bg-slate-100 rounded-full h-1">
+                <div className="flex items-center space-x-2">
+                  <div className="w-full bg-slate-600 rounded-full h-1">
                     <div
-                      className="bg-slate-900 h-1.5 rounded-full"
+                      className="bg-blue-500 h-1 rounded-full"
                       style={{ width: `${item.relevanceScore}%` }}
                     />
                   </div>
-                  <span className="text-[9px] font-black text-slate-400 whitespace-nowrap uppercase tracking-widest">
+                  <span className="text-xs text-slate-400 whitespace-nowrap">
                     {item.relevanceScore}% match
                   </span>
                 </div>
@@ -153,10 +153,10 @@ export function KnowledgeBase() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-3 pt-3 border-t border-slate-100">
+      <div className="mt-6 pt-6 border-t border-white/5">
         <div className="flex flex-wrap gap-2">
           {['Risk Disclosures', 'Sales Scripts', 'FAQs'].map(tag => (
-            <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-slate-50 hover:bg-harx-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-slate-200">
+            <button key={tag} className="text-[9px] font-black uppercase tracking-widest px-4 py-2 bg-white/5 hover:bg-blue-500 hover:text-white text-slate-400 rounded-xl transition-all duration-300 border border-white/5">
               {tag}
             </button>
           ))}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Headphones } from 'lucide-react';
+import React, { useState } from 'react';
+import { PhoneOff, BarChart2, Brain, Shield, Target, Volume2, Activity, TrendingUp, MicOff, Mic, VolumeX, CheckSquare, Play, Headphones } from 'lucide-react';
 import StatusCard from './StatusCard';
 import { useAgent } from '../../contexts/AgentContext';
 import { useTranscription } from '../../contexts/TranscriptionContext';
@@ -23,37 +23,25 @@ const TopStatusBar: React.FC = () => {
   const [metricsExpanded, setMetricsExpanded] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [warningsExpanded, setWarningsExpanded] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
 
-  // Synchronize microphone mute with MediaStream
-  useEffect(() => {
+  // Mute/unmute microphone
+  const handleToggleMic = () => {
     if (state.mediaStream) {
       state.mediaStream.getAudioTracks().forEach(track => {
-        track.enabled = !state.isMicMuted;
+        track.enabled = !isMicMuted;
       });
+      setIsMicMuted(m => !m);
     }
-  }, [state.isMicMuted, state.mediaStream]);
-
-  // Synchronize speaker mute with volume behavior
-  useEffect(() => {
-    if (state.isSpeakerMuted) {
-      // Opt-in behavior: muting the speaker sets app volume to 0
-      if (state.volume !== 0) {
-        dispatch({ type: 'UPDATE_VOLUME', volume: 0 });
-      }
-    } else {
-        // Unmuting restores to 1 if it was 0
-        if (state.volume === 0) {
-            dispatch({ type: 'UPDATE_VOLUME', volume: 1 });
-        }
-    }
-  }, [state.isSpeakerMuted, dispatch]);
-
-  const handleToggleMic = () => {
-    dispatch({ type: 'TOGGLE_MIC' });
   };
 
+  // Mute/unmute speaker (output)
+  // Note: This only toggles a local state; actual output mute requires control of an <audio> element
   const handleToggleSpeaker = () => {
-    dispatch({ type: 'TOGGLE_SPEAKER' });
+    setIsSpeakerMuted(m => !m);
+    // If you have an <audio> element, you can set its volume or muted property here
+    // Example: document.getElementById('call-audio')?.muted = !isSpeakerMuted;
   };
 
   const handleToggleRecording = async () => {
@@ -79,64 +67,64 @@ const TopStatusBar: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[1800px] mx-auto px-2 py-1 overflow-x-auto">
-      <div className="grid grid-cols-9 gap-1 h-[90px]">
+    <div className="w-full max-w-[1800px] mx-auto px-2 py-2 overflow-x-auto">
+      <div className="grid grid-cols-9 gap-2 h-[120px]">
         <StatusCard
-          icon={<PhoneOff size={18} className="text-slate-400" />}
+          icon={<PhoneOff size={20} className="text-slate-200" />}
           title="Call"
           value={state.callState.isActive
-            ? <span className="text-emerald-600 font-black uppercase text-[10px]">Active</span>
-            : <span className="text-slate-400 font-black uppercase text-[10px]">Inactive</span>
+            ? <span className="text-green-400 font-semibold">Active</span>
+            : <span className="text-slate-400 font-semibold">Inactive</span>
           }
           expandable
           expanded={callExpanded}
           onToggle={() => setCallExpanded(e => !e)}
         />
         <div className="relative w-full h-full">
-          <div className="absolute inset-x-0 bottom-[-8px] z-20 flex justify-center">
+          <div className="absolute inset-x-0 bottom-[-10px] z-20 flex justify-center">
             {state.callState.isActive && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleToggleRecording();
                 }}
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-[8px] font-black transition-all shadow-md active:scale-95 ${state.callState.isRecording
-                  ? 'bg-rose-500 text-white animate-pulse'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all shadow-lg ${state.callState.isRecording
+                  ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
                   }`}
               >
-                <div className={`w-1 h-1 rounded-full ${state.callState.isRecording ? 'bg-white' : 'bg-rose-500'} mr-1`}></div>
-                <span>{state.callState.isRecording ? 'STOP' : 'REC'}</span>
+                <Mic size={10} fill={state.callState.isRecording ? "white" : "none"} />
+                <span>{state.callState.isRecording ? 'STOP REC' : 'START REC'}</span>
               </button>
             )}
           </div>
           <StatusCard
-            icon={<CheckSquare size={18} className="text-slate-400" />}
+            icon={<CheckSquare size={20} className="text-slate-200" />}
             title="Recording"
             value={state.callState.isRecording ? (
-              <span className="text-rose-500 font-black text-[10px] uppercase tracking-widest animate-pulse">Recording...</span>
+              <span className="bg-red-500 px-3 py-1 rounded-full text-xs font-semibold text-white animate-pulse">RECORDING</span>
             ) : state.callState.recordingUrl ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   window.open(state.callState.recordingUrl!, '_blank');
                 }}
-                className="bg-slate-900 hover:bg-slate-800 px-3 py-1 rounded-lg text-[9px] font-black text-white flex items-center space-x-1 transition-colors shadow-sm"
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-full text-xs font-semibold text-white flex items-center space-x-1 transition-colors"
               >
-                <Headphones size={10} />
+                <Headphones size={12} />
                 <span>LISTEN</span>
               </button>
             ) : (
-              <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Stopped</span>
+              <span className="bg-[#22304a] px-3 py-1 rounded-full text-xs font-semibold text-slate-200">STOPPED</span>
             )}
           />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<BarChart2 size={18} className="text-emerald-500" />}
+            icon={<BarChart2 size={20} className="text-green-400" />}
             title="Metrics"
-            value={<span className={`${state.callMetrics.overallScore < 50 ? 'text-rose-600' : 'text-emerald-600'} font-black text-xl tracking-tighter`}>{Math.round(state.callMetrics.overallScore)}%</span>}
-            subtitle={<span className="text-[8px] font-black uppercase text-slate-400">Efficiency Score</span>}
+            value={<span className={`${state.callMetrics.overallScore < 50 ? 'text-red-400' : 'text-green-400'} font-extrabold`}>{Math.round(state.callMetrics.overallScore)}%</span>}
+            subtitle={<span>Overall Score</span>}
             status={state.callMetrics.overallScore < 50 ? "danger" : state.callMetrics.overallScore < 80 ? "warning" : "success"}
             expandable
             expanded={metricsExpanded}
@@ -146,17 +134,17 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Brain size={18} className="text-harx-500" />}
+            icon={<Brain size={20} className="text-blue-400" />}
             title="Rep Profile"
             value={agentProfile ? (
-              <span className="text-slate-900 font-black text-[10px] tracking-widest uppercase truncate block">
+              <span className="text-white font-bold leading-tight line-clamp-1">
                 {agentProfile.personalInfo.name}
               </span>
             ) : (
-              <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Analyzing...</span>
+              <span className="text-slate-400 font-semibold tracking-tighter">Analyzing...</span>
             )}
             subtitle={agentProfile?.professionalSummary?.currentRole && (
-              <span className="text-harx-500 text-[8px] font-black uppercase tracking-widest truncate block mt-0.5">{agentProfile.professionalSummary.currentRole}</span>
+              <span className="text-blue-300 text-[10px] font-bold uppercase truncate block">{agentProfile.professionalSummary.currentRole}</span>
             )}
             expandable
             expanded={profileExpanded}
@@ -165,11 +153,11 @@ const TopStatusBar: React.FC = () => {
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Shield size={18} className={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "text-rose-500" : "text-slate-400"} />}
+            icon={<Shield size={20} className={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "text-red-400" : "text-cyan-400"} />}
             title="Warnings"
             value={state.smartWarnings.filter(w => !w.resolved).length > 0
-              ? <span className="text-rose-600 font-black text-[10px] uppercase tracking-widest">{state.smartWarnings.filter(w => !w.resolved).length} Alerts</span>
-              : <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest">No Alerts</span>
+              ? <span className="text-red-400 font-semibold">{state.smartWarnings.filter(w => !w.resolved).length} Active</span>
+              : <span className="text-green-400 font-semibold">All Clear</span>
             }
             status={state.smartWarnings.filter(w => !w.resolved).length > 0 ? "danger" : "success"}
             expandable
@@ -179,127 +167,123 @@ const TopStatusBar: React.FC = () => {
           />
         </div>
         <StatusCard
-          icon={<Target size={18} className="text-slate-400" />}
+          icon={<Target size={20} className="text-cyan-400" />}
           title="Transaction"
-          value={<span className="text-slate-300 font-black text-xl tracking-tighter">0%</span>}
-          subtitle={<span className="text-[8px] font-black text-slate-300 uppercase">Success Rate</span>}
+          value={<span className="text-red-400 font-extrabold">0%</span>}
+          subtitle={<span>Success Rate</span>}
+          status="danger"
           disabled
         />
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Volume2 size={18} className="text-harx-500" />}
-            title="Volume"
+            icon={<Volume2 size={20} className="text-blue-400" />}
+            title="Audio Level"
             value={
-              <div className="w-full flex flex-col justify-end">
-                <div className="relative group/slider mt-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={state.volume}
-                    onChange={(e) => dispatch({ type: 'UPDATE_VOLUME', volume: parseFloat(e.target.value) })}
-                    className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-harx-500 hover:accent-harx-600 transition-all"
-                  />
+              <div className="w-full">
+                <div className="w-full h-3 bg-[#3a4661] rounded-full mt-2">
+                  <div
+                    className="bg-blue-400 h-3 rounded-full transition-all duration-100"
+                    style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
+                  ></div>
                 </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{Math.round(state.volume * 100)}%</span>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div 
-                        key={i} 
-                        className={`w-1 h-3 rounded-full transition-all duration-300 ${state.audioLevel * 5 >= i ? 'bg-harx-500' : 'bg-slate-100'}`} 
-                      />
-                    ))}
-                  </div>
-                </div>
+                <span className="block mt-2 text-blue-400 text-sm text-left">{Math.round(state.audioLevel * 100)}%</span>
               </div>
             }
           />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<Activity size={18} className={isTranscriptionActive ? "text-emerald-500" : "text-slate-300"} />}
+            icon={<Activity size={20} className={isTranscriptionActive ? "text-green-400" : "text-violet-400"} />}
             title="AI Status"
             value={isTranscriptionActive
               ? <div className="flex flex-col">
-                <span className="text-emerald-600 font-black text-[10px] uppercase tracking-widest">Live ({Math.round(analysisConfidence * 100)}%)</span>
+                <span className="text-green-400 font-semibold">Active ({Math.round(analysisConfidence * 100)}%)</span>
               </div>
-              : <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest">Waiting</span>
+              : <span className="text-slate-400 font-semibold">Idle</span>
             }
             disabled
           />
         </div>
         <div className="relative w-full h-full">
           <StatusCard
-            icon={<TrendingUp size={18} className="text-orange-500" />}
+            icon={<TrendingUp size={20} className="text-yellow-400" />}
             title="Phase"
-            value={<span className="text-orange-600 font-black text-[10px] uppercase tracking-widest truncate block">{state.callState.currentPhase || aiCurrentPhase || 'Discovery'}</span>}
+            value={<span className="text-yellow-400 font-semibold whitespace-nowrap">{state.callState.currentPhase || aiCurrentPhase || 'No active phase'}</span>}
             disabled
           />
         </div>
       </div>
       {callExpanded && (
-        <div className="bg-white rounded-3xl mt-4 p-8 w-full max-w-[1800px] mx-auto border border-slate-100 shadow-2xl animate-in fade-in slide-in-from-top-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">System Controls & Recording</h2>
+        <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Call Controls & Recording</h2>
             <button
-              className="text-slate-400 hover:text-slate-900 transition-colors"
+              className="text-slate-400 hover:text-white text-xl"
               onClick={() => setCallExpanded(false)}
+              aria-label="Collapse call controls"
             >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" /></svg>
             </button>
           </div>
-          <div className="grid grid-cols-3 gap-8">
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-              <div className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Audio Hardware</div>
+          <div className="flex gap-x-16">
+            {/* Audio Controls */}
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-white mb-2">Audio Controls</div>
               <div className="flex space-x-3">
                 <button
-                  className={`p-4 rounded-xl transition-all border ${state.isMicMuted ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-200 hover:border-harx-500/30 shadow-sm'}`}
+                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleMic}
+                  aria-label={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
-                  {state.isMicMuted ? <MicOff size={24} className="text-rose-500" /> : <Mic size={24} className="text-slate-400" />}
+                  {isMicMuted ? <MicOff size={20} className="text-slate-300" /> : <Mic size={20} className="text-slate-300" />}
                 </button>
                 <button
-                  className={`p-4 rounded-xl transition-all border ${state.isSpeakerMuted ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-200 hover:border-harx-500/30 shadow-sm'}`}
+                  className="bg-[#1b253a] p-3 rounded-lg text-slate-300 hover:bg-[#22304a]"
                   onClick={handleToggleSpeaker}
+                  aria-label={isSpeakerMuted ? 'Unmute speaker' : 'Mute speaker'}
                 >
-                  {state.isSpeakerMuted ? <VolumeX size={24} className="text-rose-500" /> : <Volume2 size={24} className="text-slate-400" />}
+                  {isSpeakerMuted ? <VolumeX size={20} className="text-slate-300" /> : <Volume2 size={20} className="text-slate-300" />}
                 </button>
               </div>
             </div>
-            
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col justify-center items-center text-center">
-              <div className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Signal Status</div>
+            {/* Call Status */}
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-white mb-2">Call Status</div>
               {state.callState.isActive ? (
-                <div className="flex items-center space-x-2 bg-emerald-500 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  <span>Transmitting</span>
-                </div>
+                <span className="text-green-400 font-semibold">Active</span>
               ) : (
-                <span className="text-slate-400 font-black uppercase text-[10px] tracking-widest border border-slate-200 px-6 py-2 rounded-xl bg-white shadow-sm">Offline</span>
+                <span className="text-slate-400 font-semibold">Inactive</span>
               )}
             </div>
-
-            <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl flex flex-col justify-between relative overflow-hidden group/rec">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover/rec:bg-white/10 transition-all duration-700"></div>
-              <div className="text-[10px] font-black text-white/40 mb-4 uppercase tracking-[0.3em] relative z-10">Data Acquisition</div>
-              <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-2.5 h-2.5 rounded-full ${state.callState.isRecording ? 'bg-rose-500 animate-pulse' : 'bg-white/20'}`}></div>
-                  <span className="text-white font-black uppercase text-[10px] tracking-widest">
-                    {state.callState.isRecording ? 'Recording Live' : 'Not Saved'}
-                  </span>
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-white mb-2">Recording Status</div>
+              <div className="bg-[#1b253a] rounded-lg p-4 flex flex-col space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${state.callState.isRecording ? 'bg-red-500 animate-pulse' : 'bg-slate-500'}`}></div>
+                    <span className="text-slate-200">
+                      {state.callState.isRecording ? 'Recording Live' : 'Recording Stopped'}
+                    </span>
+                  </div>
+                  {state.callState.isActive && (
+                    <button
+                      onClick={handleToggleRecording}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${state.callState.isRecording
+                        ? 'bg-red-900/30 text-red-500 border border-red-500/50 hover:bg-red-900/50'
+                        : 'bg-green-900/30 text-green-500 border border-green-500/50 hover:bg-green-900/50'
+                        }`}
+                    >
+                      {state.callState.isRecording ? 'STOP' : 'START'}
+                    </button>
+                  )}
                 </div>
-                {state.callState.isActive && (
+                {state.callState.recordingUrl && (
                   <button
-                    onClick={handleToggleRecording}
-                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${state.callState.isRecording
-                      ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/40'
-                      : 'bg-white text-slate-900 hover:bg-slate-50 shadow-lg shadow-white/20'
-                      }`}
+                    onClick={() => window.open(state.callState.recordingUrl!, '_blank')}
+                    className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full justify-center"
                   >
-                    {state.callState.isRecording ? 'Terminate' : 'Initialize'}
+                    <Play size={16} fill="white" />
+                    <span className="font-semibold text-sm">Play Recording</span>
                   </button>
                 )}
               </div>
@@ -308,9 +292,9 @@ const TopStatusBar: React.FC = () => {
         </div>
       )}
       {metricsExpanded && (
-        <div className="bg-white/80 rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto border border-slate-200 shadow-lg backdrop-blur-xl">
+        <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Call Metrics Details</h2>
+            <h2 className="text-2xl font-bold text-white">Call Metrics Details</h2>
             <button
               className="text-slate-400 hover:text-white text-xl"
               onClick={() => setMetricsExpanded(false)}
@@ -321,56 +305,56 @@ const TopStatusBar: React.FC = () => {
           </div>
           <div className="grid grid-cols-4 gap-6">
             {/* Clarity */}
-            <div className="bg-slate-50 rounded-lg p-4 flex flex-col border border-slate-100">
+            <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-harx-alt-500 text-xl mr-2">🎯</span>
-                <span className="font-black text-slate-900 text-sm uppercase tracking-widest">Clarity</span>
+                <span className="text-blue-400 text-xl mr-2">🎯</span>
+                <span className="font-bold text-white text-lg">Clarity</span>
               </div>
-              <span className={`text-2xl font-black mb-2 ${state.callMetrics.overallScore < 50 ? 'text-rose-600' : 'text-emerald-600'}`}>{Math.round(state.callMetrics.clarity)}%</span>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full">
-                <div className="bg-harx-alt-500 h-1.5 rounded-full transition-all duration-500 shadow-sm shadow-harx-alt-500/20" style={{ width: `${state.callMetrics.clarity}%` }}></div>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.clarity < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.clarity)}%</span>
+              <div className="w-full h-2 bg-[#3a4661] rounded-full">
+                <div className="bg-blue-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.clarity}%` }}></div>
               </div>
             </div>
             {/* Empathy */}
-            <div className="bg-slate-50 rounded-lg p-4 flex flex-col border border-slate-100">
+            <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-harx-alt-500 text-xl mr-2">❤️</span>
-                <span className="font-black text-slate-900 text-sm uppercase tracking-widest">Empathy</span>
+                <span className="text-blue-400 text-xl mr-2">❤️</span>
+                <span className="font-bold text-white text-lg">Empathy</span>
               </div>
-              <span className={`text-2xl font-black mb-2 ${state.callMetrics.empathy < 50 ? 'text-rose-600' : 'text-emerald-600'}`}>{Math.round(state.callMetrics.empathy)}%</span>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full">
-                <div className="bg-harx-alt-500 h-1.5 rounded-full transition-all duration-500 shadow-sm shadow-harx-alt-500/20" style={{ width: `${state.callMetrics.empathy}%` }}></div>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.empathy < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.empathy)}%</span>
+              <div className="w-full h-2 bg-[#3a4661] rounded-full">
+                <div className="bg-blue-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.empathy}%` }}></div>
               </div>
             </div>
             {/* Assertiveness */}
-            <div className="bg-slate-50 rounded-lg p-4 flex flex-col border border-slate-100">
+            <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-orange-500 text-xl mr-2">💪</span>
-                <span className="font-black text-slate-900 text-sm uppercase tracking-widest">Assertiveness</span>
+                <span className="text-yellow-400 text-xl mr-2">💪</span>
+                <span className="font-bold text-white text-lg">Assertiveness</span>
               </div>
-              <span className={`text-2xl font-black mb-2 ${state.callMetrics.assertiveness < 50 ? 'text-rose-600' : 'text-emerald-600'}`}>{Math.round(state.callMetrics.assertiveness)}%</span>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full">
-                <div className="bg-orange-500 h-1.5 rounded-full transition-all duration-500 shadow-sm shadow-orange-500/20" style={{ width: `${state.callMetrics.assertiveness}%` }}></div>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.assertiveness < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.assertiveness)}%</span>
+              <div className="w-full h-2 bg-[#3a4661] rounded-full">
+                <div className="bg-yellow-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.assertiveness}%` }}></div>
               </div>
             </div>
             {/* Efficiency */}
-            <div className="bg-slate-50 rounded-lg p-4 flex flex-col border border-slate-100">
+            <div className="bg-[#26314a] rounded-lg p-4 flex flex-col">
               <div className="flex items-center mb-2">
-                <span className="text-orange-500 text-xl mr-2">⚡</span>
-                <span className="font-black text-slate-900 text-sm uppercase tracking-widest">Efficiency</span>
+                <span className="text-yellow-400 text-xl mr-2">⚡</span>
+                <span className="font-bold text-white text-lg">Efficiency</span>
               </div>
-              <span className={`text-2xl font-black mb-2 ${state.callMetrics.efficiency < 50 ? 'text-rose-600' : 'text-emerald-600'}`}>{Math.round(state.callMetrics.efficiency)}%</span>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full">
-                <div className="bg-orange-500 h-1.5 rounded-full transition-all duration-500 shadow-sm shadow-orange-500/20" style={{ width: `${state.callMetrics.efficiency}%` }}></div>
+              <span className={`text-2xl font-bold mb-2 ${state.callMetrics.efficiency < 50 ? 'text-red-400' : 'text-green-400'}`}>{Math.round(state.callMetrics.efficiency)}%</span>
+              <div className="w-full h-2 bg-[#3a4661] rounded-full">
+                <div className="bg-yellow-400 h-2 rounded-full transition-all duration-500" style={{ width: `${state.callMetrics.efficiency}%` }}></div>
               </div>
             </div>
           </div>
         </div>
       )}
       {warningsExpanded && (
-        <div className="bg-white/80 rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto border border-slate-200 shadow-lg backdrop-blur-xl">
+        <div className="bg-[#232f47] rounded-xl mt-4 p-6 w-full max-w-[1800px] mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Active Warnings</h2>
+            <h2 className="text-2xl font-bold text-white">Active Warnings</h2>
             <button
               className="text-slate-400 hover:text-white text-xl"
               onClick={() => setWarningsExpanded(false)}
@@ -382,39 +366,39 @@ const TopStatusBar: React.FC = () => {
           <div className="flex flex-col gap-4 w-full">
             {state.smartWarnings.filter(w => !w.resolved).length > 0 ? (
               state.smartWarnings.filter(w => !w.resolved).map((warning, index) => (
-                <div key={index} className="bg-rose-50 rounded-lg p-4 border-l-4 border-rose-500 border border-rose-100">
+                <div key={index} className="bg-[#26314a] rounded-lg p-4 border-l-4 border-red-500">
                   <div className="flex justify-between items-start">
-                    <div className="font-black text-rose-900 uppercase text-xs tracking-widest">{warning.title}</div>
-                    <span className="text-[10px] text-rose-400 font-bold">{warning.detectedAt.toLocaleTimeString()}</span>
+                    <div className="font-bold text-white">{warning.title}</div>
+                    <span className="text-[10px] text-slate-400">{warning.detectedAt.toLocaleTimeString()}</span>
                   </div>
-                  <div className="text-sm text-rose-700 mt-1 font-medium">{warning.message}</div>
+                  <div className="text-sm text-slate-200 mt-1">{warning.message}</div>
                 </div>
               ))
             ) : (
               <div className="flex flex-col items-center justify-center py-12">
-                <Shield size={64} className="text-emerald-500 mb-6 opacity-20" />
-                <span className="text-emerald-600 text-xl font-black uppercase tracking-widest">All systems normal</span>
+                <Shield size={64} className="text-green-500 mb-6" />
+                <span className="text-green-400 text-xl font-semibold">All systems normal</span>
               </div>
             )}
           </div>
         </div>
       )}
       {profileExpanded && agentProfile && (
-        <div className="bg-white/90 rounded-2xl mt-4 p-8 w-full max-w-[1800px] mx-auto shadow-2xl border border-pink-100 animate-in fade-in slide-in-from-top-4 duration-300 backdrop-blur-2xl">
+        <div className="bg-[#232f47] rounded-xl mt-4 p-8 w-full max-w-[1800px] mx-auto shadow-2xl border border-blue-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-harx rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-xl shadow-harx-500/20 border-2 border-white transform rotate-3">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-blue-400/30">
                 {agentProfile.personalInfo.name.charAt(0)}
               </div>
               <div>
-                <h2 className="text-3xl font-black text-slate-900 leading-tight tracking-tight uppercase">{agentProfile.personalInfo.name}</h2>
-                <div className="flex items-center space-x-3 mt-1 text-harx-alt-600 font-bold uppercase tracking-widest text-[10px]">
+                <h2 className="text-3xl font-bold text-white leading-tight">{agentProfile.personalInfo.name}</h2>
+                <div className="flex items-center space-x-3 mt-1 text-blue-300 font-medium">
                   {agentProfile.professionalSummary?.currentRole && (
-                    <span className="bg-harx-alt-50 px-3 py-1 rounded-full border border-harx-alt-100">
+                    <span className="bg-blue-900/40 px-3 py-1 rounded-full text-xs uppercase tracking-widest border border-blue-500/30">
                       {agentProfile.professionalSummary.currentRole}
                     </span>
                   )}
-                  <span className="text-slate-400">{agentProfile.personalInfo.email}</span>
+                  <span className="text-slate-400 text-sm">{agentProfile.personalInfo.email}</span>
                 </div>
               </div>
             </div>
@@ -426,42 +410,42 @@ const TopStatusBar: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-8 text-slate-600">
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm">
-              <h3 className="text-harx-alt-600 font-black uppercase text-[10px] mb-4 tracking-[0.2em]">Professional Summary</h3>
-              <p className="text-sm leading-relaxed text-slate-500 font-medium">
+          <div className="grid grid-cols-3 gap-8 text-slate-200">
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-blue-400 font-bold uppercase text-xs mb-4 tracking-tighter">Professional Summary</h3>
+              <p className="text-sm leading-relaxed text-slate-300">
                 {agentProfile.professionalSummary?.yearsOfExperience ? (
-                  <>Experience: <span className="text-slate-900 font-black">{agentProfile.professionalSummary.yearsOfExperience}</span> in sales and customer engagement.</>
+                  <>Experience: <span className="text-white font-medium">{agentProfile.professionalSummary.yearsOfExperience}</span> in sales and customer engagement.</>
                 ) : "No experience summary provided."}
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm">
-              <h3 className="text-harx-alt-600 font-black uppercase text-[10px] mb-4 tracking-[0.2em]">Contact & Location</h3>
-              <div className="space-y-3 text-sm font-bold uppercase tracking-widest text-[10px]">
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-blue-400 font-bold uppercase text-xs mb-4 tracking-tighter">Contact & Location</h3>
+              <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Phone</span>
-                  <span className="text-slate-900 font-mono">{agentProfile.personalInfo.phone || 'N/A'}</span>
+                  <span className="text-slate-500">Phone</span>
+                  <span className="text-slate-200 font-mono">{agentProfile.personalInfo.phone || 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Location</span>
-                  <span className="text-slate-900">{agentProfile.personalInfo.location || 'Remote'}</span>
+                  <span className="text-slate-500">Location</span>
+                  <span className="text-slate-200">{agentProfile.personalInfo.location || 'Remote'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Status</span>
-                  <span className="text-emerald-600 flex items-center">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+                  <span className="text-slate-500">Status</span>
+                  <span className="text-green-400 flex items-center">
+                    <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
                     Connected
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 shadow-sm">
-              <h3 className="text-harx-alt-600 font-black uppercase text-[10px] mb-4 tracking-[0.2em]">Current Methodology</h3>
-              <div className="flex items-center space-x-3 text-sm text-slate-700 font-bold uppercase tracking-widest text-[10px]">
-                <div className="bg-harx-alt-500/10 p-2.5 rounded-xl">
-                  <Shield size={20} className="text-harx-alt-500" />
+            <div className="bg-[#1b253a] rounded-xl p-6 border border-slate-700/50">
+              <h3 className="text-blue-400 font-bold uppercase text-xs mb-4 tracking-tighter">Current Methodology</h3>
+              <div className="flex items-center space-x-2 text-sm text-slate-300">
+                <div className="bg-harx-alt-500/20 p-2 rounded-lg">
+                  <Shield size={20} className="text-blue-400" />
                 </div>
                 <span>REPS Adaptive Coaching Active</span>
               </div>
