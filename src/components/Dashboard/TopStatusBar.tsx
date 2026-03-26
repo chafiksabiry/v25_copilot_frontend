@@ -170,13 +170,23 @@ const TopStatusBar: React.FC = () => {
             title="Audio Output"
             value={state.isSpeakerPhone ? <span className="text-blue-400 font-semibold">Speaker</span> : <span className="text-slate-300 font-semibold">Headset</span>}
             subtitle={
-              <div className="w-full">
-                <div className="w-full h-1 bg-[#3a4661] rounded-full mt-1">
-                  <div
-                    className="bg-blue-400 h-1 rounded-full transition-all duration-100"
-                    style={{ width: `${Math.min(100, state.audioLevel * 100)}%` }}
-                  ></div>
-                </div>
+              <div 
+                className="w-full flex items-center mt-1"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+              >
+                <Volume2 size={12} className={state.volume === 0 ? "text-slate-600 mr-2" : "text-blue-400 mr-2"} />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={state.volume}
+                  onChange={(e) => dispatch({ type: 'UPDATE_VOLUME', volume: parseFloat(e.target.value) })}
+                  className="w-full h-1 bg-[#3a4661] rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  title="Volume"
+                />
               </div>
             }
           />
